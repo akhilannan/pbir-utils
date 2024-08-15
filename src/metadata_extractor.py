@@ -13,8 +13,14 @@ def extract_report_name(json_file_path):
     Returns:
         str: The extracted report name if found, otherwise "NA".
     """
-    return next((component[:-7] for component in reversed(json_file_path.split(os.sep))
-                 if component.endswith('.Report')), "NA")
+    return next(
+        (
+            component[:-7]
+            for component in reversed(json_file_path.split(os.sep))
+            if component.endswith(".Report")
+        ),
+        "NA",
+    )
 
 
 def extract_active_section(bookmark_json_path):
@@ -29,8 +35,10 @@ def extract_active_section(bookmark_json_path):
     """
     if "bookmarks" in bookmark_json_path:
         try:
-            with open(bookmark_json_path, 'r', encoding='utf-8') as file:
-                return json.load(file).get("explorationState", {}).get("activeSection", "")
+            with open(bookmark_json_path, "r", encoding="utf-8") as file:
+                return (
+                    json.load(file).get("explorationState", {}).get("activeSection", "")
+                )
         except (IOError, json.JSONDecodeError):
             return ""
     else:
@@ -52,14 +60,16 @@ def extract_page_name(json_path):
     if not active_section:
         return "NA"
     base_path = json_path.split("definition")[0]
-    page_json_path = os.path.join(base_path, "definition", "pages", active_section, "page.json")
+    page_json_path = os.path.join(
+        base_path, "definition", "pages", active_section, "page.json"
+    )
     try:
-        with open(page_json_path, "r", encoding='utf-8') as file:
+        with open(page_json_path, "r", encoding="utf-8") as file:
             return json.load(file).get("displayName", "NA")
     except (IOError, json.JSONDecodeError):
         return "NA"
-    
-    
+
+
 def traverse_pbir_json_structure(data, context=None):
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
@@ -87,9 +97,13 @@ def traverse_pbir_json_structure(data, context=None):
             elif key == "Property":
                 yield (None, value, context, None)
             elif key == "visual":
-                yield from traverse_pbir_json_structure(value, value.get("visualType", "visual"))
+                yield from traverse_pbir_json_structure(
+                    value, value.get("visualType", "visual")
+                )
             elif key == "pageBinding":
-                yield from traverse_pbir_json_structure(value, value.get("type", "Drillthrough"))
+                yield from traverse_pbir_json_structure(
+                    value, value.get("type", "Drillthrough")
+                )
             elif key == "filterConfig":
                 yield from traverse_pbir_json_structure(value, "Filters")
             elif key == "explorationState":
@@ -98,7 +112,12 @@ def traverse_pbir_json_structure(data, context=None):
                 for entity in value:
                     table_name = entity.get("name")
                     for measure in entity.get("measures", []):
-                        yield (table_name, measure.get("name"), context, measure.get("expression", None))
+                        yield (
+                            table_name,
+                            measure.get("name"),
+                            context,
+                            measure.get("expression", None),
+                        )
             else:
                 yield from traverse_pbir_json_structure(value, context)
     elif isinstance(data, list):
@@ -126,21 +145,35 @@ def extract_pbir_component_metadata(directory_path):
     all_rows = []
     for root, _, files in os.walk(directory_path):
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 json_file_path = os.path.join(root, file)
                 report_name = extract_report_name(json_file_path)
                 page_name = extract_page_name(json_file_path) or "NA"
                 try:
-                    with open(json_file_path, 'r', encoding='utf-8') as file:
+                    with open(json_file_path, "r", encoding="utf-8") as file:
                         data = json.load(file)
-                        for table, column, used_in, expression in traverse_pbir_json_structure(data):
-                            all_rows.append({"Report": report_name, "Page": page_name, "Table": table, "Column or Measure": column, "Expression": expression, "Used In": used_in})
+                        for (
+                            table,
+                            column,
+                            used_in,
+                            expression,
+                        ) in traverse_pbir_json_structure(data):
+                            all_rows.append(
+                                {
+                                    "Report": report_name,
+                                    "Page": page_name,
+                                    "Table": table,
+                                    "Column or Measure": column,
+                                    "Expression": expression,
+                                    "Used In": used_in,
+                                }
+                            )
                 except (json.JSONDecodeError, IOError) as e:
                     print(f"Error: Unable to process file {json_file_path}: {str(e)}")
 
     # Separate rows based on whether they have an "expression" value
-    rows_with_expression = [row for row in all_rows if row['Expression'] is not None]
-    rows_without_expression = [row for row in all_rows if row['Expression'] is None]
+    rows_with_expression = [row for row in all_rows if row["Expression"] is not None]
+    rows_without_expression = [row for row in all_rows if row["Expression"] is None]
 
     # This step is done to ensure we get table and respective column in single row
     reformatted_rows = [
@@ -150,7 +183,7 @@ def extract_pbir_component_metadata(directory_path):
             "Table": rows_without_expression[i]["Table"],
             "Column or Measure": rows_without_expression[i + 1]["Column or Measure"],
             "Expression": None,
-            "Used In": rows_without_expression[i]["Used In"]
+            "Used In": rows_without_expression[i]["Used In"],
         }
         for i in range(0, len(rows_without_expression), 2)
         if i + 1 < len(rows_without_expression)
@@ -159,27 +192,42 @@ def extract_pbir_component_metadata(directory_path):
     # This step ensures we add expression to the reformatted_rows based on a join to rows_with_expression
     for row_without in reformatted_rows:
         for row_with in rows_with_expression:
-            if (row_without['Report'] == row_with['Report'] and
-                row_without['Table'] == row_with['Table'] and
-                row_without['Column or Measure'] == row_with['Column or Measure']):
-                row_without['Expression'] = row_with['Expression']
+            if (
+                row_without["Report"] == row_with["Report"]
+                and row_without["Table"] == row_with["Table"]
+                and row_without["Column or Measure"] == row_with["Column or Measure"]
+            ):
+                row_without["Expression"] = row_with["Expression"]
                 break  # Stop looking once a match is found
 
     # Ensure rows_with_expression that were not used anywhere are added to reformatted_rows
-    final_rows = reformatted_rows + [row for row in rows_with_expression if not any(
-        row['Report'] == r['Report'] and
-        row['Table'] == r['Table'] and
-        row['Column or Measure'] == r['Column or Measure'] for r in reformatted_rows)]
-    
+    final_rows = reformatted_rows + [
+        row
+        for row in rows_with_expression
+        if not any(
+            row["Report"] == r["Report"]
+            and row["Table"] == r["Table"]
+            and row["Column or Measure"] == r["Column or Measure"]
+            for r in reformatted_rows
+        )
+    ]
+
     # Extract distinct rows
     unique_rows = []
     seen = set()
     for row in final_rows:
-        row_tuple = (row['Report'], row['Page'], row['Table'], row['Column or Measure'], row['Expression'], row['Used In'])
+        row_tuple = (
+            row["Report"],
+            row["Page"],
+            row["Table"],
+            row["Column or Measure"],
+            row["Expression"],
+            row["Used In"],
+        )
         if row_tuple not in seen:
             unique_rows.append(row)
             seen.add(row_tuple)
-    
+
     return unique_rows
 
 
@@ -207,10 +255,17 @@ def export_pbir_metadata_to_csv(directory_path, csv_output_path):
     - Expression: DAX expression for measures (if applicable)
     - Used In: Context where the item is used (e.g., visual, Drillthrough, Filters, Bookmarks)
     """
-    
+
     metadata = extract_pbir_component_metadata(directory_path)
-    fieldnames = ['Report', 'Page', 'Table', 'Column or Measure', 'Expression', 'Used In']
-    with open(csv_output_path, 'w', newline='', encoding='utf-8') as csvfile:
+    fieldnames = [
+        "Report",
+        "Page",
+        "Table",
+        "Column or Measure",
+        "Expression",
+        "Used In",
+    ]
+    with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(metadata)
