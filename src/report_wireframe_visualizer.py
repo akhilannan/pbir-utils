@@ -103,55 +103,49 @@ def create_wireframe_figure(
     Returns:
         go.Figure: Plotly figure object for the wireframe.
     """
+
     fig = go.Figure()
 
     adjusted_visuals = adjust_visual_positions(visuals_info)
 
-    for visual_id, (
-        x,
-        y,
-        width,
-        height,
-        name,
-        parent_id,
-        is_hidden,
-    ) in adjusted_visuals.items():
+    # Sort adjusted_visuals by name and visual_id
+    sorted_visuals = sorted(adjusted_visuals.items(), key=lambda x: (x[1][4], x[0]))
+    legend_labels = []
+    for visual_id, (x, y, width, height, name, _, is_hidden) in sorted_visuals:
         if not show_hidden and is_hidden:
             continue
-
         line_style = "dot" if is_hidden else "solid"
+        # Calculate center of the box
+        center_x = x + width / 2
+        center_y = y + height / 2
 
+        # Add the rectangle with an invisible line to the center
+        label = f"{name} ({visual_id})"
+        legend_labels.append(label)
         if name != "Group":
             fig.add_trace(
                 go.Scatter(
-                    x=[x, x + width, x + width, x, x],
-                    y=[y, y, y + height, y + height, y],
-                    mode="lines",
+                    x=[x, x + width, x + width, x, x, None, center_x, None],
+                    y=[y, y, y + height, y + height, y, None, center_y, None],
+                    mode="lines+text",
                     line=dict(color="black", dash=line_style),
-                    text=name,
-                    hovertext=f"ID: {visual_id}",
+                    text=[None, None, None, None, None, None, name, None],
+                    textposition="middle center",
+                    hovertext=f"Visual ID: {visual_id}<br>Visual Type: {name}",
                     hoverinfo="text",
+                    name=label,
+                    legendgroup=visual_id,
+                    showlegend=True,
                 )
             )
-            fig.add_annotation(
-                text=name,
-                x=x + width / 2,
-                y=y + height / 2,
-                showarrow=False,
-                font=dict(size=10),
-                align="center",
-                yshift=5,
-            )
 
+    legend_width_pixel = max(len(label) for label in legend_labels) * 7
     fig.update_xaxes(range=[0, page_width], showticklabels=True)
     fig.update_yaxes(range=[page_height, 0], showticklabels=True)
-
     fig.update_layout(
-        title=f"{page_name} Wireframe",
-        showlegend=False,
-        width=800,
-        height=600,
-        margin=dict(l=10, r=10, t=30, b=10),
+        width=page_width + legend_width_pixel,
+        height=page_height,
+        margin=dict(l=10, r=10, t=25, b=10),
     )
 
     return fig
