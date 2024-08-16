@@ -51,19 +51,20 @@ def extract_visual_info(visuals_folder):
     """
     visuals = {}
     for visual_id in os.listdir(visuals_folder):
-        visual_folder = os.path.join(visuals_folder, visual_id)
-        visual_json_path = os.path.join(visual_folder, "visual.json")
+        visual_json_path = os.path.join(visuals_folder, visual_id, "visual.json")
         if not os.path.exists(visual_json_path):
             continue
         visual_data = load_json(visual_json_path)
-        name = visual_data.get("visual", {}).get("visualType", "Group")
-        parent_id = visual_data.get("parentGroupName")
-        x = visual_data["position"]["x"]
-        y = visual_data["position"]["y"]
-        width = visual_data["position"]["width"]
-        height = visual_data["position"]["height"]
-        is_hidden = visual_data.get("isHidden", False)
-        visuals[visual_id] = (x, y, width, height, name, parent_id, is_hidden)
+        position = visual_data["position"]
+        visuals[visual_id] = (
+            position["x"],
+            position["y"],
+            position["width"],
+            position["height"],
+            visual_data.get("visual", {}).get("visualType", "Group"),
+            visual_data.get("parentGroupName"),
+            visual_data.get("isHidden", False)
+        )
     return visuals
 
 
@@ -77,14 +78,18 @@ def adjust_visual_positions(visuals):
     Returns:
         dict: Dictionary with adjusted visual positions.
     """
-    adjusted = {}
-    for visual_id, (x, y, width, height, name, parent_id, is_hidden) in visuals.items():
-        if parent_id and parent_id in visuals:
-            parent_x, parent_y, _, _, _, _, _ = visuals[parent_id]
-            x += parent_x
-            y += parent_y
-        adjusted[visual_id] = (x, y, width, height, name, parent_id, is_hidden)
-    return adjusted
+    return {
+        vid: (
+            x + visuals[parent][0] if parent in visuals else x,
+            y + visuals[parent][1] if parent in visuals else y,
+            width,
+            height,
+            name,
+            parent,
+            is_hidden
+        )
+        for vid, (x, y, width, height, name, parent, is_hidden) in visuals.items()
+    }
 
 
 def create_wireframe_figure(
@@ -120,9 +125,9 @@ def create_wireframe_figure(
         center_y = y + height / 2
 
         # Add the rectangle with an invisible line to the center
-        label = f"{name} ({visual_id})"
-        legend_labels.append(label)
         if name != "Group":
+            label = f"{name} ({visual_id})"
+            legend_labels.append(label)
             fig.add_trace(
                 go.Scatter(
                     x=[x, x + width, x + width, x, x, None, center_x, None],
@@ -134,8 +139,7 @@ def create_wireframe_figure(
                     hovertext=f"Visual ID: {visual_id}<br>Visual Type: {name}",
                     hoverinfo="text",
                     name=label,
-                    legendgroup=visual_id,
-                    showlegend=True,
+                    showlegend=True
                 )
             )
 
@@ -146,6 +150,8 @@ def create_wireframe_figure(
         width=page_width + legend_width_pixel,
         height=page_height,
         margin=dict(l=10, r=10, t=25, b=10),
+        xaxis=dict(range=[0, page_width], showticklabels=True),
+        yaxis=dict(range=[page_height, 0], showticklabels=True)
     )
 
     return fig
@@ -159,35 +165,46 @@ def apply_filters(pages_info, pages=None, visual_types=None, visual_ids=None):
         pages_info (list): List of tuples containing page information.
         pages (list, optional): List of page names to include. Defaults to None.
         visual_types (list, optional): List of visual types to include. Defaults to None.
-
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
 
     Returns:
         list: Filtered list of tuples containing page information.
     """
+
     filtered_pages_info = []
     for page_name, page_width, page_height, visuals_info in pages_info:
+
+        # Skip this page if it's not in the specified pages list
         if pages and page_name not in pages:
             continue
 
-        filtered_visuals_info = {}
-        for vid, vinfo in visuals_info.items():
-            visual_type = vinfo[4]
-            if (visual_types and visual_type in visual_types) or (
-                visual_ids and vid in visual_ids
-            ):
-                filtered_visuals_info[vid] = vinfo
-                parent_id = vinfo[5]
-                if parent_id and parent_id in visuals_info:
-                    filtered_visuals_info[parent_id] = visuals_info[parent_id]
+        # Filter visuals based on visual_types or visual_ids
+        filtered_visuals_info = {
+            vid: vinfo
+            for vid, vinfo in visuals_info.items()
+            if (visual_types and vinfo[4] in visual_types)
+            or (visual_ids and vid in visual_ids)
+        }
 
-        if filtered_visuals_info:
+        # Collect parent visuals to add after the loop
+        parents_to_add = {
+            parent_id: visuals_info[parent_id]
+            for _, vinfo in filtered_visuals_info.items()
+            if (parent_id := vinfo[5]) and parent_id not in filtered_visuals_info
+        }
+
+        # Add parent visuals to the filtered visuals dictionary
+        filtered_visuals_info.update(parents_to_add)
+
+        # Add the page to the result if there are filtered visuals or no visual filters were applied
+        if filtered_visuals_info or (not visual_types and not visual_ids):
             filtered_pages_info.append(
-                (page_name, page_width, page_height, filtered_visuals_info)
-            )
-        elif not visual_types and not visual_ids:
-            filtered_pages_info.append(
-                (page_name, page_width, page_height, visuals_info)
+                (
+                    page_name,
+                    page_width,
+                    page_height,
+                    filtered_visuals_info or visuals_info
+                )
             )
 
     return filtered_pages_info
