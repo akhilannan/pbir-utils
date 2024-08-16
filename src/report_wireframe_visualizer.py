@@ -87,7 +87,9 @@ def adjust_visual_positions(visuals):
     return adjusted
 
 
-def create_wireframe_figure(page_name, page_width, page_height, visuals_info):
+def create_wireframe_figure(
+    page_name, page_width, page_height, visuals_info, show_hidden=True
+):
     """
     Create a Plotly figure for the wireframe of a page.
 
@@ -96,6 +98,7 @@ def create_wireframe_figure(page_name, page_width, page_height, visuals_info):
         page_width (int): Width of the page.
         page_height (int): Height of the page.
         visuals_info (dict): Dictionary with visual information.
+        show_hidden (bool): Flag to determine if hidden visuals should be shown.
 
     Returns:
         go.Figure: Plotly figure object for the wireframe.
@@ -103,20 +106,31 @@ def create_wireframe_figure(page_name, page_width, page_height, visuals_info):
     fig = go.Figure()
 
     adjusted_visuals = adjust_visual_positions(visuals_info)
-    
-    for visual_id, (x, y, width, height, name, parent_id, is_hidden) in adjusted_visuals.items():
-        line_style = 'dot' if is_hidden else 'solid'
-        
-        if name != 'Group':
+
+    for visual_id, (
+        x,
+        y,
+        width,
+        height,
+        name,
+        parent_id,
+        is_hidden,
+    ) in adjusted_visuals.items():
+        if not show_hidden and is_hidden:
+            continue
+
+        line_style = "dot" if is_hidden else "solid"
+
+        if name != "Group":
             fig.add_trace(
                 go.Scatter(
                     x=[x, x + width, x + width, x, x],
                     y=[y, y, y + height, y + height, y],
-                    mode='lines',
-                    line=dict(color='black', dash=line_style),
+                    mode="lines",
+                    line=dict(color="black", dash=line_style),
                     text=name,
-                    hovertext=f'ID: {visual_id}',
-                    hoverinfo='text'
+                    hovertext=f"ID: {visual_id}",
+                    hoverinfo="text",
                 )
             )
             fig.add_annotation(
@@ -125,21 +139,21 @@ def create_wireframe_figure(page_name, page_width, page_height, visuals_info):
                 y=y + height / 2,
                 showarrow=False,
                 font=dict(size=10),
-                align='center',
-                yshift=5
+                align="center",
+                yshift=5,
             )
 
     fig.update_xaxes(range=[0, page_width], showticklabels=True)
     fig.update_yaxes(range=[page_height, 0], showticklabels=True)
 
     fig.update_layout(
-        title=f'{page_name} Wireframe',
+        title=f"{page_name} Wireframe",
         showlegend=False,
         width=800,
         height=600,
-        margin=dict(l=10, r=10, t=30, b=10)
+        margin=dict(l=10, r=10, t=30, b=10),
     )
-    
+
     return fig
 
 
@@ -151,6 +165,7 @@ def apply_filters(pages_info, pages=None, visual_types=None, visual_ids=None):
         pages_info (list): List of tuples containing page information.
         pages (list, optional): List of page names to include. Defaults to None.
         visual_types (list, optional): List of visual types to include. Defaults to None.
+
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
 
     Returns:
@@ -185,7 +200,7 @@ def apply_filters(pages_info, pages=None, visual_types=None, visual_ids=None):
 
 
 def display_report_wireframes(
-    root_folder, pages=None, visual_types=None, visual_ids=None
+    root_folder, pages=None, visual_types=None, visual_ids=None, show_hidden=True
 ):
     """
     Generate and display wireframes for the report with optional filters.
@@ -195,6 +210,7 @@ def display_report_wireframes(
         pages (list, optional): List of page names to include. Defaults to None.
         visual_types (list, optional): List of visual types to include. Defaults to None.
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
+        show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
     """
     pages_info = []
     pages_folder = os.path.join(root_folder, "definition", "pages")
@@ -240,7 +256,7 @@ def display_report_wireframes(
         for page_name, page_width, page_height, visuals_info in pages_info:
             if page_name == selected_tab:
                 fig = create_wireframe_figure(
-                    page_name, page_width, page_height, visuals_info
+                    page_name, page_width, page_height, visuals_info, show_hidden
                 )
                 return dcc.Graph(figure=fig)
         return html.Div("Page not found")
