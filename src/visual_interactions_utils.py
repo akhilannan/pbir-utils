@@ -28,7 +28,7 @@ def write_json_file(file_path: str, data: dict):
         json.dump(data, file, indent=2)
 
 
-def get_visuals(visuals_folder: str) -> (list, dict):
+def get_visuals(visuals_folder: str) -> tuple:
     """
     Retrieves visual IDs and their types from the visuals folder.
 
