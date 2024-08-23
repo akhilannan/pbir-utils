@@ -1,6 +1,6 @@
-# PBIR-Utils
+# PBIR Utilities
 
-PBIR-Utils is a python project designed to streamline the tasks that Power BI developers typically handle manually in Power BI Desktop. This module offers a range of utility functions to efficiently manage and manipulate PBIR metadata.
+pbir-utils is a python project designed to streamline the tasks that Power BI developers typically handle manually in Power BI Desktop. This module offers a range of utility functions to efficiently manage and manipulate PBIR metadata.
 
 ## Features
 
