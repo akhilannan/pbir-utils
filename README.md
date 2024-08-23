@@ -11,4 +11,4 @@ PBIR-Utils is a python project designed to streamline the tasks that Power BI de
 
 ## Usage
 
-To get started, clone the repository and refer to the `examples/example_usage.ipynb` file.
+To get started, refer to the `examples/example_usage.ipynb` file.
