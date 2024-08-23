@@ -1,9 +1,9 @@
-name: Publish Python Package
+name: Publish Python Package and Create Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -33,3 +33,21 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           python -m twine upload dist/*
+
+      - name: Extract tag version
+        id: extract_tag
+        run: |
+          echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: pbir-utils ${{ env.TAG_NAME }}
+          body: |
+            ## Initial Version
+          draft: false
+          prerelease: false
