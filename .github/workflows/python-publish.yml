@@ -41,8 +41,7 @@ jobs:
         with:
           name: pbir-utils ${{ github.ref_name }}
           body: |
-            ## Improvements
-            - **New Function**
-              - **remove_measures**: This function scans through a Power BI PBIR Report and removes report-level measures. It can remove all measures or a specified list of measures, with an option to check if the measures are used in any visuals before removal.
+            ## Bug Fixes
+            - Fixed errors in disable_visual_interactions and export_pbir_metadata_to_csv
           draft: false
           prerelease: false
