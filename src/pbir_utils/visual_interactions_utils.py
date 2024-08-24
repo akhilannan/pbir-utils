@@ -1,31 +1,7 @@
 import json
 import os
 
-
-def read_json_file(file_path: str) -> dict:
-    """
-    Reads and returns the content of a JSON file.
-
-    Args:
-        file_path (str): Path to the JSON file.
-
-    Returns:
-        dict: Parsed JSON data.
-    """
-    with open(file_path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def write_json_file(file_path: str, data: dict):
-    """
-    Writes JSON data to a file.
-
-    Args:
-        file_path (str): Path to the file where data will be written.
-        data (dict): JSON data to be written to the file.
-    """
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+from .json_utils import load_json, write_json
 
 
 def get_visuals(visuals_folder: str) -> tuple:
@@ -48,20 +24,19 @@ def get_visuals(visuals_folder: str) -> tuple:
         if not os.path.isfile(visual_file_path):
             continue
 
-        try:
-            visual_json = read_json_file(visual_file_path)
-            visual_id = visual_json.get("name")
+        # Load the visual JSON data
+        visual_json = load_json(visual_file_path)
 
-            # Skip visuals with a visualGroup
-            if "visualGroup" in visual_json:
-                continue
+        visual_id = visual_json.get("name")
 
-            visual_type = visual_json.get("visual", {}).get("visualType", "Unknown")
-            if visual_id:
-                visual_ids.append(visual_id)
-                visual_types[visual_id] = visual_type
-        except json.JSONDecodeError:
-            pass
+        # Skip visuals with a visualGroup
+        if "visualGroup" in visual_json:
+            continue
+
+        visual_type = visual_json.get("visual", {}).get("visualType", "Unknown")
+        if visual_id:
+            visual_ids.append(visual_id)
+            visual_types[visual_id] = visual_type
 
     return visual_ids, visual_types
 
@@ -154,7 +129,7 @@ def process_page(
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
     """
-    page_json = read_json_file(page_json_path)
+    page_json = load_json(page_json_path)
     visual_ids, visual_types = get_visuals(visuals_folder)
 
     target_ids = filter_ids_by_type(
@@ -172,7 +147,7 @@ def process_page(
         interaction_type,
     )
     page_json["visualInteractions"] = updated_interactions
-    write_json_file(page_json_path, page_json)
+    write_json(page_json_path, page_json)
 
 
 def process_all_pages(
@@ -204,25 +179,22 @@ def process_all_pages(
         for file_name in files:
             if file_name.endswith("page.json"):
                 file_path = os.path.join(root, file_name)
-                try:
-                    page_json = read_json_file(file_path)
-                    if pages is None or page_json.get("displayName") in pages:
-                        visuals_folder = os.path.join(
-                            os.path.dirname(file_path), "visuals"
+                page_json = load_json(file_path)
+
+                # Process the page if it's in the list or if all pages should be processed
+                if pages is None or page_json.get("displayName") in pages:
+                    visuals_folder = os.path.join(os.path.dirname(file_path), "visuals")
+                    if os.path.isdir(visuals_folder):
+                        process_page(
+                            file_path,
+                            visuals_folder,
+                            source_ids,
+                            source_types,
+                            target_ids,
+                            target_types,
+                            update_type,
+                            interaction_type,
                         )
-                        if os.path.isdir(visuals_folder):
-                            process_page(
-                                file_path,
-                                visuals_folder,
-                                source_ids,
-                                source_types,
-                                target_ids,
-                                target_types,
-                                update_type,
-                                interaction_type,
-                            )
-                except json.JSONDecodeError:
-                    continue
 
 
 def disable_visual_interactions(

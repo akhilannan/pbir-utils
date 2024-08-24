@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pbir-utils",
-    version="0.1.4",
+    version="0.2.0",
     description="A tool for managing Power BI Enhanced Report Format (PBIR) projects",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

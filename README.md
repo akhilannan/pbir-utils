@@ -9,6 +9,14 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Report Wireframe Visualizer**: Visualize PBIR report wireframe.
 - **Disable Visual Interactions**: Bulk disable interactions in PBIR report.
 
-## Usage
+## Installation
+```python
+pip install pbir-utils
+```
 
-To get started, refer to the `examples/example_usage.ipynb` file.
+## Usage
+Once installed, you can import the library as follows:
+```python
+import pbir_utils as pbir
+```
+To get started, refer to `[example_usage.ipynb](examples/example_usage.ipynb)` notebook, which contains detailed examples demonstrating how to use the various functions available in pbir_utils.

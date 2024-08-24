@@ -1,22 +1,9 @@
 import os
-import json
 import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objects as go
 
-
-def load_json(filepath: str) -> dict:
-    """
-    Load JSON data from a file.
-
-    Args:
-        filepath (str): Path to the JSON file.
-
-    Returns:
-        dict: Parsed JSON data.
-    """
-    with open(filepath, "r") as file:
-        return json.load(file)
+from .json_utils import load_json
 
 
 def extract_page_info(page_folder: str) -> tuple:
@@ -200,8 +187,8 @@ def apply_filters(
         filtered_visuals_info = {
             vid: vinfo
             for vid, vinfo in visuals_info.items()
-            if (not visual_types or vinfo[4] in visual_types) and
-               (not visual_ids or vid in visual_ids)
+            if (not visual_types or vinfo[4] in visual_types)
+            and (not visual_ids or vid in visual_ids)
         }
 
         # Collect parent visuals to add after the loop
@@ -229,7 +216,7 @@ def apply_filters(
 
 
 def display_report_wireframes(
-    root_folder: str,
+    report_path: str,
     pages: list = None,
     visual_types: list = None,
     visual_ids: list = None,
@@ -239,14 +226,14 @@ def display_report_wireframes(
     Generate and display wireframes for the report with optional filters.
 
     Args:
-        root_folder (str): Path to the root folder of the report.
+        report_path (str): Path to the root folder of the report.
         pages (list, optional): List of page names to include. Defaults to None.
         visual_types (list, optional): List of visual types to include. Defaults to None.
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
         show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
     """
     # Path to the folder containing page definitions
-    pages_folder = os.path.join(root_folder, "definition", "pages")
+    pages_folder = os.path.join(report_path, "definition", "pages")
     pages_info = []
 
     # Collect page and visual information

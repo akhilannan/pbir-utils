@@ -1,7 +1,8 @@
-import json
+import csv
 import os
 import re
-import csv
+
+from .json_utils import load_json, write_json
 
 
 def load_csv_mapping(csv_path):
@@ -215,30 +216,23 @@ def update_pbir_component(file_path, table_map, column_map):
     - table_map: A dictionary mapping old table names to new table names.
     - column_map: A dictionary mapping old (table, column) pairs to new column names.
     """
-    try:
-        with open(file_path, "r", encoding="utf-8") as json_file:
-            data = json.load(json_file)
+    data = load_json(file_path)
 
-        entity_updated = False
-        property_updated = False
+    entity_updated = False
+    property_updated = False
 
-        if table_map:
-            entity_updated = update_entity(data, table_map)
-            if entity_updated:
-                print(f"Entity updated in file: {file_path}")
+    if table_map:
+        entity_updated = update_entity(data, table_map)
+        if entity_updated:
+            print(f"Entity updated in file: {file_path}")
 
-        if column_map:
-            property_updated = update_property(data, column_map)
-            if property_updated:
-                print(f"Property updated in file: {file_path}")
+    if column_map:
+        property_updated = update_property(data, column_map)
+        if property_updated:
+            print(f"Property updated in file: {file_path}")
 
-        if entity_updated or property_updated:
-            with open(file_path, "w", encoding="utf-8") as json_file:
-                json.dump(data, json_file, indent=2)
-    except json.JSONDecodeError:
-        print(f"Error: Unable to parse JSON in file: {file_path}")
-    except IOError as e:
-        print(f"Error: Unable to read or write file: {file_path}. {str(e)}")
+    if entity_updated or property_updated:
+        write_json(file_path, data)
 
 
 def batch_update_pbir_project(directory_path, csv_path):
