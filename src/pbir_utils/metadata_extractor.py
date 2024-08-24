@@ -44,15 +44,20 @@ def extract_active_section(bookmark_json_path):
     Returns:
         str: The active section if found, otherwise an empty string.
     """
+    # Check if the path is related to bookmarks
     if "bookmarks" in bookmark_json_path:
-        return (
-            load_json(bookmark_json_path)
-            .get("explorationState", {})
-            .get("activeSection", "")
-        )
-    else:
-        parts = bookmark_json_path.split(os.sep)
-        return parts[parts.index("pages") + 1] if "pages" in parts else ""
+        return load_json(bookmark_json_path).get("explorationState", {}).get("activeSection", "")
+    
+    # Check if the path contains "pages" and extract the next part if it's a directory
+    parts = os.path.normpath(bookmark_json_path).split(os.sep)
+    try:
+        pages_index = parts.index("pages") + 1
+        if pages_index < len(parts) and not parts[pages_index].endswith(".json"):
+            return parts[pages_index]
+    except ValueError:
+        pass
+    
+    return None
 
 
 def extract_page_name(json_path):

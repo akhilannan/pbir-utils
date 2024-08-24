@@ -182,7 +182,7 @@ def process_all_pages(
                 page_json = load_json(file_path)
 
                 # Process the page if it's in the list or if all pages should be processed
-                if pages is None or page_json.get("displayName") in pages:
+                if not pages or page_json.get("displayName") in pages:
                     visuals_folder = os.path.join(os.path.dirname(file_path), "visuals")
                     if os.path.isdir(visuals_folder):
                         process_page(
