@@ -10,6 +10,7 @@ HEADER_FIELDS = [
     "Column or Measure",
     "Expression",
     "Used In",
+    "Used In Detail",
     "ID",
 ]
 
@@ -46,8 +47,12 @@ def extract_active_section(bookmark_json_path):
     """
     # Check if the path is related to bookmarks
     if "bookmarks" in bookmark_json_path:
-        return load_json(bookmark_json_path).get("explorationState", {}).get("activeSection", "")
-    
+        return (
+            load_json(bookmark_json_path)
+            .get("explorationState", {})
+            .get("activeSection", "")
+        )
+
     # Check if the path contains "pages" and extract the next part if it's a directory
     parts = os.path.normpath(bookmark_json_path).split(os.sep)
     try:
@@ -56,7 +61,7 @@ def extract_active_section(bookmark_json_path):
             return parts[pages_index]
     except ValueError:
         pass
-    
+
     return None
 
 
@@ -82,44 +87,75 @@ def extract_page_name(json_path):
     return load_json(page_json_path).get("displayName", "NA")
 
 
-def traverse_pbir_json_structure(data, context=None):
+def traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
 
     This function navigates through the complex PBIR JSON structure, identifying and extracting
     key metadata elements such as entities, properties, visuals, filters, bookmarks, and measures.
-    It handles various PBIR-specific components and contexts, providing a comprehensive
-    extraction of report structure and data model information.
 
     Args:
         data (dict or list): The PBIR JSON data to traverse.
-        context (str, optional): The current context within the PBIR structure (e.g., visual type, filter, bookmark).
+        usage_context (str, optional): The current context within the PBIR structure (e.g., visual type, filter, bookmark, etc)
+        usage_detail (str, optional): The detailed context inside a usage_context (e.g., tooltip, legend, Category, etc.)
 
     Yields:
-        tuple: Extracted metadata in the form of (table, column, context, expression).
+        tuple: Extracted metadata in the form of (table, column, used_in, expression, used_in_detail).
                - table: The name of the table (if applicable)
                - column: The name of the column or measure
-               - context: The context in which the element is used (e.g., visual type, filter, bookmark)
+               - used_in: The broader context in which the element is used (e.g., visual type, filter, bookmark)
                - expression: The DAX expression for measures (if applicable)
+               - used_in_detail: The specific setting where "Entity" and "Property" appear within the context
     """
     if isinstance(data, dict):
         for key, value in data.items():
+            new_usage_detail = usage_detail or usage_context
             if key == "Entity":
-                yield (value, None, context, None)
+                yield (value, None, usage_context, None, usage_detail)
             elif key == "Property":
-                yield (None, value, context, None)
+                yield (None, value, usage_context, None, usage_detail)
+            elif key in [
+                "backColor",
+                "Category",
+                "categoryAxis",
+                "Data",
+                "dataPoint",
+                "error",
+                "fontColor",
+                "icon",
+                "labels",
+                "legend",
+                "Series",
+                "singleVisual",
+                "Size",
+                "sort",
+                "Tooltips",
+                "valueAxis",
+                "Values",
+                "webURL",
+                "X",
+                "Y",
+                "Y2",
+            ]:
+                yield from traverse_pbir_json_structure(value, usage_context, key)
+            elif key in ["filters", "filter", "parameters"]:
+                yield from traverse_pbir_json_structure(value, usage_context, "filter")
             elif key == "visual":
                 yield from traverse_pbir_json_structure(
-                    value, value.get("visualType", "visual")
+                    value, value.get("visualType", "visual"), new_usage_detail
                 )
             elif key == "pageBinding":
                 yield from traverse_pbir_json_structure(
-                    value, value.get("type", "Drillthrough")
+                    value, value.get("type", "Drillthrough"), new_usage_detail
                 )
             elif key == "filterConfig":
-                yield from traverse_pbir_json_structure(value, "Filters")
+                yield from traverse_pbir_json_structure(
+                    value, "Filters", new_usage_detail
+                )
             elif key == "explorationState":
-                yield from traverse_pbir_json_structure(value, "Bookmarks")
+                yield from traverse_pbir_json_structure(
+                    value, "Bookmarks", new_usage_detail
+                )
             elif key == "entities":
                 for entity in value:
                     table_name = entity.get("name")
@@ -127,14 +163,17 @@ def traverse_pbir_json_structure(data, context=None):
                         yield (
                             table_name,
                             measure.get("name"),
-                            context,
+                            usage_context,
                             measure.get("expression", None),
+                            new_usage_detail,
                         )
             else:
-                yield from traverse_pbir_json_structure(value, context)
+                yield from traverse_pbir_json_structure(
+                    value, usage_context, new_usage_detail
+                )
     elif isinstance(data, list):
         for item in data:
-            yield from traverse_pbir_json_structure(item, context)
+            yield from traverse_pbir_json_structure(item, usage_context, usage_detail)
 
 
 def extract_metadata_from_file(json_file_path):
@@ -157,7 +196,13 @@ def extract_metadata_from_file(json_file_path):
 
     # Traverse the JSON structure and collect all rows
     temp_row = None
-    for table, column, used_in, expression in traverse_pbir_json_structure(data):
+    for (
+        table,
+        column,
+        used_in,
+        expression,
+        used_in_detail,
+    ) in traverse_pbir_json_structure(data):
         # Create a base dictionary for the row
         row = {
             field: value
@@ -170,6 +215,7 @@ def extract_metadata_from_file(json_file_path):
                     column,
                     expression,
                     used_in,
+                    used_in_detail,
                     id,
                 ],
             )
