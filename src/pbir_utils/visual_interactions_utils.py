@@ -1,10 +1,10 @@
 import json
 import os
 
-from .json_utils import load_json, write_json
+from .json_utils import _load_json, _write_json
 
 
-def get_visuals(visuals_folder: str) -> tuple:
+def _get_visuals(visuals_folder: str) -> tuple:
     """
     Retrieves visual IDs and their types from the visuals folder.
 
@@ -25,7 +25,7 @@ def get_visuals(visuals_folder: str) -> tuple:
             continue
 
         # Load the visual JSON data
-        visual_json = load_json(visual_file_path)
+        visual_json = _load_json(visual_file_path)
 
         visual_id = visual_json.get("name")
 
@@ -41,7 +41,7 @@ def get_visuals(visuals_folder: str) -> tuple:
     return visual_ids, visual_types
 
 
-def update_interactions(
+def _update_interactions(
     existing_interactions: list,
     source_ids: list,
     target_ids: list,
@@ -91,7 +91,7 @@ def update_interactions(
     return list(interactions_dict.values())
 
 
-def filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
+def _filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
     """
     Filters a set of visual IDs by their types.
 
@@ -106,7 +106,7 @@ def filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
     return {vid for vid in ids if not types or visual_types.get(vid) in types}
 
 
-def process_page(
+def _process_page(
     page_json_path: str,
     visuals_folder: str,
     source_ids: list,
@@ -129,17 +129,17 @@ def process_page(
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
     """
-    page_json = load_json(page_json_path)
-    visual_ids, visual_types = get_visuals(visuals_folder)
+    page_json = _load_json(page_json_path)
+    visual_ids, visual_types = _get_visuals(visuals_folder)
 
-    target_ids = filter_ids_by_type(
+    target_ids = _filter_ids_by_type(
         set(target_ids or visual_ids), target_types, visual_types
     )
-    source_ids = filter_ids_by_type(
+    source_ids = _filter_ids_by_type(
         set(source_ids or visual_ids), source_types, visual_types
     )
 
-    updated_interactions = update_interactions(
+    updated_interactions = _update_interactions(
         page_json.get("visualInteractions", []),
         list(source_ids),
         list(target_ids),
@@ -147,10 +147,10 @@ def process_page(
         interaction_type,
     )
     page_json["visualInteractions"] = updated_interactions
-    write_json(page_json_path, page_json)
+    _write_json(page_json_path, page_json)
 
 
-def process_all_pages(
+def _process_all_pages(
     report_path: str,
     pages: list = None,
     source_ids: list = None,
@@ -179,13 +179,13 @@ def process_all_pages(
         for file_name in files:
             if file_name.endswith("page.json"):
                 file_path = os.path.join(root, file_name)
-                page_json = load_json(file_path)
+                page_json = _load_json(file_path)
 
                 # Process the page if it's in the list or if all pages should be processed
                 if not pages or page_json.get("displayName") in pages:
                     visuals_folder = os.path.join(os.path.dirname(file_path), "visuals")
                     if os.path.isdir(visuals_folder):
-                        process_page(
+                        _process_page(
                             file_path,
                             visuals_folder,
                             source_ids,
@@ -233,7 +233,7 @@ def disable_visual_interactions(
             raise ValueError(f"{param_name} must be a list")
 
     # Proceed with processing all pages
-    process_all_pages(
+    _process_all_pages(
         report_path,
         pages,
         source_visual_ids,

@@ -2,10 +2,10 @@ import csv
 import os
 import re
 
-from .json_utils import load_json, write_json
+from .json_utils import _load_json, _write_json
 
 
-def load_csv_mapping(csv_path):
+def _load_csv_mapping(csv_path):
     """
     Load a CSV file and return a list of dictionaries mapping from old (entity, column) pairs
     to new (entity, column) pairs, filtering out invalid rows based on specified conditions.
@@ -38,7 +38,7 @@ def load_csv_mapping(csv_path):
     return mappings
 
 
-def update_dax_expression(expression, table_map=None, column_map=None):
+def _update_dax_expression(expression, table_map=None, column_map=None):
     """
     Update DAX expressions based on table_map and/or column_map.
 
@@ -97,7 +97,7 @@ def update_dax_expression(expression, table_map=None, column_map=None):
     return expression
 
 
-def update_entity(data, table_map):
+def _update_entity(data, table_map):
     """
     Update the "Entity" fields and DAX expressions in the JSON data based on the table_map.
 
@@ -125,7 +125,7 @@ def update_entity(data, table_map):
                         traverse_and_update(entity)
                 elif key == "expression" and isinstance(value, str):
                     original_expression = value
-                    data[key] = update_dax_expression(
+                    data[key] = _update_dax_expression(
                         original_expression, table_map=table_map
                     )
                     if data[key] != original_expression:
@@ -140,7 +140,7 @@ def update_entity(data, table_map):
     return updated
 
 
-def update_property(data, column_map):
+def _update_property(data, column_map):
     """
     Update the "Property" fields in the JSON data based on the column_map and updated table names.
 
@@ -170,7 +170,7 @@ def update_property(data, column_map):
                             updated = True
                 elif key == "expression" and isinstance(value, str):
                     original_expression = value
-                    value = update_dax_expression(
+                    value = _update_dax_expression(
                         original_expression, column_map=column_map
                     )
                     if value != original_expression:
@@ -204,7 +204,7 @@ def update_property(data, column_map):
     return updated
 
 
-def update_pbir_component(file_path, table_map, column_map):
+def _update_pbir_component(file_path, table_map, column_map):
     """
     Update a single component within a Power BI Enhanced Report Format (PBIR) structure.
 
@@ -216,23 +216,23 @@ def update_pbir_component(file_path, table_map, column_map):
     - table_map: A dictionary mapping old table names to new table names.
     - column_map: A dictionary mapping old (table, column) pairs to new column names.
     """
-    data = load_json(file_path)
+    data = _load_json(file_path)
 
     entity_updated = False
     property_updated = False
 
     if table_map:
-        entity_updated = update_entity(data, table_map)
+        entity_updated = _update_entity(data, table_map)
         if entity_updated:
             print(f"Entity updated in file: {file_path}")
 
     if column_map:
-        property_updated = update_property(data, column_map)
+        property_updated = _update_property(data, column_map)
         if property_updated:
             print(f"Property updated in file: {file_path}")
 
     if entity_updated or property_updated:
-        write_json(file_path, data)
+        _write_json(file_path, data)
 
 
 def batch_update_pbir_project(directory_path, csv_path):
@@ -248,7 +248,7 @@ def batch_update_pbir_project(directory_path, csv_path):
     - csv_path: Path to the CSV file with the mapping of old and new table/column names.
     """
     try:
-        mappings = load_csv_mapping(csv_path)
+        mappings = _load_csv_mapping(csv_path)
 
         table_map = {}
         column_map = {}
@@ -270,6 +270,6 @@ def batch_update_pbir_project(directory_path, csv_path):
             for file in files:
                 if file.endswith(".json"):
                     file_path = os.path.join(root, file)
-                    update_pbir_component(file_path, table_map, column_map)
+                    _update_pbir_component(file_path, table_map, column_map)
     except Exception as e:
         print(f"An error occurred: {str(e)}")

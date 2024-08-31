@@ -1,7 +1,7 @@
 import os
 import csv
 
-from .json_utils import load_json
+from .json_utils import _load_json
 
 HEADER_FIELDS = [
     "Report",
@@ -15,7 +15,7 @@ HEADER_FIELDS = [
 ]
 
 
-def extract_report_name(json_file_path):
+def _extract_report_name(json_file_path):
     """
     Extracts the report name from the JSON file path.
 
@@ -35,7 +35,7 @@ def extract_report_name(json_file_path):
     )
 
 
-def extract_active_section(bookmark_json_path):
+def _extract_active_section(bookmark_json_path):
     """
     Extracts the active section from the bookmarks JSON file.
 
@@ -48,7 +48,7 @@ def extract_active_section(bookmark_json_path):
     # Check if the path is related to bookmarks
     if "bookmarks" in bookmark_json_path:
         return (
-            load_json(bookmark_json_path)
+            _load_json(bookmark_json_path)
             .get("explorationState", {})
             .get("activeSection", "")
         )
@@ -65,7 +65,7 @@ def extract_active_section(bookmark_json_path):
     return None
 
 
-def extract_page_name(json_path):
+def _extract_page_name(json_path):
     """
     Extracts the page name from the JSON file path.
 
@@ -75,7 +75,7 @@ def extract_page_name(json_path):
     Returns:
         str: The extracted page name if found, otherwise "NA".
     """
-    active_section = extract_active_section(json_path)
+    active_section = _extract_active_section(json_path)
     if not active_section:
         return "NA"
 
@@ -84,10 +84,10 @@ def extract_page_name(json_path):
         base_path, "definition", "pages", active_section, "page.json"
     )
 
-    return load_json(page_json_path).get("displayName", "NA")
+    return _load_json(page_json_path).get("displayName", "NA")
 
 
-def traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
+def _traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
 
@@ -137,23 +137,23 @@ def traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
                 "Y",
                 "Y2",
             ]:
-                yield from traverse_pbir_json_structure(value, usage_context, key)
+                yield from _traverse_pbir_json_structure(value, usage_context, key)
             elif key in ["filters", "filter", "parameters"]:
-                yield from traverse_pbir_json_structure(value, usage_context, "filter")
+                yield from _traverse_pbir_json_structure(value, usage_context, "filter")
             elif key == "visual":
-                yield from traverse_pbir_json_structure(
+                yield from _traverse_pbir_json_structure(
                     value, value.get("visualType", "visual"), new_usage_detail
                 )
             elif key == "pageBinding":
-                yield from traverse_pbir_json_structure(
+                yield from _traverse_pbir_json_structure(
                     value, value.get("type", "Drillthrough"), new_usage_detail
                 )
             elif key == "filterConfig":
-                yield from traverse_pbir_json_structure(
+                yield from _traverse_pbir_json_structure(
                     value, "Filters", new_usage_detail
                 )
             elif key == "explorationState":
-                yield from traverse_pbir_json_structure(
+                yield from _traverse_pbir_json_structure(
                     value, "Bookmarks", new_usage_detail
                 )
             elif key == "entities":
@@ -168,15 +168,15 @@ def traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
                             new_usage_detail,
                         )
             else:
-                yield from traverse_pbir_json_structure(
+                yield from _traverse_pbir_json_structure(
                     value, usage_context, new_usage_detail
                 )
     elif isinstance(data, list):
         for item in data:
-            yield from traverse_pbir_json_structure(item, usage_context, usage_detail)
+            yield from _traverse_pbir_json_structure(item, usage_context, usage_detail)
 
 
-def extract_metadata_from_file(json_file_path):
+def _extract_metadata_from_file(json_file_path):
     """
     Extracts and formats attribute metadata from a single PBIR JSON file.
 
@@ -187,10 +187,10 @@ def extract_metadata_from_file(json_file_path):
         list: A list of dictionaries representing the processed attribute metadata entries from the file.
     """
     # Extract report name, page name, and ID from the JSON file
-    report_name = extract_report_name(json_file_path)
-    page_name = extract_page_name(json_file_path) or "NA"
+    report_name = _extract_report_name(json_file_path)
+    page_name = _extract_page_name(json_file_path) or "NA"
 
-    data = load_json(json_file_path)
+    data = _load_json(json_file_path)
     id = data.get("name", None)
     all_rows = []
 
@@ -202,7 +202,7 @@ def extract_metadata_from_file(json_file_path):
         used_in,
         expression,
         used_in_detail,
-    ) in traverse_pbir_json_structure(data):
+    ) in _traverse_pbir_json_structure(data):
         # Create a base dictionary for the row
         row = {
             field: value
@@ -237,7 +237,7 @@ def extract_metadata_from_file(json_file_path):
     return all_rows
 
 
-def consolidate_metadata_from_directory(directory_path):
+def _consolidate_metadata_from_directory(directory_path):
     """
     Extracts and consolidates attribute metadata from all PBIR JSON files in the specified directory.
 
@@ -260,7 +260,7 @@ def consolidate_metadata_from_directory(directory_path):
                 json_file_path = os.path.join(root, file)
 
                 # Extract metadata from the JSON file
-                file_metadata = extract_metadata_from_file(json_file_path)
+                file_metadata = _extract_metadata_from_file(json_file_path)
 
                 # Separate the extracted rows
                 rows_with_expression = [
@@ -335,7 +335,7 @@ def export_pbir_metadata_to_csv(directory_path, csv_output_path):
     - ID: The ID of the artifact where the Column or Measure is used
     """
 
-    metadata = consolidate_metadata_from_directory(directory_path)
+    metadata = _consolidate_metadata_from_directory(directory_path)
 
     with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)

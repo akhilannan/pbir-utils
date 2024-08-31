@@ -42,6 +42,9 @@ jobs:
           name: pbir-utils ${{ github.ref_name }}
           body: |
             ## Improvements
-            - Added "Used In Detail" column to export_pbir_metadata_to_csv which captures where in a visual an attribute is used
+            - New Function:
+              - get_measure_dependencies: Gets the dependency tree for given measures or all measures in a Power BI report, optionally including visual IDs.
+            - Updated Function:
+              - remove_measures: check_visual_usage flag now checks usage in dependant measures as well.
           draft: false
           prerelease: false

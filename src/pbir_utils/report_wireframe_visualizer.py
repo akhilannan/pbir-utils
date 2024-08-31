@@ -3,10 +3,10 @@ import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objects as go
 
-from .json_utils import load_json
+from .json_utils import _load_json
 
 
-def extract_page_info(page_folder: str) -> tuple:
+def _extract_page_info(page_folder: str) -> tuple:
     """
     Extract page information from the `page.json` file in a page folder.
 
@@ -25,13 +25,13 @@ def extract_page_info(page_folder: str) -> tuple:
         # Raise an error if the `page.json` file is missing
         raise FileNotFoundError(f"{page_json_path} does not exist")
 
-    page_data = load_json(page_json_path)
+    page_data = _load_json(page_json_path)
 
     # Return the display name, width, and height from the page data
     return page_data["displayName"], page_data["width"], page_data["height"]
 
 
-def extract_visual_info(visuals_folder: str) -> dict:
+def _extract_visual_info(visuals_folder: str) -> dict:
     """
     Extract visual information from `visual.json` files in a visuals folder.
 
@@ -49,7 +49,7 @@ def extract_visual_info(visuals_folder: str) -> dict:
         if not os.path.exists(visual_json_path):
             continue  # Skip if the visual.json file does not exist
 
-        visual_data = load_json(visual_json_path)
+        visual_data = _load_json(visual_json_path)
         position = visual_data["position"]
 
         # Extract and store visual information in a tuple
@@ -66,7 +66,7 @@ def extract_visual_info(visuals_folder: str) -> dict:
     return visuals
 
 
-def adjust_visual_positions(visuals: dict) -> dict:
+def _adjust_visual_positions(visuals: dict) -> dict:
     """
     Adjust visual positions based on parent-child relationships.
 
@@ -93,7 +93,7 @@ def adjust_visual_positions(visuals: dict) -> dict:
     }
 
 
-def create_wireframe_figure(
+def _create_wireframe_figure(
     page_width: int, page_height: int, visuals_info: dict, show_hidden: bool = True
 ) -> go.Figure:
     """
@@ -112,7 +112,7 @@ def create_wireframe_figure(
     fig = go.Figure()
 
     # Adjust visual positions and sort by name and visual_id
-    adjusted_visuals = adjust_visual_positions(visuals_info)
+    adjusted_visuals = _adjust_visual_positions(visuals_info)
     sorted_visuals = sorted(adjusted_visuals.items(), key=lambda x: (x[1][4], x[0]))
 
     legend_labels = []
@@ -157,7 +157,7 @@ def create_wireframe_figure(
     return fig
 
 
-def apply_filters(
+def _apply_filters(
     pages_info: list,
     pages: list = None,
     visual_types: list = None,
@@ -242,8 +242,8 @@ def display_report_wireframes(
     ):
         page_folder_path = os.path.join(pages_folder, page_folder)
         try:
-            page_info = extract_page_info(page_folder_path)
-            visuals_info = extract_visual_info(
+            page_info = _extract_page_info(page_folder_path)
+            visuals_info = _extract_visual_info(
                 os.path.join(page_folder_path, "visuals")
             )
             pages_info.append((*page_info, visuals_info))
@@ -255,7 +255,7 @@ def display_report_wireframes(
         return
 
     # Apply filters to the collected pages_info
-    filtered_pages_info = apply_filters(pages_info, pages, visual_types, visual_ids)
+    filtered_pages_info = _apply_filters(pages_info, pages, visual_types, visual_ids)
     if not filtered_pages_info:
         print("No pages match the given filters.")
         return
@@ -282,7 +282,7 @@ def display_report_wireframes(
         for _, page_width, page_height, visuals_info in filter(
             lambda item: item[0] == selected_tab, filtered_pages_info
         ):
-            fig = create_wireframe_figure(
+            fig = _create_wireframe_figure(
                 page_width, page_height, visuals_info, show_hidden
             )
             return dcc.Graph(figure=fig)

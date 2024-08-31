@@ -8,6 +8,8 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Update Metadata**: Apply updates to metadata within PBIR files.
 - **Report Wireframe Visualizer**: Visualize PBIR report wireframe.
 - **Disable Visual Interactions**: Bulk disable interactions in PBIR report.
+- **Remove Measures**: Bulk remove report-level measures.
+- **Get Measure Dependencies**: Extract the dependency tree for report-level measures.
 
 ## Installation
 ```python

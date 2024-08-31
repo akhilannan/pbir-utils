@@ -1,7 +1,7 @@
 import json
 
 
-def load_json(file_path: str) -> dict:
+def _load_json(file_path: str) -> dict:
     """
     Loads and returns the content of a JSON file.
 
@@ -25,7 +25,7 @@ def load_json(file_path: str) -> dict:
     return {}
 
 
-def write_json(file_path: str, data: dict) -> None:
+def _write_json(file_path: str, data: dict) -> None:
     """
     Write JSON data to a file with indentation.
 
