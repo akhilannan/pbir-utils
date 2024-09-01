@@ -61,10 +61,11 @@ def _get_visual_ids_for_measure(report_path, measure_name):
         if "visual.json" in files:
             visual_file_path = os.path.join(root, "visual.json")
             visual_data = _load_json(visual_file_path)
-            visual_id = visual_data.get("name")
-            all_rows = _extract_metadata_from_file(visual_file_path)
-            if any(row["Column or Measure"] == measure_name for row in all_rows):
-                visual_ids.append(visual_id)
+            if any(
+                row["Column or Measure"] == measure_name
+                for row in _extract_metadata_from_file(visual_file_path)
+            ):
+                visual_ids.append(visual_data.get("name"))
     return visual_ids
 
 
@@ -120,9 +121,7 @@ def _trace_dependency_path(measures_dict, measure, current_path, dependency_path
     Returns:
         None
     """
-    direct_dependents = _get_dependent_measures(
-        measure, measures_dict, include_all_dependents=False
-    )
+    direct_dependents = _get_dependent_measures(measure, measures_dict)
 
     if not direct_dependents:
         dependency_paths.append(current_path)
@@ -201,9 +200,7 @@ def generate_measure_dependencies_report(
 
     for measure_name in measures_to_analyze:
         dependency_paths = []
-        direct_dependents = _get_dependent_measures(
-            measure_name, measures_dict, include_all_dependents=False
-        )
+        direct_dependents = _get_dependent_measures(measure_name, measures_dict)
 
         if direct_dependents:
             dependency_report += f"--- Dependencies for {measure_name} ---\n"
