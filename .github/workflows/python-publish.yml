@@ -14,7 +14,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+        with:
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -23,28 +25,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
+          pip install build twine setuptools-scm
 
       - name: Build package
-        run: |
-          python setup.py sdist bdist_wheel
+        run: python -m build
 
       - name: Publish package
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          python -m twine upload dist/*
+        run: python -m twine upload dist/*
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: pbir-utils ${{ github.ref_name }}
           body: |
-            ## Improvements
-            - New Function:
-              - get_measure_dependencies: Gets the dependency tree for given measures or all measures in a Power BI report, optionally including visual IDs.
-            - Updated Function:
-              - remove_measures: check_visual_usage flag now checks usage in dependant measures as well.
+            ## Renamed Function:
+            - *get_measure_dependencies* renamed to **generate_measure_dependencies_report**
           draft: false
           prerelease: false

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pbir-utils"
+description = "A tool for managing Power BI Enhanced Report Format (PBIR) projects"
+readme = "README.md"
+license = {text = "MIT License"}
+authors = [
+    {name = "Akhil Ashok"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "dash",
+    "plotly",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/akhilannan/pbir-utils"
+
+[project.classifiers]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+
+[tool.setuptools]
+packages = {find = {where = ["src"]}}

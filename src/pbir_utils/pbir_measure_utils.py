@@ -4,13 +4,50 @@ from .json_utils import _load_json, _write_json
 from .metadata_extractor import _extract_metadata_from_file
 
 
-def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
+def _get_dependent_measures(
+    measure_name, measures_dict, visited=None, include_all_dependents=False
+):
+    """
+    Recursively find measures that depend on the given measure.
+
+    Args:
+        measure_name (str): The name of the measure whose dependents are to be found.
+        measures_dict (dict): A dictionary of all measures with their names as keys and expressions as values.
+        visited (set, optional): A set to track visited measures during recursion to prevent infinite loops.
+                                 Defaults to None.
+        include_all_dependents (bool, optional): Whether to include indirect dependents as well.
+                                                 Defaults to False.
+
+    Returns:
+        set: A set of dependent measures, either direct dependents or both direct and indirect dependents.
+    """
+    visited = visited or set()
+
+    if measure_name in visited:
+        return set()
+
+    visited.add(measure_name)
+
+    direct_dependents = {
+        other_measure
+        for other_measure, exp in measures_dict.items()
+        if f"[{measure_name}]" in exp
+    }
+
+    if not include_all_dependents:
+        return direct_dependents
+
+    return direct_dependents.union(
+        *(
+            _get_dependent_measures(dependent, measures_dict, visited, True)
+            for dependent in direct_dependents
+        )
+    )
+
+
+def _get_visual_ids_for_measure(report_path, measure_name):
     """
     Get a list of visual IDs that use the specified measure.
-
-    Description:
-        This function iterates through the visuals in a Power BI report and identifies the IDs
-        of visuals that use the given measure.
 
     Args:
         report_path (str): The file system path to the report folder.
@@ -24,24 +61,16 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
         if "visual.json" in files:
             visual_file_path = os.path.join(root, "visual.json")
             visual_data = _load_json(visual_file_path)
-
-            # Get visual ID ("name" in visual.json)
             visual_id = visual_data.get("name")
-
             all_rows = _extract_metadata_from_file(visual_file_path)
-            for row in all_rows:
-                if row["Column or Measure"] == measure_name:
-                    visual_ids.append(visual_id)
+            if any(row["Column or Measure"] == measure_name for row in all_rows):
+                visual_ids.append(visual_id)
     return visual_ids
 
 
-def _is_measure_used_in_visuals(report_path: str, measure_name: str) -> bool:
+def _is_measure_used_in_visuals(report_path, measure_name):
     """
     Check if the specified measure is used in any visual.
-
-    Description:
-        This function determines whether a given measure is used in any of the visuals within
-        a Power BI report.
 
     Args:
         report_path (str): The file system path to the report folder.
@@ -50,106 +79,163 @@ def _is_measure_used_in_visuals(report_path: str, measure_name: str) -> bool:
     Returns:
         bool: True if the measure is used in any visual within the report, False otherwise.
     """
-    return len(_get_visual_ids_for_measure(report_path, measure_name)) > 0
-
-
-def _get_dependent_measures(measure_name, measures_dict, visited=None):
-    """
-    Recursively find all measures that depend on the given measure.
-
-    Description:
-        This function identifies all measures that directly or indirectly depend on the
-        specified measure by analyzing the expressions of other measures in the report.
-
-    Args:
-        measure_name (str): The name of the measure whose dependents are to be found.
-        measures_dict (dict): A dictionary of all measures with measure names as keys and
-                              expressions as values.
-        visited (set): A set to track visited measures during recursion to prevent infinite loops.
-
-    Returns:
-        set: A set of all dependent measure names.
-    """
-    visited = visited or set()
-
-    if measure_name in visited:
-        return set()
-
-    visited.add(measure_name)
-
-    dependents = set()
-
-    for other_measure_name, expression in measures_dict.items():
-        if f"[{measure_name}]" in expression:
-            dependents.add(other_measure_name)
-            dependents.update(
-                _get_dependent_measures(other_measure_name, measures_dict, visited)
-            )
-
-    return dependents
+    return bool(_get_visual_ids_for_measure(report_path, measure_name))
 
 
 def _is_measure_or_dependents_used_in_visuals(report_path, measure_name, measures_dict):
     """
-    Check if a measure or any dependents are used in visuals.
-
-    Description:
-        This function checks if a given measure or any of its dependent measures are used
-        in any visuals within the Power BI report.
+    Check if a measure or any of its dependents are used in visuals.
 
     Args:
         report_path (str): The file system path to the report folder.
         measure_name (str): The name of the measure to check.
-        measures_dict (dict): A dictionary of all measures with measure names as keys and
-                              expressions as values.
+        measures_dict (dict): A dictionary of all measures with their names as keys and expressions as values.
 
     Returns:
-        bool: True if the measure or any of its dependents are used in visuals, False otherwise.
+        bool: True if the measure or any of its dependents are used in visuals; False otherwise.
     """
     if _is_measure_used_in_visuals(report_path, measure_name):
         return True
 
+    all_dependents = _get_dependent_measures(
+        measure_name, measures_dict, include_all_dependents=True
+    )
+
     return any(
         _is_measure_used_in_visuals(report_path, dependent)
-        for dependent in _get_dependent_measures(measure_name, measures_dict)
+        for dependent in all_dependents
     )
 
 
-def _load_report_extension_data(report_path: str):
+def _trace_dependency_path(measures_dict, measure, current_path, dependency_paths):
+    """
+    Recursively trace the dependency path of a measure.
+
+    Args:
+        measures_dict (dict): A dictionary of all measures with their names as keys and expressions as values.
+        measure (str): The name of the measure to trace dependencies for.
+        current_path (list): The current dependency path being built.
+        dependency_paths (list): A list to store all discovered dependency paths.
+
+    Returns:
+        None
+    """
+    direct_dependents = _get_dependent_measures(
+        measure, measures_dict, include_all_dependents=False
+    )
+
+    if not direct_dependents:
+        dependency_paths.append(current_path)
+        return
+
+    for dependent in direct_dependents:
+        _trace_dependency_path(
+            measures_dict, dependent, current_path + [dependent], dependency_paths
+        )
+
+
+def _format_measure_with_visual_ids(report_path, measure, include_visual_ids):
+    """
+    Format a measure name with its visual IDs.
+
+    Args:
+        report_path (str): The file system path to the report folder.
+        measure (str): The name of the measure.
+        include_visual_ids (bool): Whether to include visual IDs in the formatted string.
+
+    Returns:
+        str: The formatted measure name, optionally with visual IDs in parentheses.
+    """
+    visual_ids = _get_visual_ids_for_measure(report_path, measure)
+    if visual_ids and include_visual_ids:
+        return f"{measure} ({', '.join(visual_ids)})"
+    return measure
+
+
+def _load_report_extension_data(report_path):
     """
     Helper function to load the Power BI report extension data.
-
-    Description:
-        This function loads the report's JSON data from the reportExtensions.json file.
 
     Args:
         report_path (str): The file system path to the report folder.
 
     Returns:
-        dict: The loaded report extension data as a dictionary.
+        tuple: A tuple containing the report file path and the loaded report extension data as a dictionary.
     """
     report_file = os.path.join(report_path, "definition", "reportExtensions.json")
     return report_file, _load_json(report_file)
 
 
-def remove_measures(
-    report_path: str, measure_names: list = None, check_visual_usage: bool = True
-) -> None:
+def generate_measure_dependencies_report(
+    report_path, measure_names=None, include_visual_ids=False
+):
     """
-    Removes specified measures or all measures from a PowerBI PBIR report,
-    with an optional check for their usage in visuals.
-
-    Description:
-        This function allows you to remove specific measures or all measures from a Power BI report.
-        It can optionally check if a measure is used in any visual before removing it to
-        prevent accidental deletion of measures that are still in use.
+    Generate a dependency report for given measures or all measures in a Power BI report,
+    optionally including visual IDs.
 
     Args:
         report_path (str): The file system path to the report folder.
-        measure_names (Optional[List[str]]): A list of measure names to be removed. If None or an empty list,
-                                             all measures will be considered for removal. Default is None.
-        check_visual_usage (bool): If True, only remove a measure if neither the measure itself nor any of its dependent measures
-                                   are used in any visuals. Default is True.
+        measure_names (list, optional): A list of measure names to analyze. If None (default) or an empty list [],
+                                        analyzes all measures in the report.
+        include_visual_ids (bool, optional): If True, include a list of visual IDs where each measure is used.
+                                             Default is False.
+
+    Returns:
+        str: A string representing the dependency report, with each measure's dependencies listed.
+             If include_visual_ids is True, visual IDs are added in parentheses after each measure.
+             If measure_names is None or an empty list, it returns a report with dependencies for all measures.
+             Returns an empty string if no measures are found or have no dependencies.
+    """
+    _, report_data = _load_report_extension_data(report_path)
+    measures_dict = {
+        measure["name"]: measure.get("expression", "")
+        for entity in report_data.get("entities", [])
+        for measure in entity.get("measures", [])
+    }
+
+    if not measures_dict:
+        return ""
+
+    measures_to_analyze = measure_names or measures_dict.keys()
+    dependency_report = ""
+
+    for measure_name in measures_to_analyze:
+        dependency_paths = []
+        direct_dependents = _get_dependent_measures(
+            measure_name, measures_dict, include_all_dependents=False
+        )
+
+        if direct_dependents:
+            dependency_report += f"--- Dependencies for {measure_name} ---\n"
+
+            for dependent in direct_dependents:
+                _trace_dependency_path(
+                    measures_dict, dependent, [dependent], dependency_paths
+                )
+
+            formatted_paths = [
+                " > ".join(
+                    _format_measure_with_visual_ids(report_path, m, include_visual_ids)
+                    for m in path
+                )
+                for path in dependency_paths
+            ]
+            dependency_report += "\n".join(formatted_paths) + "\n\n"
+
+    return dependency_report
+
+
+def remove_measures(report_path, measure_names=None, check_visual_usage=True):
+    """
+    Remove specified measures or all measures from a Power BI PBIX report,
+    with an optional check for their usage in visuals.
+
+    Args:
+        report_path (str): The file system path to the report folder.
+        measure_names (list, optional): A list of measure names to be removed. If None or an empty list,
+                                        all measures will be considered for removal. Default is None.
+        check_visual_usage (bool, optional): If True, only remove a measure if neither the measure itself nor any
+                                             of its dependents are used in any visuals. Default is True.
 
     Returns:
         None
@@ -198,136 +284,10 @@ def remove_measures(
 
     if entities_to_keep:
         _write_json(report_file, report_data)
-        print(
-            f"Measures removed: {', '.join(removed_measures)}"
-            if removed_measures
-            else "No measures were removed."
-        )
+        if removed_measures:
+            print(f"Measures removed: {', '.join(removed_measures)}")
+        else:
+            print("No measures were removed.")
     else:
         os.remove(report_file)
         print("All measures removed. The reportExtensions.json file has been deleted.")
-
-
-def _format_measure_with_visual_ids(report_path, measure, include_visual_ids):
-    """
-    Helper function to format a measure name with its visual IDs.
-
-    Description:
-        This function takes a measure name and optionally includes a list of visual IDs
-        where the measure is used, formatting it as a string.
-
-    Args:
-        report_path (str): The file system path to the report folder.
-        measure (str): The name of the measure.
-        include_visual_ids (bool): Whether to include visual IDs in the formatted string.
-
-    Returns:
-        str: The formatted measure name, optionally with visual IDs in parentheses.
-    """
-    visual_ids = _get_visual_ids_for_measure(report_path, measure)
-    if visual_ids and include_visual_ids:
-        return f"{measure} ({', '.join(visual_ids)})"
-    else:
-        return measure
-
-
-def _trace_dependency_path(measures_dict, measure, current_path, dependency_paths):
-    """
-    Helper function to recursively trace the dependency path of a measure.
-
-    Description:
-        This function recursively traces the dependencies of a measure, building a list of
-        dependency paths that show how other measures depend on it.
-
-    Args:
-        measures_dict (dict): A dictionary of all measures with measure names as keys and
-                              expressions as values.
-        measure (str): The name of the measure to trace dependencies for.
-        current_path (list): The current dependency path being built.
-        dependency_paths (list): A list to store all discovered dependency paths.
-
-    Returns:
-        None
-    """
-    direct_dependents = [
-        dep for dep, exp in measures_dict.items() if f"[{measure}]" in exp
-    ]
-
-    if not direct_dependents:
-        dependency_paths.append(current_path)
-        return
-
-    for dependent in direct_dependents:
-        _trace_dependency_path(
-            measures_dict, dependent, current_path + [dependent], dependency_paths
-        )
-
-
-def get_measure_dependencies(report_path, measure_names=None, include_visual_ids=False):
-    """
-    Gets the dependency tree for given measures or all measures in a Power BI report,
-    optionally including visual IDs.
-
-    Description:
-        This function analyzes the dependencies between measures in a Power BI report.
-        It can either analyze a list of specified measures or generate a report for all measures.
-        Optionally, it can include the IDs of visuals that use each measure.
-
-    Args:
-        report_path (str): The file system path to the report folder.
-        measure_names (list, optional): A list of measure names to analyze. If None (default) or an empty list [],
-                                     analyzes all measures in the report.
-        include_visual_ids (bool): If True, include a list of visual IDs where each measure is used. Default is False.
-
-    Returns:
-        str: A string representing the dependency tree(s), with each level indented.
-             If include_visual_ids is True, visual IDs are added in brackets after each measure.
-             If measure_names is None or an empty list, it returns a string with dependencies for all measures,
-             separated by section headers.
-             Returns an empty string if no measures are found or have no dependencies.
-    """
-    _, report_data = _load_report_extension_data(report_path)
-
-    measures_dict = {}
-    for entity in report_data.get("entities", []):
-        for measure in entity.get("measures", []):
-            measures_dict[measure["name"]] = measure.get("expression", "")
-
-    if not measures_dict:
-        return ""
-
-    if not measure_names:
-        # Analyze all measures
-        measures_to_analyze = measures_dict.keys()
-    else:
-        # Analyze specified measures
-        measures_to_analyze = [m for m in measure_names if m in measures_dict]
-
-    all_dependencies_str = ""
-    for measure_name in measures_to_analyze:
-        dependencies = _get_dependent_measures(measure_name, measures_dict)
-
-        if dependencies:  # Only include measures with dependencies
-            all_dependencies_str += f"--- Dependencies for {measure_name} ---\n"
-
-            dependency_paths = []
-            direct_dependents = [
-                dep for dep, exp in measures_dict.items() if f"[{measure_name}]" in exp
-            ]
-
-            for dependent in direct_dependents:
-                _trace_dependency_path(
-                    measures_dict, dependent, [dependent], dependency_paths
-                )
-
-            formatted_paths = []
-            for path in dependency_paths:
-                formatted_path = " > ".join(
-                    _format_measure_with_visual_ids(report_path, m, include_visual_ids)
-                    for m in path
-                )
-                formatted_paths.append(formatted_path)
-
-            all_dependencies_str += "\n".join(formatted_paths) + "\n\n"
-
-    return all_dependencies_str
