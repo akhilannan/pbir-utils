@@ -27,5 +27,7 @@ dynamic = ["version"]
 [project.urls]
 Homepage = "https://github.com/akhilannan/pbir-utils"
 
-[tool.setuptools]
-packages = {find = {where = ["src"]}}
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
