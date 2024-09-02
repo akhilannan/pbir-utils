@@ -41,7 +41,7 @@ jobs:
         with:
           name: pbir-utils ${{ github.ref_name }}
           body: |
-            ## Renamed Function:
-            - *get_measure_dependencies* renamed to **generate_measure_dependencies_report**
+            ## Updated Function:
+            - *export_pbir_metadata_to_csv*: Added a filter parameter to allow filtering on any column in the final output.
           draft: false
           prerelease: false
