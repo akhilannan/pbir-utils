@@ -1,5 +1,6 @@
 import os
 import csv
+import fnmatch
 
 from .json_utils import _load_json
 
@@ -176,103 +177,133 @@ def _traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
             yield from _traverse_pbir_json_structure(item, usage_context, usage_detail)
 
 
-def _extract_metadata_from_file(json_file_path):
+def _apply_filters(row, filters):
+    """
+    Apply filters to a row with early exit.
+
+    Args:
+        row (dict): The row to filter.
+        filters (dict): Filters dictionary with sets as values.
+
+    Returns:
+        bool: True if the row passes all filters, False otherwise.
+    """
+    for column, allowed_values in filters.items():
+        if allowed_values and row.get(column) not in allowed_values:
+            return False
+    return True
+
+
+def _extract_metadata_from_file(json_file_path, filters=None):
     """
     Extracts and formats attribute metadata from a single PBIR JSON file.
 
     Args:
         json_file_path (str): The file path to the PBIR JSON file.
+        filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
 
     Returns:
         list: A list of dictionaries representing the processed attribute metadata entries from the file.
     """
-    # Extract report name, page name, and ID from the JSON file
     report_name = _extract_report_name(json_file_path)
+
+    page_filter = filters.get("Page") if filters else None
     page_name = _extract_page_name(json_file_path) or "NA"
 
+    if page_filter and page_name not in page_filter:
+        return []  # Skip this file if page doesn't match the filter
+
+    # If we've passed the initial filter checks, proceed with loading and processing the JSON
     data = _load_json(json_file_path)
     id = data.get("name", None)
     all_rows = []
 
-    # Traverse the JSON structure and collect all rows
-    temp_row = None
-    for (
-        table,
-        column,
-        used_in,
-        expression,
-        used_in_detail,
-    ) in _traverse_pbir_json_structure(data):
-        # Create a base dictionary for the row
-        row = {
-            field: value
-            for field, value in zip(
-                HEADER_FIELDS,
-                [
-                    report_name,
-                    page_name,
-                    table,
-                    column,
-                    expression,
-                    used_in,
-                    used_in_detail,
-                    id,
-                ],
+    def row_generator():
+        temp_row = None
+        for (
+            table,
+            column,
+            used_in,
+            expression,
+            used_in_detail,
+        ) in _traverse_pbir_json_structure(data):
+            row = dict(
+                zip(
+                    HEADER_FIELDS,
+                    [
+                        report_name,
+                        page_name,
+                        table,
+                        column,
+                        expression,
+                        used_in,
+                        used_in_detail,
+                        id,
+                    ],
+                )
             )
-        }
 
-        if expression is None:
-            # If expression is None, handle split rows
-            if temp_row is None:
-                temp_row = row  # Store the first part
+            if expression is None:
+                if temp_row is None:
+                    temp_row = row
+                else:
+                    temp_row["Column or Measure"] = column
+                    yield temp_row
+                    temp_row = None
             else:
-                # Combine with the second part and append
-                temp_row["Column or Measure"] = column
-                all_rows.append(temp_row)
-                temp_row = None
-        else:
-            # If expression is not None, append directly
+                yield row
+
+        if temp_row is not None:
+            yield temp_row
+
+    for row in row_generator():
+        if _apply_filters(row, filters):
             all_rows.append(row)
 
     return all_rows
 
 
-def _consolidate_metadata_from_directory(directory_path):
+def _consolidate_metadata_from_directory(directory_path, filters=None):
     """
     Extracts and consolidates attribute metadata from all PBIR JSON files in the specified directory.
 
     Args:
         directory_path (str): The root directory path containing PBIR component JSON files.
+        filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
 
     Returns:
         list: A list of dictionaries, each representing a unique metadata entry with fields:
             Report, Page, Table, Column or Measure, Expression, Used In, and ID.
     """
-
-    # Extract data from all json files in a directory
     all_rows_with_expression = []
     all_rows_without_expression = []
+    report_filter = filters.get("Report") if filters else None
+    report_pattern = (
+        "|".join([f"*{report_name}.Report*" for report_name in report_filter])
+        if report_filter
+        else "*.Report*"
+    )
 
-    # Traverse the directory and process each JSON file
     for root, _, files in os.walk(directory_path):
-        for file in files:
-            if file.endswith(".json"):
-                json_file_path = os.path.join(root, file)
+        if fnmatch.fnmatch(root, report_pattern):
+            for file in files:
+                if file.endswith(".json"):
+                    json_file_path = os.path.join(root, file)
 
-                # Extract metadata from the JSON file
-                file_metadata = _extract_metadata_from_file(json_file_path)
+                    # Extract metadata from the JSON file
+                    file_metadata = _extract_metadata_from_file(json_file_path, filters)
 
-                # Separate the extracted rows
-                rows_with_expression = [
-                    row for row in file_metadata if row["Expression"] is not None
-                ]
-                rows_without_expression = [
-                    row for row in file_metadata if row["Expression"] is None
-                ]
+                    # Separate the extracted rows
+                    rows_with_expression = [
+                        row for row in file_metadata if row["Expression"] is not None
+                    ]
+                    rows_without_expression = [
+                        row for row in file_metadata if row["Expression"] is None
+                    ]
 
-                # Aggregate all rows with and without expressions
-                all_rows_with_expression.extend(rows_with_expression)
-                all_rows_without_expression.extend(rows_without_expression)
+                    # Aggregate all rows with and without expressions
+                    all_rows_with_expression.extend(rows_with_expression)
+                    all_rows_without_expression.extend(rows_without_expression)
 
     # Add expressions from rows_with_expression to rows_without_expression if applicable
     for row_without in all_rows_without_expression:
@@ -309,7 +340,7 @@ def _consolidate_metadata_from_directory(directory_path):
     return unique_rows
 
 
-def export_pbir_metadata_to_csv(directory_path, csv_output_path):
+def export_pbir_metadata_to_csv(directory_path, csv_output_path, filters=None):
     """
     Exports the extracted Power BI Enhanced Report Format (PBIR) metadata to a CSV file.
 
@@ -321,6 +352,9 @@ def export_pbir_metadata_to_csv(directory_path, csv_output_path):
     Args:
         directory_path (str): The directory path containing PBIR JSON files.
         csv_output_path (str): The output path for the CSV file containing the extracted metadata.
+        filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
+                                  If a filter key has an empty set/dict, it will be ignored.
+                                  If filters is None or an empty dict, all data will be processed.
 
     Returns:
         None
@@ -332,10 +366,10 @@ def export_pbir_metadata_to_csv(directory_path, csv_output_path):
     - Column or Measure: Name of the column or measure
     - Expression: DAX expression for measures (if applicable)
     - Used In: Context where the Column or Measure is used (e.g., visual, Drillthrough, Filters, Bookmarks)
+    - Used In Detail: Additional context information (e.g., tooltip, legend, Category, etc.)
     - ID: The ID of the artifact where the Column or Measure is used
     """
-
-    metadata = _consolidate_metadata_from_directory(directory_path)
+    metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
     with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
