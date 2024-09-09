@@ -39,12 +39,15 @@ jobs:
       - name: Read Release Notes
         id: get_release_notes
         run: |
-          echo "::set-output name=notes::$(cat CHANGELOG.md)"
+          RELEASE_NOTES=$(cat CHANGELOG.md)
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: pbir-utils ${{ github.ref_name }}
-          body: ${{ steps.get_release_notes.outputs.notes }}
+          body: ${{ env.RELEASE_NOTES }}
           draft: false
           prerelease: false
