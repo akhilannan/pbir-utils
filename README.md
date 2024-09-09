@@ -10,6 +10,8 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Disable Visual Interactions**: Bulk disable interactions in PBIR report.
 - **Remove Measures**: Bulk remove report-level measures.
 - **Get Measure Dependencies**: Extract the dependency tree for report-level measures.
+- **Update Report Level Filters**: Update the filters added to the Power BI report level filter pane.
+- **Sort Report Level Filters**: Reorder filters in report filter pane on a specified sorting strategy.
 
 ## Installation
 ```python

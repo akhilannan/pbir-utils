@@ -36,12 +36,15 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: python -m twine upload dist/*
 
+      - name: Read Release Notes
+        id: get_release_notes
+        run: |
+          echo "::set-output name=notes::$(cat CHANGELOG.md)"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: pbir-utils ${{ github.ref_name }}
-          body: |
-            ## Updated Function:
-            - *export_pbir_metadata_to_csv*: Added a filter parameter to allow filtering on any column in the final output.
+          body: ${{ steps.get_release_notes.outputs.notes }}
           draft: false
           prerelease: false
