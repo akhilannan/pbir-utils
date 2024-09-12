@@ -205,7 +205,7 @@ def disable_visual_interactions(
     target_visual_ids: list = None,
     target_visual_types: list = None,
     update_type: str = "Upsert",
-):
+) -> None:
     """
     Main function to disable visual interactions based on provided parameters.
 

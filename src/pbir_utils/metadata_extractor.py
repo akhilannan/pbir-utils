@@ -16,7 +16,7 @@ HEADER_FIELDS = [
 ]
 
 
-def _extract_report_name(json_file_path):
+def _extract_report_name(json_file_path: str) -> str:
     """
     Extracts the report name from the JSON file path.
 
@@ -36,7 +36,7 @@ def _extract_report_name(json_file_path):
     )
 
 
-def _extract_active_section(bookmark_json_path):
+def _extract_active_section(bookmark_json_path: str) str:
     """
     Extracts the active section from the bookmarks JSON file.
 
@@ -66,7 +66,7 @@ def _extract_active_section(bookmark_json_path):
     return None
 
 
-def _extract_page_name(json_path):
+def _extract_page_name(json_path: str) -> str:
     """
     Extracts the page name from the JSON file path.
 
@@ -88,7 +88,7 @@ def _extract_page_name(json_path):
     return _load_json(page_json_path).get("displayName", "NA")
 
 
-def _traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
+def _traverse_pbir_json_structure(data: dict | list, usage_context: str = None, usage_detail: str = None) -> object:
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
 
@@ -177,7 +177,7 @@ def _traverse_pbir_json_structure(data, usage_context=None, usage_detail=None):
             yield from _traverse_pbir_json_structure(item, usage_context, usage_detail)
 
 
-def _apply_filters(row, filters):
+def _apply_filters(row: dict, filters: dict) -> bool:
     """
     Apply filters to a row with early exit.
 
@@ -194,7 +194,7 @@ def _apply_filters(row, filters):
     return True
 
 
-def _extract_metadata_from_file(json_file_path, filters=None):
+def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> list:
     """
     Extracts and formats attribute metadata from a single PBIR JSON file.
 
@@ -263,7 +263,7 @@ def _extract_metadata_from_file(json_file_path, filters=None):
     return all_rows
 
 
-def _consolidate_metadata_from_directory(directory_path, filters=None):
+def _consolidate_metadata_from_directory(directory_path: str, filters: dict = None) -> list:
     """
     Extracts and consolidates attribute metadata from all PBIR JSON files in the specified directory.
 
@@ -340,7 +340,9 @@ def _consolidate_metadata_from_directory(directory_path, filters=None):
     return unique_rows
 
 
-def export_pbir_metadata_to_csv(directory_path, csv_output_path, filters=None):
+def export_pbir_metadata_to_csv(
+    directory_path: str, csv_output_path: str, filters: dict = None
+):
     """
     Exports the extracted Power BI Enhanced Report Format (PBIR) metadata to a CSV file.
 

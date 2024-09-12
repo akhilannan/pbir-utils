@@ -5,7 +5,7 @@ from datetime import datetime
 from .json_utils import _load_json, _write_json
 
 
-def _format_date(date_str):
+def _format_date(date_str: str) -> str:
     """
     Converts a date string in the format '%d-%b-%Y' to an ISO 8601 format string.
 
@@ -18,36 +18,26 @@ def _format_date(date_str):
     return f"datetime'{datetime.strptime(date_str, '%d-%b-%Y').strftime('%Y-%m-%dT00:00:00')}'"
 
 
-def _is_date(value):
-    """
-    Checks if a value is a date string.
+def _is_date(value: any) -> bool:
+    """if a value is a date string in the format "dd-Mon-YYYY".
 
     Parameters:
     value (any): The value to check.
 
     Returns:
-    bool: True if the value is a date string, False otherwise.
+    bool: True if the value is a valid date string, False otherwise.
     """
-    return isinstance(value, str) and bool(_try_parse_date(value))
+    if not isinstance(value, str):
+        return False
 
-
-def _try_parse_date(value):
-    """
-    Tries to parse a date string.
-
-    Parameters:
-    value (str): The date string to parse.
-
-    Returns:
-    datetime: Parsed datetime object if successful, None otherwise.
-    """
     try:
-        return datetime.strptime(value, "%d-%b-%Y")
+        datetime.strptime(value, "%d-%b-%Y")
+        return True
     except ValueError:
-        return None
+        return False
 
 
-def _is_number(value):
+def _is_number(value: any) -> bool:
     """
     Checks if a value is either an integer or a float.
 
@@ -60,7 +50,7 @@ def _is_number(value):
     return isinstance(value, (int, float))
 
 
-def _format_value(value):
+def _format_value(value: any) -> str:
     """
     Formats a value based on its type.
 
@@ -78,7 +68,7 @@ def _format_value(value):
         return f"'{value}'"
 
 
-def _get_existing_or_generate_name(filters, table):
+def _get_existing_or_generate_name(filters: list[dict], table: str) -> str:
     """
     Retrieves an existing name or generates a new one based on filters and table name.
 
@@ -97,7 +87,9 @@ def _get_existing_or_generate_name(filters, table):
     return table[0].lower()
 
 
-def _create_condition(condition_type, column, values, column_source):
+def _create_condition(
+    condition_type: str, column: str, values: list, column_source: str
+) -> dict:
     """
     Creates a condition dictionary for filtering.
 
@@ -208,7 +200,7 @@ def _create_condition(condition_type, column, values, column_source):
     return {}
 
 
-def _validate_filters(filters):
+def _validate_filters(filters: list[dict]) -> tuple[list, list]:
     """
     Validates the given filters.
 
@@ -285,7 +277,7 @@ def _validate_filters(filters):
     return valid_filters, ignored_filters
 
 
-def get_report_paths(directory_path, reports=None):
+def _get_report_paths(directory_path: str, reports: list = None) -> list:
     """
     Retrieves the paths to the report JSON files in the specified root folder.
 
@@ -312,7 +304,7 @@ def get_report_paths(directory_path, reports=None):
     return report_paths
 
 
-def update_report_filters(directory_path, filters, reports=None):
+def update_report_filters(directory_path: str, filters: list, reports: list = None):
     """
     Updates report filters based on the given filters.
 
@@ -331,7 +323,7 @@ def update_report_filters(directory_path, filters, reports=None):
     for filter_config, reason in ignored_filters:
         print(f"Ignored filter: {filter_config} - Reason: {reason}")
 
-    report_paths = get_report_paths(directory_path, reports)
+    report_paths = _get_report_paths(directory_path, reports)
 
     for report_path in report_paths:
         data = _load_json(report_path)
@@ -411,8 +403,11 @@ def update_report_filters(directory_path, filters, reports=None):
 
 
 def sort_report_filters(
-    directory_path, reports=None, sort_order="SelectedFilterTop", custom_order=None
-):
+    directory_path: str,
+    reports: list = None,
+    sort_order: str = "SelectedFilterTop",
+    custom_order: list = None,
+) -> None:
     """
     Sorts the report filters in all specified reports in the root folder based on the given sort order:
     - "Ascending": Sort all filters alphabetically ascending.
@@ -431,7 +426,7 @@ def sort_report_filters(
     Returns:
     None
     """
-    report_paths = get_report_paths(directory_path, reports)
+    report_paths = _get_report_paths(directory_path, reports)
 
     for report_path in report_paths:
         data = _load_json(report_path)

@@ -5,7 +5,7 @@ import re
 from .json_utils import _load_json, _write_json
 
 
-def _load_csv_mapping(csv_path):
+def _load_csv_mapping(csv_path: str) -> list[dict]:
     """
     Load a CSV file and return a list of dictionaries mapping from old (entity, column) pairs
     to new (entity, column) pairs, filtering out invalid rows based on specified conditions.
@@ -38,7 +38,9 @@ def _load_csv_mapping(csv_path):
     return mappings
 
 
-def _update_dax_expression(expression, table_map=None, column_map=None):
+def _update_dax_expression(
+    expression: str, table_map: dict = None, column_map: dict = None
+) -> str:
     """
     Update DAX expressions based on table_map and/or column_map.
 
@@ -97,7 +99,7 @@ def _update_dax_expression(expression, table_map=None, column_map=None):
     return expression
 
 
-def _update_entity(data, table_map):
+def _update_entity(data: dict, table_map: dict) -> bool:
     """
     Update the "Entity" fields and DAX expressions in the JSON data based on the table_map.
 
@@ -140,7 +142,7 @@ def _update_entity(data, table_map):
     return updated
 
 
-def _update_property(data, column_map):
+def _update_property(data: dict, column_map: dict) -> bool:
     """
     Update the "Property" fields in the JSON data based on the column_map and updated table names.
 
@@ -204,7 +206,7 @@ def _update_property(data, column_map):
     return updated
 
 
-def _update_pbir_component(file_path, table_map, column_map):
+def _update_pbir_component(file_path: str, table_map: dict, column_map: dict):
     """
     Update a single component within a Power BI Enhanced Report Format (PBIR) structure.
 
@@ -235,7 +237,7 @@ def _update_pbir_component(file_path, table_map, column_map):
         _write_json(file_path, data)
 
 
-def batch_update_pbir_project(directory_path, csv_path):
+def batch_update_pbir_project(directory_path: str, csv_path: str):
     """
     Perform a batch update on all components of a Power BI Enhanced Report Format (PBIR) project.
 

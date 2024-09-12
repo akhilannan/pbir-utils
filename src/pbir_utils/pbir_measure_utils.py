@@ -5,8 +5,11 @@ from .metadata_extractor import _extract_metadata_from_file
 
 
 def _get_dependent_measures(
-    measure_name, measures_dict, visited=None, include_all_dependents=False
-):
+    measure_name: str,
+    measures_dict: dict,
+    visited: set = None,
+    include_all_dependents: bool = False,
+) -> set:
     """
     Recursively find measures that depend on the given measure.
 
@@ -45,7 +48,7 @@ def _get_dependent_measures(
     )
 
 
-def _get_visual_ids_for_measure(report_path, measure_name):
+def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
     """
     Get a list of visual IDs that use the specified measure.
 
@@ -69,7 +72,7 @@ def _get_visual_ids_for_measure(report_path, measure_name):
     return visual_ids
 
 
-def _is_measure_used_in_visuals(report_path, measure_name):
+def _is_measure_used_in_visuals(report_path: str, measure_name: str) -> bool:
     """
     Check if the specified measure is used in any visual.
 
@@ -83,7 +86,9 @@ def _is_measure_used_in_visuals(report_path, measure_name):
     return bool(_get_visual_ids_for_measure(report_path, measure_name))
 
 
-def _is_measure_or_dependents_used_in_visuals(report_path, measure_name, measures_dict):
+def _is_measure_or_dependents_used_in_visuals(
+    report_path: str, measure_name: str, measures_dict: dict
+) -> bool:
     """
     Check if a measure or any of its dependents are used in visuals.
 
@@ -108,7 +113,9 @@ def _is_measure_or_dependents_used_in_visuals(report_path, measure_name, measure
     )
 
 
-def _trace_dependency_path(measures_dict, measure, current_path, dependency_paths):
+def _trace_dependency_path(
+    measures_dict: dict, measure: str, current_path: list, dependency_paths: list
+) -> None:
     """
     Recursively trace the dependency path of a measure.
 
@@ -133,7 +140,9 @@ def _trace_dependency_path(measures_dict, measure, current_path, dependency_path
         )
 
 
-def _format_measure_with_visual_ids(report_path, measure, include_visual_ids):
+def _format_measure_with_visual_ids(
+    report_path: str, measure: str, include_visual_ids: bool
+) -> str:
     """
     Format a measure name with its visual IDs.
 
@@ -151,7 +160,7 @@ def _format_measure_with_visual_ids(report_path, measure, include_visual_ids):
     return measure
 
 
-def _load_report_extension_data(report_path):
+def _load_report_extension_data(report_path: str) -> tuple:
     """
     Helper function to load the Power BI report extension data.
 
@@ -166,8 +175,8 @@ def _load_report_extension_data(report_path):
 
 
 def generate_measure_dependencies_report(
-    report_path, measure_names=None, include_visual_ids=False
-):
+    report_path: str, measure_names: list = None, include_visual_ids: bool = False
+) -> str:
     """
     Generate a dependency report for given measures or all measures in a Power BI report,
     optionally including visual IDs.
@@ -222,7 +231,9 @@ def generate_measure_dependencies_report(
     return dependency_report
 
 
-def remove_measures(report_path, measure_names=None, check_visual_usage=True):
+def remove_measures(
+    report_path: str, measure_names: list = None, check_visual_usage: bool = True
+) -> None:
     """
     Remove specified measures or all measures from a Power BI PBIX report,
     with an optional check for their usage in visuals.
