@@ -36,7 +36,7 @@ def _extract_report_name(json_file_path: str) -> str:
     )
 
 
-def _extract_active_section(bookmark_json_path: str) str:
+def _extract_active_section(bookmark_json_path: str) -> str:
     """
     Extracts the active section from the bookmarks JSON file.
 
