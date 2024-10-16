@@ -6,7 +6,8 @@ from .json_utils import _load_json
 
 HEADER_FIELDS = [
     "Report",
-    "Page",
+    "Page Name",
+    "Page ID",
     "Table",
     "Column or Measure",
     "Expression",
@@ -66,29 +67,49 @@ def _extract_active_section(bookmark_json_path: str) -> str:
     return None
 
 
-def _extract_page_name(json_path: str) -> str:
+def _extract_page_info(json_path: str) -> tuple:
     """
-    Extracts the page name from the JSON file path.
+    Extracts the page name and ID from the JSON file path.
 
     Args:
         json_path (str): The file path to the JSON file.
 
     Returns:
-        str: The extracted page name if found, otherwise "NA".
+        tuple: The extracted page name and ID if found, otherwise ("NA", "NA").
     """
     active_section = _extract_active_section(json_path)
     if not active_section:
-        return "NA"
+        return "NA", "NA"
 
     base_path = json_path.split("definition")[0]
     page_json_path = os.path.join(
         base_path, "definition", "pages", active_section, "page.json"
     )
 
-    return _load_json(page_json_path).get("displayName", "NA")
+    page_data = _load_json(page_json_path)
+    page_name = page_data.get("displayName", "NA")
+    page_id = page_data.get("name", "NA")
+    return page_name, page_id
 
 
-def _traverse_pbir_json_structure(data: dict | list, usage_context: str = None, usage_detail: str = None) -> object:
+def _get_page_order(report_path: str) -> list:
+    """
+    Get the page order from the pages.json file.
+
+    Args:
+        report_path (str): Path to the root folder of the report.
+
+    Returns:
+        list: List of page IDs in the correct order.
+    """
+    pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
+    pages_data = _load_json(pages_json_path)
+    return pages_data["pageOrder"]
+
+
+def _traverse_pbir_json_structure(
+    data: dict | list, usage_context: str = None, usage_detail: str = None
+) -> object:
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
 
@@ -209,8 +230,8 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
     """
     report_name = _extract_report_name(json_file_path)
 
-    page_filter = filters.get("Page") if filters else None
-    page_name = _extract_page_name(json_file_path) or "NA"
+    page_filter = filters.get("Page Name") if filters else None
+    page_name, page_id = _extract_page_info(json_file_path)
 
     if page_filter and page_name not in page_filter:
         return []  # Skip this file if page doesn't match the filter
@@ -235,6 +256,7 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
                     [
                         report_name,
                         page_name,
+                        page_id,
                         table,
                         column,
                         expression,
@@ -265,7 +287,9 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
     return all_rows
 
 
-def _consolidate_metadata_from_directory(directory_path: str, filters: dict = None) -> list:
+def _consolidate_metadata_from_directory(
+    directory_path: str, filters: dict = None
+) -> list:
     """
     Extracts and consolidates attribute metadata from all PBIR JSON files in the specified directory.
 
@@ -275,7 +299,7 @@ def _consolidate_metadata_from_directory(directory_path: str, filters: dict = No
 
     Returns:
         list: A list of dictionaries, each representing a unique metadata entry with fields:
-            Report, Page, Table, Column or Measure, Expression, Used In, and ID.
+            Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, and ID.
     """
     all_rows_with_expression = []
     all_rows_without_expression = []
@@ -348,11 +372,6 @@ def export_pbir_metadata_to_csv(
     """
     Exports the extracted Power BI Enhanced Report Format (PBIR) metadata to a CSV file.
 
-    This function processes JSON files representing Power BI reports, extracting information about
-    tables, columns, measures, their expressions, and where they are used within the report. It
-    handles multiple JSON files in the given directory, consolidating the extracted information
-    into a single CSV output.
-
     Args:
         directory_path (str): The directory path containing PBIR JSON files.
         csv_output_path (str): The output path for the CSV file containing the extracted metadata.
@@ -362,19 +381,33 @@ def export_pbir_metadata_to_csv(
 
     Returns:
         None
-
-    The resulting CSV file will contain the following columns:
-    - Report: Name of the Power BI report
-    - Page: Name of the page within the report (or "NA" if not applicable)
-    - Table: Name of the table
-    - Column or Measure: Name of the column or measure
-    - Expression: DAX expression for measures (if applicable)
-    - Used In: Context where the Column or Measure is used (e.g., visual, Drillthrough, Filters, Bookmarks)
-    - Used In Detail: Additional context information (e.g., tooltip, legend, Category, etc.)
-    - ID: The ID of the artifact where the Column or Measure is used
     """
+
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
+    # Extract report paths to gather the page order
+    report_paths = {
+        row["Report"]: os.path.join(directory_path, row["Report"] + ".Report")
+        for row in metadata
+    }
+
+    # Get page orders for each report
+    report_page_orders = {
+        report_name: _get_page_order(report_path)
+        for report_name, report_path in report_paths.items()
+    }
+
+    # Sort by Report name alphabetically, then by Page ID based on the page order
+    metadata.sort(
+        key=lambda row: (
+            row["Report"],
+            report_page_orders.get(row["Report"], []).index(row["Page ID"])
+            if row["Page ID"] in report_page_orders.get(row["Report"], [])
+            else len(report_page_orders.get(row["Report"], [])) + 1
+        )
+    )
+
+    # Write to CSV
     with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
         writer.writeheader()

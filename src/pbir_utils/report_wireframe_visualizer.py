@@ -4,6 +4,7 @@ from dash import dcc, html, Input, Output
 import plotly.graph_objects as go
 
 from .json_utils import _load_json
+from .metadata_extractor import _get_page_order
 
 
 def _extract_page_info(page_folder: str) -> tuple:
@@ -200,21 +201,6 @@ def _apply_filters(
             )
 
     return filtered_pages_info
-
-
-def _get_page_order(report_path: str) -> list:
-    """
-    Get the page order from the pages.json file.
-
-    Args:
-        report_path (str): Path to the root folder of the report.
-
-    Returns:
-        list: List of page IDs in the correct order.
-    """
-    pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
-    pages_data = _load_json(pages_json_path)
-    return pages_data["pageOrder"]
 
 
 def display_report_wireframes(
