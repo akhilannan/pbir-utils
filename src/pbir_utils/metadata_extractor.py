@@ -188,6 +188,8 @@ def _apply_filters(row: dict, filters: dict) -> bool:
     Returns:
         bool: True if the row passes all filters, False otherwise.
     """
+    if not filters:
+        return True
     for column, allowed_values in filters.items():
         if allowed_values and row.get(column) not in allowed_values:
             return False
