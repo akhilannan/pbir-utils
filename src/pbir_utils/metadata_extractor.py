@@ -81,15 +81,17 @@ def _extract_page_info(json_path: str) -> tuple:
     if not active_section:
         return "NA", "NA"
 
-    base_path = json_path.split("definition")[0]
-    page_json_path = os.path.join(
-        base_path, "definition", "pages", active_section, "page.json"
+    page_data = _load_json(
+        os.path.join(
+            json_path.split("definition")[0],
+            "definition",
+            "pages",
+            active_section,
+            "page.json",
+        )
     )
 
-    page_data = _load_json(page_json_path)
-    page_name = page_data.get("displayName", "NA")
-    page_id = page_data.get("name", "NA")
-    return page_name, page_id
+    return page_data.get("displayName", "NA"), page_data.get("name", "NA")
 
 
 def _get_page_order(report_path: str) -> list:
@@ -401,9 +403,11 @@ def export_pbir_metadata_to_csv(
     metadata.sort(
         key=lambda row: (
             row["Report"],
-            report_page_orders.get(row["Report"], []).index(row["Page ID"])
-            if row["Page ID"] in report_page_orders.get(row["Report"], [])
-            else len(report_page_orders.get(row["Report"], [])) + 1
+            (
+                report_page_orders.get(row["Report"], []).index(row["Page ID"])
+                if row["Page ID"] in report_page_orders.get(row["Report"], [])
+                else len(report_page_orders.get(row["Report"], [])) + 1
+            ),
         )
     )
 
