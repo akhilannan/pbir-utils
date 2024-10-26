@@ -65,7 +65,7 @@ def remove_unused_measures(report_path: str) -> None:
 
 def remove_unused_bookmarks(report_path: str) -> None:
     """
-    Remove unused bookmarks from the report.
+    Remove bookmarks which are not activated in report using bookmark navigator or actions
 
     Args:
         report_path (str): The path to the report.
@@ -372,6 +372,7 @@ def remove_empty_pages(report_path: str) -> None:
 def remove_hidden_visuals_never_shown(report_path: str) -> None:
     """
     Remove hidden visuals that are never shown using bookmarks.
+    Also removes hidden visual groups and their children.
 
     Args:
         report_path (str): The path to the report.
@@ -382,13 +383,15 @@ def remove_hidden_visuals_never_shown(report_path: str) -> None:
     print("Action: Removing hidden visuals that are never shown using bookmarks")
 
     def _find_hidden_visuals(visual_data: dict, file_path: str) -> tuple:
-        if visual_data.get("isHidden", False):  # check if visual is hidden
-            visual_name = visual_data.get("name")
-            if visual_name:
-                return (
-                    visual_name,
-                    os.path.dirname(os.path.dirname(file_path)),
-                )  # return visual name and page folder
+        visual_name = visual_data.get("name")
+        folder = os.path.dirname(file_path)
+
+        if visual_data.get("isHidden", False):
+            if visual_data.get("visualGroup"):
+                return (visual_name, folder, "group")
+            return (visual_name, folder, "hidden")
+        elif visual_data.get("parentGroupName"):
+            return (visual_name, folder, ("child", visual_data["parentGroupName"]))
         return None
 
     hidden_visuals_results = _process_or_check_json_files(
@@ -396,47 +399,112 @@ def remove_hidden_visuals_never_shown(report_path: str) -> None:
         "visual.json",
         _find_hidden_visuals,
     )
-    hidden_visuals = {result[1][0]: result[1][1] for result in hidden_visuals_results}
 
-    def _check_bookmark(bookmark_data: dict, _: str) -> set:
+    # Initialize dictionaries to store our findings
+    hidden_groups = {}  # group_name -> folder
+    group_children = {}  # group_name -> set of child visual names
+    hidden_visuals = {}  # visual_name -> folder
+
+    # Process results
+    for result in hidden_visuals_results:
+        if result[1]:  # if we got a result
+            visual_name, folder, info = result[1]
+            if info == "group":
+                hidden_groups[visual_name] = folder
+            elif isinstance(info, tuple) and info[0] == "child":
+                parent_group = info[1]
+                if parent_group not in group_children:
+                    group_children[parent_group] = set()
+                group_children[parent_group].add(visual_name)
+            elif info == "hidden":
+                hidden_visuals[visual_name] = folder
+
+    def _check_bookmark(bookmark_data: dict, _: str) -> tuple[set, set]:
         shown_visuals = set()
-        sections = bookmark_data.get("explorationState", {}).get("sections", {})
-        for section in sections.values():
-            visual_containers = section.get("visualContainers", {})
-            for visual_name, container in visual_containers.items():
-                if visual_name in hidden_visuals:
-                    if "display" not in container.get(
-                        "singleVisual", {}
-                    ):  # check if visual is set to display in bookmark
-                        shown_visuals.add(visual_name)
-        return shown_visuals
+        shown_groups = set()
 
-    bookmark_results = _process_or_check_json_files(
+        for section in (
+            bookmark_data.get("explorationState", {}).get("sections", {}).values()
+        ):
+            # Check groups
+            for group_name, group_info in section.get(
+                "visualContainerGroups", {}
+            ).items():
+                if not group_info.get("isHidden", False):
+                    shown_groups.add(group_name)
+
+            # Check visuals
+            for visual_name, container in section.get("visualContainers", {}).items():
+                if (
+                    not container.get("singleVisual", {}).get("display", {}).get("mode")
+                    == "hidden"
+                ):
+                    shown_visuals.add(visual_name)
+
+        return shown_visuals, shown_groups
+
+    # Get shown visuals from bookmarks
+    shown_visuals = set()
+    shown_groups = set()
+    for _, result in _process_or_check_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
         _check_bookmark,
-    )
-    shown_visuals = set().union(*[result[1] for result in bookmark_results])
+    ):
+        if result:
+            vis, grp = result
+            shown_visuals.update(vis)
+            shown_groups.update(grp)
 
-    always_hidden_visuals = set(hidden_visuals.keys()) - shown_visuals
+    # Determine visuals to remove
+    visuals_to_remove = set()
 
-    for visual_name in always_hidden_visuals:
-        visual_folder = hidden_visuals.get(visual_name)
-        if visual_folder and os.path.exists(visual_folder):
-            shutil.rmtree(visual_folder)
-            print(f"Removed always hidden visual: {visual_name}")
+    # Add always-hidden groups and their children
+    for group in set(hidden_groups) - shown_groups:
+        visuals_to_remove.add(group)
+        visuals_to_remove.update(group_children.get(group, set()))
 
+    # Add hidden visuals never shown (excluding children of shown groups)
+    for visual in hidden_visuals:
+        if visual not in shown_visuals and not any(
+            visual in group_children.get(group, set()) for group in shown_groups
+        ):
+            visuals_to_remove.add(visual)
+
+    # Remove the visuals
+    for visual_name in visuals_to_remove:
+        # Get folder from hidden_groups or hidden_visuals_results
+        folder = hidden_groups.get(visual_name)
+        if not folder:
+            folder = next(
+                (
+                    result[1][1]
+                    for result in hidden_visuals_results
+                    if result[1] and result[1][0] == visual_name
+                ),
+                None,
+            )
+
+        if folder and os.path.exists(folder):
+            shutil.rmtree(folder)
+            visual_type = "group" if visual_name in hidden_groups else "visual"
+            print(f"Removed {visual_type}: {visual_name}")
+
+    # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
         updated = False
-        sections = bookmark_data.get("explorationState", {}).get("sections", {})
-        for section in sections.values():
-            visual_containers = section.get("visualContainers", {})
-            for visual_name in always_hidden_visuals:
-                if visual_name in visual_containers:
-                    del visual_containers[visual_name]
-                    updated = True
+        for section in (
+            bookmark_data.get("explorationState", {}).get("sections", {}).values()
+        ):
+            for container_type in ["visualContainers", "visualContainerGroups"]:
+                containers = section.get(container_type, {})
+                for name in list(containers.keys()):
+                    if name in visuals_to_remove:
+                        del containers[name]
+                        updated = True
         return updated
 
+    # Update bookmarks to remove references to removed visuals
     bookmarks_updated = _process_or_check_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
@@ -445,9 +513,140 @@ def remove_hidden_visuals_never_shown(report_path: str) -> None:
     )
 
     print(
-        f"Removed {len(always_hidden_visuals)} hidden visuals that are never shown using bookmarks"
+        f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
     )
     print(f"Updated {bookmarks_updated} bookmark files")
+
+
+def cleanup_invalid_bookmarks(report_path: str) -> None:
+    """
+    Clean up invalid bookmarks that reference non-existent pages or visuals.
+
+    Args:
+        report_path (str): The path to the report.
+
+    Returns:
+        None
+    """
+    print("Action: Cleaning up invalid bookmarks")
+
+    bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
+    if not os.path.exists(bookmarks_dir):
+        print("No bookmarks directory found.")
+        return
+
+    # Load pages.json to get valid page names
+    pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
+    pages_data = _load_json(pages_json_path)
+    valid_pages = set(pages_data.get("pageOrder", []))
+
+    # Track bookmarks to remove globally
+    bookmarks_to_remove = set()
+    stats = {"processed": 0, "removed": 0, "cleaned": 0, "updated": 0}
+
+    def _process_bookmark(bookmark_data: dict, file_path: str) -> bool:
+        """Process a single bookmark file. Returns was_modified flag."""
+        active_section = bookmark_data.get("explorationState", {}).get("activeSection")
+        if active_section not in valid_pages:
+            bookmarks_to_remove.add(bookmark_data.get("name"))
+            stats["removed"] += 1
+            stats["processed"] += 1
+            os.remove(file_path)
+            return False
+
+        was_modified = False
+        cleaned_visuals_count = 0
+        sections = bookmark_data.get("explorationState", {}).get("sections", {})
+
+        sections_to_remove = []
+        for section_name, section_data in sections.items():
+            if section_name not in valid_pages:
+                sections_to_remove.append(section_name)
+                was_modified = True
+                continue
+
+            # Get valid visuals for this page
+            valid_visuals = {
+                result[1]
+                for result in _process_or_check_json_files(
+                    os.path.join(
+                        report_path, "definition", "pages", section_name, "visuals"
+                    ),
+                    "visual.json",
+                    lambda data, _: data.get("name"),
+                )
+                if result[1]
+            }
+
+            # Clean up containers and groups
+            for section_key in ["visualContainers", "visualContainerGroups"]:
+                containers = section_data.get(section_key, {})
+                invalid_items = [id for id in containers if id not in valid_visuals]
+                if invalid_items:
+                    was_modified = True
+                    for id in invalid_items:
+                        del containers[id]
+                        cleaned_visuals_count += 1
+                    if not containers and section_key in section_data:
+                        del section_data[section_key]
+
+            if not section_data:
+                sections_to_remove.append(section_name)
+                was_modified = True
+
+        for section_name in sections_to_remove:
+            del sections[section_name]
+
+        if was_modified:
+            stats["updated"] += 1
+            stats["cleaned"] += cleaned_visuals_count
+            stats["processed"] += 1
+
+        return was_modified
+
+    # Process all bookmark files
+    _process_or_check_json_files(
+        bookmarks_dir, ".bookmark.json", _process_bookmark, process=True
+    )
+
+    # Update bookmarks.json
+    bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
+    bookmarks_data = _load_json(bookmarks_json_path)
+
+    def _cleanup_bookmark_items(items: list) -> list:
+        """Recursively clean up bookmark items."""
+        cleaned_items = []
+        for item in items:
+            if "children" in item:
+                item["children"] = [
+                    child
+                    for child in item["children"]
+                    if child not in bookmarks_to_remove
+                ]
+                if item["children"] or item["name"] not in bookmarks_to_remove:
+                    cleaned_items.append(item)
+            elif item["name"] not in bookmarks_to_remove:
+                cleaned_items.append(item)
+        return cleaned_items
+
+    bookmarks_data["items"] = _cleanup_bookmark_items(bookmarks_data["items"])
+
+    # Final cleanup and reporting
+    if not bookmarks_data["items"]:
+        shutil.rmtree(bookmarks_dir)
+        print("Removed empty bookmarks directory")
+    else:
+        if stats["processed"] > 0:
+            print(f"Processed {stats['processed']} bookmark files:")
+            if stats["removed"] > 0:
+                _write_json(bookmarks_json_path, bookmarks_data)
+                print(f"- Removed {stats['removed']} invalid bookmarks")
+            if stats["cleaned"] > 0:
+                print(f"- Cleaned {stats['cleaned']} invalid visual references")
+            if stats["updated"] > 0:
+                print(f"- Updated {stats['updated']} bookmark files")
+        else:
+            print("No invalid bookmarks or references found.")
 
 
 def sanitize_powerbi_report(report_path: str, actions: list[str]) -> None:
@@ -470,6 +669,7 @@ def sanitize_powerbi_report(report_path: str, actions: list[str]) -> None:
         "set_first_page_as_active": set_first_page_as_active,
         "remove_empty_pages": remove_empty_pages,
         "remove_hidden_visuals_never_shown": remove_hidden_visuals_never_shown,
+        "cleanup_invalid_bookmarks": cleanup_invalid_bookmarks,
     }
 
     for action in actions:
