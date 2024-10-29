@@ -484,8 +484,27 @@ def remove_hidden_visuals_never_shown(report_path: str) -> None:
                 ),
                 None,
             )
-
+        
         if folder and os.path.exists(folder):
+            # Remove visual interactions for the visual
+            page_json_path = os.path.join(os.path.dirname(folder), "page.json")
+            if os.path.exists(page_json_path):
+                page_data = _load_json(page_json_path)
+                visual_interactions = page_data.get("visualInteractions", [])
+                new_interactions = []
+                for interaction in visual_interactions:
+                    if (
+                        interaction.get("source") != visual_name
+                        and interaction.get("target") != visual_name
+                    ):
+                        new_interactions.append(interaction)
+                if len(new_interactions) != len(visual_interactions):
+                    page_data["visualInteractions"] = new_interactions
+                    _write_json(page_json_path, page_data)
+                    print(
+                        f"Removed visual interactions for {visual_name} from {page_json_path}"
+                    )
+            # Remove the visual folder
             shutil.rmtree(folder)
             visual_type = "group" if visual_name in hidden_groups else "visual"
             print(f"Removed {visual_type}: {visual_name}")
