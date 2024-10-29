@@ -487,7 +487,7 @@ def remove_hidden_visuals_never_shown(report_path: str) -> None:
         
         if folder and os.path.exists(folder):
             # Remove visual interactions for the visual
-            page_json_path = os.path.join(os.path.dirname(folder), "page.json")
+            page_json_path = os.path.join(os.path.dirname(os.path.dirname(folder)), "page.json")
             if os.path.exists(page_json_path):
                 page_data = _load_json(page_json_path)
                 visual_interactions = page_data.get("visualInteractions", [])
