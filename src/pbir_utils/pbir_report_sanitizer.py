@@ -147,9 +147,9 @@ def remove_unused_bookmarks(report_path: str) -> None:
                 used_bookmarks.add(item["name"])
                 new_items.append(item)
 
-    removed_bookmarks = len(bookmarks_data["items"]) - len(new_items)
     bookmarks_data["items"] = new_items
 
+    removed_bookmarks = 0
     for filename in os.listdir(bookmarks_dir):
         if filename.endswith(".bookmark.json"):
             bookmark_file_data = _load_json(os.path.join(bookmarks_dir, filename))
@@ -157,6 +157,7 @@ def remove_unused_bookmarks(report_path: str) -> None:
                 bookmark_file_data.get("name") not in used_bookmarks
             ):  # remove bookmark file if not used
                 os.remove(os.path.join(bookmarks_dir, filename))
+                removed_bookmarks += 1
                 print(f"Removed unused bookmark file: {filename}")
 
     _write_json(bookmarks_json_path, bookmarks_data)
