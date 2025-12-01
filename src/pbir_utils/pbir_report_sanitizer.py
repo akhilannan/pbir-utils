@@ -652,7 +652,18 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
             if not dry_run:
                 shutil.rmtree(folder)
             visual_type = "group" if visual_name in hidden_groups else "visual"
-            print(f"Removed {visual_type}: {visual_name}")
+            visual_type = visual_types.get(visual_name, "unknown")
+            
+            # Get page name
+            page_name = "Unknown Page"
+            if folder:
+                page_dir = os.path.dirname(os.path.dirname(folder))
+                page_json_path = os.path.join(page_dir, "page.json")
+                if os.path.exists(page_json_path):
+                    page_data = _load_json(page_json_path)
+                    page_name = page_data.get("displayName", "Unknown Page")
+
+            print(f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}")
 
     # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
