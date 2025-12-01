@@ -1,5 +1,4 @@
 import os
-import json
 from datetime import datetime
 
 from .json_utils import _load_json, _write_json
@@ -304,7 +303,9 @@ def _get_report_paths(directory_path: str, reports: list = None) -> list:
     return report_paths
 
 
-def update_report_filters(directory_path: str, filters: list, reports: list = None):
+def update_report_filters(
+    directory_path: str, filters: list, reports: list = None, dry_run: bool = False
+):
     """
     Updates report filters based on the given filters.
 
@@ -396,8 +397,11 @@ def update_report_filters(directory_path: str, filters: list, reports: list = No
                 )
 
         if updated:
-            _write_json(report_path, data)
-            print(f"Updated filters in report: {os.path.basename(report_path)}")
+            if not dry_run:
+                _write_json(report_path, data)
+            print(
+                f"Updated filters in report: {os.path.basename(report_path)}{' (Dry Run)' if dry_run else ''}"
+            )
         else:
             print(f"No filters were updated in report: {os.path.basename(report_path)}")
 
@@ -407,6 +411,7 @@ def sort_report_filters(
     reports: list = None,
     sort_order: str = "SelectedFilterTop",
     custom_order: list = None,
+    dry_run: bool = False,
 ) -> None:
     """
     Sorts the report filters in all specified reports in the root folder based on the given sort order:
@@ -451,6 +456,7 @@ def sort_report_filters(
                 unselected_filters.sort(key=lambda x: x["field"]["Column"]["Property"])
 
                 filters = selected_filters + unselected_filters
+                data["filterConfig"]["filters"] = filters
 
                 for index, filter_item in enumerate(filters):
                     filter_item["ordinal"] = index
@@ -483,11 +489,17 @@ def sort_report_filters(
 
             data["filterConfig"]["filterSortOrder"] = sort_order
 
+        elif sort_order == "SelectedFilterTop":
+            pass
+
         else:
             print(
                 f"Invalid sort_order: {sort_order}. No changes applied to report: {report_path}"
             )
             continue
 
-        _write_json(report_path, data)
-        print(f"Sorted filters in report: {report_path}")
+        if not dry_run:
+            _write_json(report_path, data)
+        print(
+            f"Sorted filters in report: {report_path}{' (Dry Run)' if dry_run else ''}"
+        )

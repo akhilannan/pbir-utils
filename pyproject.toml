@@ -27,6 +27,20 @@ dynamic = ["version"]
 [project.urls]
 Homepage = "https://github.com/akhilannan/pbir-utils"
 
+[project.scripts]
+pbir-utils = "pbir_utils.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "black",
+    "bandit",
+    "build",
+    "twine",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

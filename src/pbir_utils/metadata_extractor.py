@@ -165,8 +165,11 @@ def _traverse_pbir_json_structure(
             elif key in ["filters", "filter", "parameters"]:
                 yield from _traverse_pbir_json_structure(value, usage_context, "filter")
             elif key == "visual":
+                visual_type = "visual"
+                if isinstance(value, dict):
+                    visual_type = value.get("visualType", "visual")
                 yield from _traverse_pbir_json_structure(
-                    value, value.get("visualType", "visual"), new_usage_detail
+                    value, visual_type, new_usage_detail
                 )
             elif key == "pageBinding":
                 yield from _traverse_pbir_json_structure(

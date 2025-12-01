@@ -229,9 +229,11 @@ def display_report_wireframes(
         page_folder_path = os.path.join(pages_folder, page_folder)
         try:
             page_info = _extract_page_info(page_folder_path)
-            visuals_info = _extract_visual_info(
-                os.path.join(page_folder_path, "visuals")
-            )
+            visuals_folder_path = os.path.join(page_folder_path, "visuals")
+            if os.path.exists(visuals_folder_path):
+                visuals_info = _extract_visual_info(visuals_folder_path)
+            else:
+                visuals_info = {}
             pages_info.append((*page_info, visuals_info))
         except FileNotFoundError as e:
             print(e)
@@ -276,4 +278,4 @@ def display_report_wireframes(
             return dcc.Graph(figure=fig)
         return html.Div("Page not found")
 
-    app.run_server(debug=True)
+    app.run(debug=True)

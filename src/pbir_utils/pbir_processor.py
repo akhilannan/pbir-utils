@@ -179,23 +179,28 @@ def _update_property(data: dict, column_map: dict) -> bool:
                         data[key] = value
                         updated = True
                 elif key == "filter":
-                    if "From" in value and "Where" in value:
+                    if (
+                        "From" in value
+                        and "Where" in value
+                        and value["From"]
+                        and "Entity" in value["From"][0]
+                    ):
                         from_entity = value["From"][0]["Entity"]
-                        for condition in value["Where"]:
-                            column = (
-                                condition.get("Condition", {})
-                                .get("Not", {})
-                                .get("Expression", {})
-                                .get("In", {})
-                                .get("Expressions", [{}])[0]
-                                .get("Column", {})
-                            )
-                            property = column.get("Property")
-                            if property:
-                                if (from_entity, property) in column_map:
-                                    new_property = column_map[(from_entity, property)]
-                                    column["Property"] = new_property
-                                    updated = True
+                    for condition in value["Where"]:
+                        column = (
+                            condition.get("Condition", {})
+                            .get("Not", {})
+                            .get("Expression", {})
+                            .get("In", {})
+                            .get("Expressions", [{}])[0]
+                            .get("Column", {})
+                        )
+                        property = column.get("Property")
+                        if property:
+                            if (from_entity, property) in column_map:
+                                new_property = column_map[(from_entity, property)]
+                                column["Property"] = new_property
+                                updated = True
                 else:
                     traverse_and_update(value)
         elif isinstance(data, list):
@@ -206,7 +211,9 @@ def _update_property(data: dict, column_map: dict) -> bool:
     return updated
 
 
-def _update_pbir_component(file_path: str, table_map: dict, column_map: dict):
+def _update_pbir_component(
+    file_path: str, table_map: dict, column_map: dict, dry_run: bool = False
+):
     """
     Update a single component within a Power BI Enhanced Report Format (PBIR) structure.
 
@@ -234,10 +241,15 @@ def _update_pbir_component(file_path: str, table_map: dict, column_map: dict):
             print(f"Property updated in file: {file_path}")
 
     if entity_updated or property_updated:
-        _write_json(file_path, data)
+        if not dry_run:
+            _write_json(file_path, data)
+        else:
+            print(f"Dry Run: Would update {file_path}")
 
 
-def batch_update_pbir_project(directory_path: str, csv_path: str):
+def batch_update_pbir_project(
+    directory_path: str, csv_path: str, dry_run: bool = False
+):
     """
     Perform a batch update on all components of a Power BI Enhanced Report Format (PBIR) project.
 
@@ -272,6 +284,8 @@ def batch_update_pbir_project(directory_path: str, csv_path: str):
             for file in files:
                 if file.endswith(".json"):
                     file_path = os.path.join(root, file)
-                    _update_pbir_component(file_path, table_map, column_map)
+                    _update_pbir_component(
+                        file_path, table_map, column_map, dry_run=dry_run
+                    )
     except Exception as e:
         print(f"An error occurred: {str(e)}")

@@ -135,6 +135,8 @@ def _trace_dependency_path(
         return
 
     for dependent in direct_dependents:
+        if dependent in current_path:
+            continue
         _trace_dependency_path(
             measures_dict, dependent, current_path + [dependent], dependency_paths
         )
@@ -232,7 +234,10 @@ def generate_measure_dependencies_report(
 
 
 def remove_measures(
-    report_path: str, measure_names: list = None, check_visual_usage: bool = True
+    report_path: str,
+    measure_names: list = None,
+    check_visual_usage: bool = True,
+    dry_run: bool = False,
 ) -> None:
     """
     Remove specified measures or all measures from a Power BI PBIX report,
@@ -249,6 +254,10 @@ def remove_measures(
         None
     """
     report_file, report_data = _load_report_extension_data(report_path)
+
+    if not report_data:
+        print("No report extensions found.")
+        return
 
     removed_measures = []
     entities_to_keep = []
@@ -291,11 +300,17 @@ def remove_measures(
     report_data["entities"] = entities_to_keep
 
     if entities_to_keep:
-        _write_json(report_file, report_data)
+        if not dry_run:
+            _write_json(report_file, report_data)
         if removed_measures:
-            print(f"Measures removed: {', '.join(removed_measures)}")
+            print(
+                f"Measures removed: {', '.join(removed_measures)}{' (Dry Run)' if dry_run else ''}"
+            )
         else:
             print("No measures were removed.")
     else:
-        os.remove(report_file)
-        print("All measures removed. The reportExtensions.json file has been deleted.")
+        if not dry_run:
+            os.remove(report_file)
+        print(
+            f"All measures removed. The reportExtensions.json file has been deleted.{' (Dry Run)' if dry_run else ''}"
+        )

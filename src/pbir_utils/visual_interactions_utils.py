@@ -1,4 +1,3 @@
-import json
 import os
 
 from .json_utils import _load_json, _write_json
@@ -115,6 +114,7 @@ def _process_page(
     target_types: list,
     update_type: str,
     interaction_type: str,
+    dry_run: bool = False,
 ):
     """
     Processes and updates visual interactions for a specific page.
@@ -147,7 +147,10 @@ def _process_page(
         interaction_type,
     )
     page_json["visualInteractions"] = updated_interactions
-    _write_json(page_json_path, page_json)
+    if not dry_run:
+        _write_json(page_json_path, page_json)
+    else:
+        print(f"Dry Run: Would update visual interactions in {page_json_path}")
 
 
 def _process_all_pages(
@@ -159,6 +162,7 @@ def _process_all_pages(
     target_types: list = None,
     update_type: str = "Upsert",
     interaction_type: str = "NoFilter",
+    dry_run: bool = False,
 ):
     """
     Processes all pages or specific pages based on provided parameters.
@@ -194,6 +198,7 @@ def _process_all_pages(
                             target_types,
                             update_type,
                             interaction_type,
+                            dry_run=dry_run,
                         )
 
 
@@ -205,6 +210,7 @@ def disable_visual_interactions(
     target_visual_ids: list = None,
     target_visual_types: list = None,
     update_type: str = "Upsert",
+    dry_run: bool = False,
 ) -> None:
     """
     Main function to disable visual interactions based on provided parameters.
@@ -242,4 +248,5 @@ def disable_visual_interactions(
         target_visual_types,
         update_type,
         interaction_type="NoFilter",
+        dry_run=dry_run,
     )
