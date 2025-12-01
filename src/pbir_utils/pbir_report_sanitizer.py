@@ -404,19 +404,43 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
         print("No empty or rogue page folders found.")
 
 
-def _get_hidden_visuals_info(report_path: str) -> tuple[dict, dict, dict, list]:
+def _get_hidden_visuals_info(
+    report_path: str,
+) -> tuple[dict, dict, dict, list, dict, set]:
     """Helper to find hidden visuals, groups, and their children."""
 
     def _find_hidden_visuals(visual_data: dict, file_path: str) -> tuple:
         visual_name = visual_data.get("name")
         folder = os.path.dirname(file_path)
+        visual_type = visual_data.get("visual", {}).get("visualType")
+
+        # Check for default selection in visual.objects.general
+        has_default_filters = False
+        general_objects = (
+            visual_data.get("visual", {}).get("objects", {}).get("general", [])
+        )
+        if isinstance(general_objects, list):
+            for item in general_objects:
+                if (
+                    isinstance(item, dict)
+                    and "properties" in item
+                    and "filter" in item["properties"]
+                ):
+                    has_default_filters = True
+                    break
 
         if visual_data.get("isHidden", False):
             if visual_data.get("visualGroup"):
-                return (visual_name, folder, "group")
-            return (visual_name, folder, "hidden")
+                return (visual_name, folder, "group", visual_type, has_default_filters)
+            return (visual_name, folder, "hidden", visual_type, has_default_filters)
         elif visual_data.get("parentGroupName"):
-            return (visual_name, folder, ("child", visual_data["parentGroupName"]))
+            return (
+                visual_name,
+                folder,
+                ("child", visual_data["parentGroupName"]),
+                visual_type,
+                has_default_filters,
+            )
         return None
 
     hidden_visuals_results = _process_or_check_json_files(
@@ -428,10 +452,16 @@ def _get_hidden_visuals_info(report_path: str) -> tuple[dict, dict, dict, list]:
     hidden_groups = {}
     group_children = {}
     hidden_visuals = {}
+    visual_types = {}
+    visuals_with_default_filters = set()
 
     for result in hidden_visuals_results:
         if result[1]:
-            visual_name, folder, info = result[1]
+            visual_name, folder, info, visual_type, has_default_filters = result[1]
+            visual_types[visual_name] = visual_type
+            if has_default_filters:
+                visuals_with_default_filters.add(visual_name)
+
             if info == "group":
                 hidden_groups[visual_name] = folder
             elif isinstance(info, tuple) and info[0] == "child":
@@ -442,7 +472,14 @@ def _get_hidden_visuals_info(report_path: str) -> tuple[dict, dict, dict, list]:
             elif info == "hidden":
                 hidden_visuals[visual_name] = folder
 
-    return hidden_groups, group_children, hidden_visuals, hidden_visuals_results
+    return (
+        hidden_groups,
+        group_children,
+        hidden_visuals,
+        hidden_visuals_results,
+        visual_types,
+        visuals_with_default_filters,
+    )
 
 
 def _get_shown_visuals_from_bookmarks(report_path: str) -> tuple[set, set]:
@@ -487,10 +524,42 @@ def _get_shown_visuals_from_bookmarks(report_path: str) -> tuple[set, set]:
     return shown_visuals, shown_groups
 
 
+def _get_visuals_filtered_by_bookmarks(report_path: str) -> set:
+    """Helper to identify visuals that have filters applied in bookmarks."""
+
+    def _check_bookmark_filters(bookmark_data: dict, _: str) -> set:
+        filtered_visuals = set()
+        for section in (
+            bookmark_data.get("explorationState", {}).get("sections", {}).values()
+        ):
+            for visual_name, container in section.get("visualContainers", {}).items():
+                # Check for filters in the container or singleVisual
+                if "filters" in container:
+                    filtered_visuals.add(visual_name)
+                elif (
+                    "singleVisual" in container
+                    and "filters" in container["singleVisual"]
+                ):
+                    filtered_visuals.add(visual_name)
+        return filtered_visuals
+
+    filtered_visuals = set()
+    for _, result in _process_or_check_json_files(
+        os.path.join(report_path, "definition", "bookmarks"),
+        ".bookmark.json",
+        _check_bookmark_filters,
+    ):
+        if result:
+            filtered_visuals.update(result)
+
+    return filtered_visuals
+
+
 def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -> None:
     """
     Remove hidden visuals that are never shown using bookmarks.
     Also removes hidden visual groups and their children.
+    Preserves hidden slicers if they have default selections or are filtered by bookmarks.
 
     Args:
         report_path (str): The path to the report.
@@ -503,10 +572,16 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
         f"Action: Removing hidden visuals that are never shown using bookmarks{' (Dry Run)' if dry_run else ''}"
     )
 
-    hidden_groups, group_children, hidden_visuals, hidden_visuals_results = (
-        _get_hidden_visuals_info(report_path)
-    )
+    (
+        hidden_groups,
+        group_children,
+        hidden_visuals,
+        hidden_visuals_results,
+        visual_types,
+        visuals_with_default_filters,
+    ) = _get_hidden_visuals_info(report_path)
     shown_visuals, shown_groups = _get_shown_visuals_from_bookmarks(report_path)
+    filtered_visuals = _get_visuals_filtered_by_bookmarks(report_path)
 
     # Determine visuals to remove
     visuals_to_remove = set()
@@ -521,6 +596,20 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
         if visual not in shown_visuals and not any(
             visual in group_children.get(group, set()) for group in shown_groups
         ):
+            visual_type = visual_types.get(visual)
+            if visual_type and "slicer" in visual_type.lower():
+                # Check if it has default filters or bookmark filters
+                if visual in visuals_with_default_filters:
+                    print(
+                        f"Skipping removal of hidden slicer: {visual} (type: {visual_type}) (has default selection)"
+                    )
+                    continue
+                if visual in filtered_visuals:
+                    print(
+                        f"Skipping removal of hidden slicer: {visual} (type: {visual_type}) (filtered by bookmark)"
+                    )
+                    continue
+
             visuals_to_remove.add(visual)
 
     # Remove the visuals
