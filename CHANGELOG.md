@@ -1,2 +1,3 @@
-### Fixed
-- Refined logic for removing hidden visuals to preserve slicers that have default selections or are filtered by bookmarks.
+### Improved
+- Enhanced the visual removal message in the `sanitize` command to display both the visual type and page name
+- General fixes and improvements
