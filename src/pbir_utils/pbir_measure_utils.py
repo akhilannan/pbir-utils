@@ -1,6 +1,6 @@
 import os
 
-from .json_utils import _load_json, _write_json
+from .common import load_json, write_json
 from .metadata_extractor import _extract_metadata_from_file
 
 
@@ -63,7 +63,7 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
     for root, _, files in os.walk(report_path):
         if "visual.json" in files:
             visual_file_path = os.path.join(root, "visual.json")
-            visual_data = _load_json(visual_file_path)
+            visual_data = load_json(visual_file_path)
             if any(
                 row["Column or Measure"] == measure_name
                 for row in _extract_metadata_from_file(visual_file_path)
@@ -173,7 +173,7 @@ def _load_report_extension_data(report_path: str) -> tuple:
         tuple: A tuple containing the report file path and the loaded report extension data as a dictionary.
     """
     report_file = os.path.join(report_path, "definition", "reportExtensions.json")
-    return report_file, _load_json(report_file)
+    return report_file, load_json(report_file)
 
 
 def generate_measure_dependencies_report(
@@ -301,7 +301,7 @@ def remove_measures(
 
     if entities_to_keep:
         if not dry_run:
-            _write_json(report_file, report_data)
+            write_json(report_file, report_data)
         if removed_measures:
             print(
                 f"Measures removed: {', '.join(removed_measures)}{' (Dry Run)' if dry_run else ''}"

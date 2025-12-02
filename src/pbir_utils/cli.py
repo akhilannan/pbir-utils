@@ -1,10 +1,10 @@
-import os
 import argparse
 import json
 import sys
 import textwrap
 from typing import List, Dict, Set, Optional
 
+from .common import resolve_report_path
 from .pbir_report_sanitizer import sanitize_powerbi_report, AVAILABLE_ACTIONS
 from .metadata_extractor import export_pbir_metadata_to_csv
 from .report_wireframe_visualizer import display_report_wireframes
@@ -12,28 +12,6 @@ from .pbir_processor import batch_update_pbir_project
 from .visual_interactions_utils import disable_visual_interactions
 from .pbir_measure_utils import remove_measures, generate_measure_dependencies_report
 from .filter_utils import update_report_filters, sort_report_filters
-
-
-def resolve_report_path(path_arg: Optional[str]) -> str:
-    """
-    Resolves the report path.
-    If path_arg is provided, returns it.
-    If not, checks if CWD is a report folder (ends with .Report).
-    If yes, returns CWD.
-    Otherwise, exits with error.
-    """
-    if path_arg:
-        return path_arg
-
-    cwd = os.getcwd()
-    if cwd.lower().endswith(".report"):
-        return cwd
-
-    print(
-        "Error: report_path not provided and current directory is not a .Report folder.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 
 
 def parse_filters(filters_str: str) -> Optional[Dict[str, Set[str]]]:

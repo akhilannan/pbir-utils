@@ -1,274 +1,255 @@
-import unittest
 import os
 import sys
 import json
-import shutil
-import tempfile
-from pathlib import Path
-
-# Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-
-from pbir_utils.metadata_extractor import _extract_metadata_from_file, _consolidate_metadata_from_directory, export_pbir_metadata_to_csv
+import pytest
+from pbir_utils.metadata_extractor import (
+    _consolidate_metadata_from_directory,
+    export_pbir_metadata_to_csv,
+)
 from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
 from pbir_utils.pbir_processor import batch_update_pbir_project
 
-class TestPBIRUtils(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Create a temporary directory for the test suite
-        cls.test_dir = tempfile.mkdtemp()
-        
-        # Define the synthetic report path
-        cls.report_name = "Mock.Report"
-        cls.report_path = os.path.join(cls.test_dir, cls.report_name)
-        cls.temp_report_path = os.path.join(cls.test_dir, "Temp_Mock.Report")
-        
-        # Create the synthetic report structure
-        cls._create_synthetic_report(cls.report_path)
-        
-        # Create a copy for destructive tests
-        shutil.copytree(cls.report_path, cls.temp_report_path)
+# Add src to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(cls.test_dir):
-            shutil.rmtree(cls.test_dir)
 
-    @classmethod
-    def _create_synthetic_report(cls, base_path):
-        """Creates a synthetic PBIP report structure."""
-        os.makedirs(base_path, exist_ok=True)
-        
-        # 1. definition/report.json
-        definition_dir = os.path.join(base_path, "definition")
-        os.makedirs(definition_dir, exist_ok=True)
-        
-        report_json = {
-            "name": "MockReport",
-            "publicCustomVisuals": ["customVisual1"],
-            "themeCollection": {"baseTheme": {"name": "CY24SU06"}},
-            "modelId": 12345
-        }
-        cls._write_json(os.path.join(definition_dir, "report.json"), report_json)
-        
-        # 2. definition/pages/pages.json
-        pages_dir = os.path.join(definition_dir, "pages")
-        os.makedirs(pages_dir, exist_ok=True)
-        
-        pages_json = {
-            "pageOrder": ["Page1", "Page2", "TooltipPage"],
-            "activePageName": "Page1"
-        }
-        cls._write_json(os.path.join(pages_dir, "pages.json"), pages_json)
-        
-        # 3. definition/pages/Page1 (Standard Page)
-        cls._create_page(pages_dir, "Page1", "Page 1", "ReportSection", "Visible", visuals=[
+def test_metadata_extraction(complex_report):
+    print(f"\nTesting Metadata Extraction on: {complex_report}")
+    metadata = _consolidate_metadata_from_directory(complex_report)
+
+    print(f"Metadata rows found: {len(metadata)}")
+    assert len(metadata) > 0, "No metadata extracted"
+
+    # Check for expected fields
+    first_row = metadata[0]
+    expected_fields = [
+        "Report",
+        "Page Name",
+        "Page ID",
+        "Table",
+        "Column or Measure",
+        "Expression",
+        "Used In",
+        "Used In Detail",
+        "ID",
+    ]
+    for field in expected_fields:
+        assert field in first_row
+
+
+def test_export_pbir_metadata_to_csv(complex_report, tmp_path):
+    print(f"\nTesting Metadata Export to CSV on: {complex_report}")
+    csv_output_path = tmp_path / "metadata.csv"
+    export_pbir_metadata_to_csv(complex_report, str(csv_output_path))
+
+    assert csv_output_path.exists(), "CSV file was not created"
+
+    with open(csv_output_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    assert len(lines) > 1, "CSV file is empty or only has header"
+    header = lines[0].strip().split(",")
+    expected_fields = [
+        "Report",
+        "Page Name",
+        "Page ID",
+        "Table",
+        "Column or Measure",
+        "Expression",
+        "Used In",
+        "Used In Detail",
+        "ID",
+    ]
+    assert header == expected_fields
+
+
+def test_sanitization_remove_unused_measures(complex_report):
+    print("\nTesting Sanitization: Remove Unused Measures...")
+    # complex_report has "UnusedMeasure"
+    sanitize_powerbi_report(complex_report, ["remove_unused_measures"])
+
+    # Verify UnusedMeasure is gone
+    ext_path = os.path.join(complex_report, "definition", "reportExtensions.json")
+    with open(ext_path, "r") as f:
+        data = json.load(f)
+    measures = data["entities"][0]["measures"]
+    measure_names = [m["name"] for m in measures]
+    assert "Measure1" in measure_names
+    assert "UnusedMeasure" not in measure_names
+
+
+def test_sanitization_remove_unused_bookmarks(complex_report):
+    print("\nTesting Sanitization: Remove Unused Bookmarks...")
+    # complex_report has Bookmark1 which is valid.
+    # Let's add an invalid bookmark to test removal.
+    bookmarks_dir = os.path.join(complex_report, "definition", "bookmarks")
+
+    # Add invalid bookmark (referencing non-existent page)
+    invalid_bookmark = {
+        "name": "InvalidBookmark",
+        "explorationState": {"activeSection": "NonExistentPage"},
+    }
+    with open(os.path.join(bookmarks_dir, "InvalidBookmark.bookmark.json"), "w") as f:
+        json.dump(invalid_bookmark, f)
+
+    # Update bookmarks.json
+    with open(os.path.join(bookmarks_dir, "bookmarks.json"), "r+") as f:
+        data = json.load(f)
+        data["items"].append({"name": "InvalidBookmark"})
+        f.seek(0)
+        json.dump(data, f)
+        f.truncate()
+
+    sanitize_powerbi_report(
+        complex_report, ["cleanup_invalid_bookmarks"]
+    )  # Using cleanup_invalid_bookmarks as per original test logic for invalid refs
+
+    # Verify InvalidBookmark is gone
+    assert not os.path.exists(
+        os.path.join(bookmarks_dir, "InvalidBookmark.bookmark.json")
+    )
+    # Verify Bookmark1 is still there
+    assert os.path.exists(os.path.join(bookmarks_dir, "Bookmark1.bookmark.json"))
+
+
+def test_batch_update(complex_report, tmp_path):
+    print("\nTesting Batch Update...")
+    # Create a dummy mapping CSV
+    csv_path = tmp_path / "mapping.csv"
+    with open(csv_path, "w", newline="") as f:
+        f.write("old_tbl,old_col,new_tbl,new_col\n")
+        f.write("Table1,Column1,NewTable,NewColumn\n")
+
+    definition_folder = os.path.join(complex_report, "definition")
+    batch_update_pbir_project(definition_folder, str(csv_path))
+
+    # Verify update
+    # Check reportExtensions.json for measure expression update
+    ext_path = os.path.join(definition_folder, "reportExtensions.json")
+    with open(ext_path, "r") as f:
+        data = json.load(f)
+    measure_expr = data["entities"][0]["measures"][0]["expression"]
+    # Original: SUM(Table1[Column1])
+    # Expected: SUM('NewTable'[NewColumn]) or similar depending on quoting logic
+    assert "NewTable" in measure_expr
+    assert "NewColumn" in measure_expr
+
+
+def test_sanitization_remove_unused_custom_visuals(complex_report):
+    print("\nTesting Sanitization: Remove Unused Custom Visuals...")
+    # complex_report has customVisual1 in report.json, and Visual1 is columnChart (standard).
+    sanitize_powerbi_report(complex_report, ["remove_unused_custom_visuals"])
+
+    report_json_path = os.path.join(complex_report, "definition", "report.json")
+    with open(report_json_path, "r") as f:
+        data = json.load(f)
+    assert "customVisual1" not in data.get("publicCustomVisuals", [])
+
+
+def test_sanitization_disable_show_items_with_no_data(complex_report):
+    print("\nTesting Sanitization: Disable Show Items With No Data...")
+    # Add showAll: True to Visual1
+    visual_path = os.path.join(
+        complex_report,
+        "definition",
+        "pages",
+        "Page1",
+        "visuals",
+        "Visual1",
+        "visual.json",
+    )
+    with open(visual_path, "r+") as f:
+        data = json.load(f)
+        # Inject showAll property
+        if "objects" not in data["visual"]:
+            data["visual"]["objects"] = {}
+        data["visual"]["objects"]["general"] = [{"properties": {"showAll": True}}]
+        f.seek(0)
+        json.dump(data, f)
+        f.truncate()
+
+    sanitize_powerbi_report(complex_report, ["disable_show_items_with_no_data"])
+
+    with open(visual_path, "r") as f:
+        data = json.load(f)
+    # Check if showAll is removed or set to False (implementation removes it usually)
+    props = data["visual"]["objects"]["general"][0]["properties"]
+    assert "showAll" not in props
+
+
+def test_sanitization_hide_tooltip_drillthrough_pages(complex_report):
+    print("\nTesting Sanitization: Hide Tooltip Drillthrough Pages...")
+    # complex_report Page2 is Tooltip but already HiddenInViewMode.
+    # Let's set it to Visible to test the sanitizer.
+    page2_path = os.path.join(
+        complex_report, "definition", "pages", "Page2", "page.json"
+    )
+    with open(page2_path, "r+") as f:
+        data = json.load(f)
+        data["visibility"] = "Visible"
+        f.seek(0)
+        json.dump(data, f)
+        f.truncate()
+
+    sanitize_powerbi_report(complex_report, ["hide_tooltip_drillthrough_pages"])
+
+    with open(page2_path, "r") as f:
+        data = json.load(f)
+    assert data["visibility"] == "HiddenInViewMode"
+
+
+def test_sanitization_remove_empty_pages(complex_report):
+    print("\nTesting Sanitization: Remove Empty Pages...")
+    # complex_report Page2 is empty but it is a Tooltip page, so it might be preserved depending on logic.
+    # Let's create a standard empty page.
+    pages_dir = os.path.join(complex_report, "definition", "pages")
+    empty_page_dir = os.path.join(pages_dir, "EmptyPage")
+    os.makedirs(empty_page_dir, exist_ok=True)
+    os.makedirs(os.path.join(empty_page_dir, "visuals"), exist_ok=True)
+
+    with open(os.path.join(empty_page_dir, "page.json"), "w") as f:
+        json.dump(
             {
-                "name": "visual1",
-                "visual": {
-                    "visualType": "columnChart",
-                    "objects": {
-                        "general": [{"properties": {"showAll": True}}] # For disable_show_items_with_no_data
-                    },
-                    "query": {
-                        "Category": {
-                            "Entity": "Sales",
-                            "Property": "Amount"
-                        }
-                    }
-                }
+                "name": "EmptyPage",
+                "displayName": "Empty Page",
+                "pageBinding": {"type": "ReportSection"},
             },
+            f,
+        )
+
+    # Update pages.json
+    pages_json_path = os.path.join(pages_dir, "pages.json")
+    with open(pages_json_path, "r+") as f:
+        data = json.load(f)
+        data["pageOrder"].append("EmptyPage")
+        f.seek(0)
+        json.dump(data, f)
+        f.truncate()
+
+    sanitize_powerbi_report(complex_report, ["remove_empty_pages"])
+
+    assert not os.path.exists(empty_page_dir)
+
+
+def test_sanitization_remove_hidden_visuals_never_shown(complex_report):
+    print("\nTesting Sanitization: Remove Hidden Visuals Never Shown...")
+    # Create a hidden visual in Page1 that is NOT used in bookmarks or interactions
+    visuals_dir = os.path.join(
+        complex_report, "definition", "pages", "Page1", "visuals"
+    )
+    hidden_visual_dir = os.path.join(visuals_dir, "HiddenVisual")
+    os.makedirs(hidden_visual_dir, exist_ok=True)
+
+    with open(os.path.join(hidden_visual_dir, "visual.json"), "w") as f:
+        json.dump(
             {
-                "name": "visual2",
-                "isHidden": True, # For remove_hidden_visuals_never_shown (needs bookmark check)
-                "visual": {
-                    "visualType": "card"
-                }
-            }
-        ])
-        
-        # 4. definition/pages/Page2 (Empty Page)
-        cls._create_page(pages_dir, "Page2", "Page 2", "ReportSection", "Visible", visuals=[])
-        
-        # 5. definition/pages/TooltipPage (Tooltip)
-        cls._create_page(pages_dir, "TooltipPage", "Tooltip Page", "Tooltip", "Visible", visuals=[])
+                "name": "HiddenVisual",
+                "isHidden": True,
+                "visual": {"visualType": "card"},
+            },
+            f,
+        )
 
-        # 6. definition/bookmarks/bookmarks.json
-        bookmarks_dir = os.path.join(definition_dir, "bookmarks")
-        os.makedirs(bookmarks_dir, exist_ok=True)
-        
-        bookmarks_json = {
-            "items": [{"name": "Bookmark1"}, {"name": "Bookmark2"}]
-        }
-        cls._write_json(os.path.join(bookmarks_dir, "bookmarks.json"), bookmarks_json)
-        
-        # 7. definition/bookmarks/Bookmark1.bookmark.json (Valid)
-        bookmark1 = {
-            "name": "Bookmark1",
-            "displayName": "Valid Bookmark",
-            "explorationState": {
-                "activeSection": "Page1",
-                "sections": {
-                    "Page1": {
-                        "visualContainers": {
-                            "visual2": {"singleVisual": {"display": {"mode": "Visible"}}} # References hidden visual
-                        }
-                    }
-                }
-            }
-        }
-        cls._write_json(os.path.join(bookmarks_dir, "Bookmark1.bookmark.json"), bookmark1)
+    sanitize_powerbi_report(complex_report, ["remove_hidden_visuals_never_shown"])
 
-        # 8. definition/bookmarks/Bookmark2.bookmark.json (Invalid - references non-existent page)
-        bookmark2 = {
-            "name": "Bookmark2",
-            "displayName": "Invalid Bookmark",
-            "explorationState": {
-                "activeSection": "NonExistentPage"
-            }
-        }
-        cls._write_json(os.path.join(bookmarks_dir, "Bookmark2.bookmark.json"), bookmark2)
-
-    @classmethod
-    def _create_page(cls, pages_dir, page_name, display_name, page_type, visibility, visuals=[]):
-        page_dir = os.path.join(pages_dir, page_name)
-        os.makedirs(page_dir, exist_ok=True)
-        
-        page_json = {
-            "name": page_name,
-            "displayName": display_name,
-            "pageBinding": {"type": page_type},
-            "visibility": visibility
-        }
-        cls._write_json(os.path.join(page_dir, "page.json"), page_json)
-        
-        visuals_dir = os.path.join(page_dir, "visuals")
-        if visuals:
-            os.makedirs(visuals_dir, exist_ok=True)
-            for i, visual in enumerate(visuals):
-                v_name = visual.get("name", f"visual{i}")
-                # Create individual visual file (PBIR structure usually has one file per visual or folder)
-                # Assuming folder structure: visuals/visualName/visual.json
-                v_folder = os.path.join(visuals_dir, v_name)
-                os.makedirs(v_folder, exist_ok=True)
-                cls._write_json(os.path.join(v_folder, "visual.json"), visual)
-
-    @classmethod
-    def _write_json(cls, path, content):
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(content, f, indent=4)
-
-    def test_metadata_extraction(self):
-        print(f"\nTesting Metadata Extraction on: {self.report_path}")
-        metadata = _consolidate_metadata_from_directory(self.report_path)
-        
-        print(f"Metadata rows found: {len(metadata)}")
-        self.assertTrue(len(metadata) > 0, "No metadata extracted")
-        
-        # Check for expected fields
-        first_row = metadata[0]
-        expected_fields = [
-            "Report", "Page Name", "Page ID", "Table", 
-            "Column or Measure", "Expression", "Used In", 
-            "Used In Detail", "ID"
-        ]
-        for field in expected_fields:
-            self.assertIn(field, first_row)
-            
-        print(f"Extracted {len(metadata)} metadata rows.")
-
-    def test_export_pbir_metadata_to_csv(self):
-        print(f"\nTesting Metadata Export to CSV on: {self.report_path}")
-        csv_output_path = os.path.join(self.test_dir, "metadata.csv")
-        export_pbir_metadata_to_csv(self.test_dir, csv_output_path)
-        
-        self.assertTrue(os.path.exists(csv_output_path), "CSV file was not created")
-        
-        with open(csv_output_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            
-        self.assertTrue(len(lines) > 1, "CSV file is empty or only has header")
-        header = lines[0].strip().split(',')
-        expected_fields = [
-            "Report", "Page Name", "Page ID", "Table", 
-            "Column or Measure", "Expression", "Used In", 
-            "Used In Detail", "ID"
-        ]
-        self.assertEqual(header, expected_fields)
-        print(f"Exported metadata to {csv_output_path}")
-
-    def test_sanitization_remove_unused_measures(self):
-        print("\nTesting Sanitization: Remove Unused Measures...")
-        sanitize_powerbi_report(self.temp_report_path, ["remove_unused_measures"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_sanitization_remove_unused_bookmarks(self):
-        print("\nTesting Sanitization: Remove Unused Bookmarks...")
-        sanitize_powerbi_report(self.temp_report_path, ["remove_unused_bookmarks"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_batch_update(self):
-        print("\nTesting Batch Update...")
-        # Create a dummy mapping CSV
-        csv_path = os.path.join(self.test_dir, 'mapping.csv')
-        with open(csv_path, 'w', newline='') as f:
-            f.write("old_tbl,old_col,new_tbl,new_col\n")
-            f.write("Date,Month,DateTable,MonthName\n")
-        
-        definition_folder = os.path.join(self.temp_report_path, 'definition')
-        batch_update_pbir_project(definition_folder, csv_path)
-        
-        print("Batch update executed.")
-
-    def test_sanitization_remove_unused_custom_visuals(self):
-        print("\nTesting Sanitization: Remove Unused Custom Visuals...")
-        sanitize_powerbi_report(self.temp_report_path, ["remove_unused_custom_visuals"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_sanitization_disable_show_items_with_no_data(self):
-        print("\nTesting Sanitization: Disable Show Items With No Data...")
-        sanitize_powerbi_report(self.temp_report_path, ["disable_show_items_with_no_data"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_sanitization_hide_tooltip_drillthrough_pages(self):
-        print("\nTesting Sanitization: Hide Tooltip Drillthrough Pages...")
-        sanitize_powerbi_report(self.temp_report_path, ["hide_tooltip_drillthrough_pages"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-        
-        # Verify TooltipPage is hidden
-        tooltip_page_json = os.path.join(self.temp_report_path, "definition", "pages", "TooltipPage", "page.json")
-        with open(tooltip_page_json, 'r') as f:
-            data = json.load(f)
-        self.assertEqual(data["visibility"], "HiddenInViewMode")
-
-    def test_sanitization_set_first_page_as_active(self):
-        print("\nTesting Sanitization: Set First Page As Active...")
-        sanitize_powerbi_report(self.temp_report_path, ["set_first_page_as_active"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_sanitization_remove_empty_pages(self):
-        print("\nTesting Sanitization: Remove Empty Pages...")
-        sanitize_powerbi_report(self.temp_report_path, ["remove_empty_pages"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-        
-        # Verify Page2 (empty) is removed
-        page2_path = os.path.join(self.temp_report_path, "definition", "pages", "Page2")
-        self.assertFalse(os.path.exists(page2_path))
-
-    def test_sanitization_remove_hidden_visuals_never_shown(self):
-        print("\nTesting Sanitization: Remove Hidden Visuals Never Shown...")
-        sanitize_powerbi_report(self.temp_report_path, ["remove_hidden_visuals_never_shown"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-
-    def test_sanitization_cleanup_invalid_bookmarks(self):
-        print("\nTesting Sanitization: Cleanup Invalid Bookmarks...")
-        sanitize_powerbi_report(self.temp_report_path, ["cleanup_invalid_bookmarks"])
-        self.assertTrue(os.path.exists(self.temp_report_path))
-        
-        # Verify Bookmark2 (invalid) is removed
-        bookmark2_path = os.path.join(self.temp_report_path, "definition", "bookmarks", "Bookmark2.bookmark.json")
-        self.assertFalse(os.path.exists(bookmark2_path))
-
-if __name__ == '__main__':
-    unittest.main()
+    assert not os.path.exists(hidden_visual_dir)

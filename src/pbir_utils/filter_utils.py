@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from .json_utils import _load_json, _write_json
+from .common import load_json, write_json, get_report_paths
 
 
 def _format_date(date_str: str) -> str:
@@ -276,33 +276,6 @@ def _validate_filters(filters: list[dict]) -> tuple[list, list]:
     return valid_filters, ignored_filters
 
 
-def _get_report_paths(directory_path: str, reports: list = None) -> list:
-    """
-    Retrieves the paths to the report JSON files in the specified root folder.
-
-    Parameters:
-    directory_path (str): Root folder containing reports.
-    reports (list, optional): List of reports to update. Defaults to None.
-
-    Returns:
-    list: List of paths to report JSON files.
-    """
-    reports = reports or [
-        d for d in os.listdir(directory_path) if d.endswith(".Report")
-    ]
-    reports = [f"{r}.Report" if not r.endswith(".Report") else r for r in reports]
-
-    report_paths = []
-    for report in reports:
-        report_path = os.path.join(directory_path, report, "definition", "report.json")
-        if os.path.exists(report_path):
-            report_paths.append(report_path)
-        else:
-            print(f"Report file not found: {report_path}")
-
-    return report_paths
-
-
 def update_report_filters(
     directory_path: str, filters: list, reports: list = None, dry_run: bool = False
 ):
@@ -324,10 +297,10 @@ def update_report_filters(
     for filter_config, reason in ignored_filters:
         print(f"Ignored filter: {filter_config} - Reason: {reason}")
 
-    report_paths = _get_report_paths(directory_path, reports)
+    report_paths = get_report_paths(directory_path, reports)
 
     for report_path in report_paths:
-        data = _load_json(report_path)
+        data = load_json(report_path)
         if (
             not data
             or "filterConfig" not in data
@@ -398,7 +371,7 @@ def update_report_filters(
 
         if updated:
             if not dry_run:
-                _write_json(report_path, data)
+                write_json(report_path, data)
             print(
                 f"Updated filters in report: {os.path.basename(report_path)}{' (Dry Run)' if dry_run else ''}"
             )
@@ -431,10 +404,10 @@ def sort_report_filters(
     Returns:
     None
     """
-    report_paths = _get_report_paths(directory_path, reports)
+    report_paths = get_report_paths(directory_path, reports)
 
     for report_path in report_paths:
-        data = _load_json(report_path)
+        data = load_json(report_path)
         if (
             not data
             or "filterConfig" not in data
@@ -499,7 +472,7 @@ def sort_report_filters(
             continue
 
         if not dry_run:
-            _write_json(report_path, data)
+            write_json(report_path, data)
         print(
             f"Sorted filters in report: {report_path}{' (Dry Run)' if dry_run else ''}"
         )

@@ -2,7 +2,7 @@ import os
 import csv
 import fnmatch
 
-from .json_utils import _load_json
+from .common import load_json, traverse_pbir_json
 
 HEADER_FIELDS = [
     "Report",
@@ -50,7 +50,7 @@ def _extract_active_section(bookmark_json_path: str) -> str:
     # Check if the path is related to bookmarks
     if "bookmarks" in bookmark_json_path:
         return (
-            _load_json(bookmark_json_path)
+            load_json(bookmark_json_path)
             .get("explorationState", {})
             .get("activeSection", "")
         )
@@ -81,7 +81,7 @@ def _extract_page_info(json_path: str) -> tuple:
     if not active_section:
         return "NA", "NA"
 
-    page_data = _load_json(
+    page_data = load_json(
         os.path.join(
             json_path.split("definition")[0],
             "definition",
@@ -105,102 +105,8 @@ def _get_page_order(report_path: str) -> list:
         list: List of page IDs in the correct order.
     """
     pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
-    pages_data = _load_json(pages_json_path)
-    return pages_data["pageOrder"]
-
-
-def _traverse_pbir_json_structure(
-    data: dict | list, usage_context: str = None, usage_detail: str = None
-) -> object:
-    """
-    Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
-
-    This function navigates through the complex PBIR JSON structure, identifying and extracting
-    key metadata elements such as entities, properties, visuals, filters, bookmarks, and measures.
-
-    Args:
-        data (dict or list): The PBIR JSON data to traverse.
-        usage_context (str, optional): The current context within the PBIR structure (e.g., visual type, filter, bookmark, etc)
-        usage_detail (str, optional): The detailed context inside a usage_context (e.g., tooltip, legend, Category, etc.)
-
-    Yields:
-        tuple: Extracted metadata in the form of (table, column, used_in, expression, used_in_detail).
-               - table: The name of the table (if applicable)
-               - column: The name of the column or measure
-               - used_in: The broader context in which the element is used (e.g., visual type, filter, bookmark)
-               - expression: The DAX expression for measures (if applicable)
-               - used_in_detail: The specific setting where "Entity" and "Property" appear within the context
-    """
-    if isinstance(data, dict):
-        for key, value in data.items():
-            new_usage_detail = usage_detail or usage_context
-            if key == "Entity":
-                yield (value, None, usage_context, None, usage_detail)
-            elif key == "Property":
-                yield (None, value, usage_context, None, usage_detail)
-            elif key in [
-                "backColor",
-                "Category",
-                "categoryAxis",
-                "Data",
-                "dataPoint",
-                "error",
-                "fontColor",
-                "icon",
-                "labels",
-                "legend",
-                "Series",
-                "singleVisual",
-                "Size",
-                "sort",
-                "Tooltips",
-                "valueAxis",
-                "Values",
-                "webURL",
-                "X",
-                "Y",
-                "Y2",
-            ]:
-                yield from _traverse_pbir_json_structure(value, usage_context, key)
-            elif key in ["filters", "filter", "parameters"]:
-                yield from _traverse_pbir_json_structure(value, usage_context, "filter")
-            elif key == "visual":
-                visual_type = "visual"
-                if isinstance(value, dict):
-                    visual_type = value.get("visualType", "visual")
-                yield from _traverse_pbir_json_structure(
-                    value, visual_type, new_usage_detail
-                )
-            elif key == "pageBinding":
-                yield from _traverse_pbir_json_structure(
-                    value, value.get("type", "Drillthrough"), new_usage_detail
-                )
-            elif key == "filterConfig":
-                yield from _traverse_pbir_json_structure(
-                    value, "Filters", new_usage_detail
-                )
-            elif key == "explorationState":
-                yield from _traverse_pbir_json_structure(
-                    value, "Bookmarks", new_usage_detail
-                )
-            elif key == "entities":
-                for entity in value:
-                    table_name = entity.get("name")
-                    for measure in entity.get("measures", []):
-                        yield (
-                            table_name,
-                            measure.get("name"),
-                            usage_context,
-                            measure.get("expression", None),
-                            new_usage_detail,
-                        )
-            else:
-                yield from _traverse_pbir_json_structure(
-                    value, usage_context, new_usage_detail
-                )
-    elif isinstance(data, list):
-        for item in data:
-            yield from _traverse_pbir_json_structure(item, usage_context, usage_detail)
+    pages_data = load_json(pages_json_path)
+    return pages_data.get("pageOrder", [])
 
 
 def _apply_filters(row: dict, filters: dict) -> bool:
@@ -242,7 +148,7 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
         return []  # Skip this file if page doesn't match the filter
 
     # If we've passed the initial filter checks, proceed with loading and processing the JSON
-    data = _load_json(json_file_path)
+    data = load_json(json_file_path)
     id = data.get("name", None)
     all_rows = []
 
@@ -254,7 +160,7 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
             used_in,
             expression,
             used_in_detail,
-        ) in _traverse_pbir_json_structure(data):
+        ) in traverse_pbir_json(data):
             row = dict(
                 zip(
                     HEADER_FIELDS,
@@ -391,10 +297,19 @@ def export_pbir_metadata_to_csv(
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
     # Extract report paths to gather the page order
-    report_paths = {
-        row["Report"]: os.path.join(directory_path, row["Report"] + ".Report")
-        for row in metadata
-    }
+    report_paths = {}
+    for row in metadata:
+        report_name = row["Report"]
+        # Check if the directory_path itself is the report folder
+        if (
+            os.path.basename(os.path.normpath(directory_path))
+            == f"{report_name}.Report"
+        ):
+            report_paths[report_name] = directory_path
+        else:
+            report_paths[report_name] = os.path.join(
+                directory_path, report_name + ".Report"
+            )
 
     # Get page orders for each report
     report_page_orders = {

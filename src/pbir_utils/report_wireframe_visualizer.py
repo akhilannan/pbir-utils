@@ -3,7 +3,7 @@ import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objects as go
 
-from .json_utils import _load_json
+from .common import load_json
 from .metadata_extractor import _get_page_order
 
 
@@ -25,7 +25,7 @@ def _extract_page_info(page_folder: str) -> tuple:
     if not os.path.exists(page_json_path):
         raise FileNotFoundError(f"{page_json_path} does not exist")
 
-    page_data = _load_json(page_json_path)
+    page_data = load_json(page_json_path)
 
     return (
         page_data["name"],
@@ -52,7 +52,7 @@ def _extract_visual_info(visuals_folder: str) -> dict:
         if not os.path.exists(visual_json_path):
             continue
 
-        visual_data = _load_json(visual_json_path)
+        visual_data = load_json(visual_json_path)
         position = visual_data["position"]
 
         visuals[visual_id] = (

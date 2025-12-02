@@ -1,68 +1,7 @@
 from .pbir_measure_utils import remove_measures
-from .json_utils import _load_json, _write_json
+from .common import load_json, write_json, process_json_files
 import os
 import shutil
-
-
-def _walk_json_files(directory: str, file_pattern: str):
-    """
-    Walk through JSON files in a directory matching a specific pattern.
-
-    Args:
-        directory (str): The directory to search in.
-        file_pattern (str): The file pattern to match.
-
-    Yields:
-        str: The full path of each matching file.
-    """
-    # Validate directory path to prevent traversal
-    directory = os.path.abspath(directory)
-    if not os.path.isdir(directory):
-        return
-
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if file.endswith(file_pattern):
-                file_path = os.path.join(root, file)
-                # Ensure the file path is within the intended directory
-                if (
-                    os.path.commonpath([directory, os.path.abspath(file_path)])
-                    == directory
-                ):
-                    yield file_path
-
-
-def _process_or_check_json_files(
-    directory: str,
-    file_pattern: str,
-    func: callable,
-    process: bool = False,
-    dry_run: bool = False,
-) -> list:
-    """
-    Process or check JSON files in a directory.
-
-    Args:
-        directory (str): The directory to search in.
-        file_pattern (str): The file pattern to match.
-        func (callable): The function to apply to each file's data.
-        process (bool): Whether to process the files or just check.
-
-    Returns:
-        list: A list of results or the count of modified files.
-    """
-    results = []
-    modified_count = 0
-    for file_path in _walk_json_files(directory, file_pattern):
-        data = _load_json(file_path)
-        result = func(data, file_path)
-        if process and result:
-            if not dry_run:
-                _write_json(file_path, data)
-            modified_count += 1
-        elif not process and result:
-            results.append((file_path, result))
-    return modified_count if process else results
 
 
 def remove_unused_measures(report_path: str, dry_run: bool = False) -> None:
@@ -98,7 +37,7 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
         print("No bookmarks found.")
         return
 
-    bookmarks_data = _load_json(bookmarks_json_path)
+    bookmarks_data = load_json(bookmarks_json_path)
 
     def _is_bookmark_used(bookmark_name: str) -> bool:
         """
@@ -141,7 +80,7 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
 
         return any(
             result[1]
-            for result in _process_or_check_json_files(
+            for result in process_json_files(
                 os.path.join(report_path, "definition", "pages"),
                 "visual.json",
                 _check_visual,
@@ -173,7 +112,7 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
     removed_bookmarks = 0
     for filename in os.listdir(bookmarks_dir):
         if filename.endswith(".bookmark.json"):
-            bookmark_file_data = _load_json(os.path.join(bookmarks_dir, filename))
+            bookmark_file_data = load_json(os.path.join(bookmarks_dir, filename))
             if (
                 bookmark_file_data.get("name") not in used_bookmarks
             ):  # remove bookmark file if not used
@@ -183,7 +122,7 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
                 print(f"Removed unused bookmark file: {filename}")
 
     if not dry_run:
-        _write_json(bookmarks_json_path, bookmarks_data)
+        write_json(bookmarks_json_path, bookmarks_data)
 
     if not bookmarks_data["items"]:  # if no bookmarks left, remove the directory
         if not dry_run:
@@ -206,7 +145,7 @@ def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> Non
     print(f"Action: Removing unused custom visuals{' (Dry Run)' if dry_run else ''}")
 
     report_json_path = os.path.join(report_path, "definition", "report.json")
-    report_data = _load_json(report_json_path)
+    report_data = load_json(report_json_path)
 
     custom_visuals = set(report_data.get("publicCustomVisuals", []))
     if not custom_visuals:
@@ -219,7 +158,7 @@ def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> Non
 
     used_visuals = set(
         result[1]
-        for result in _process_or_check_json_files(
+        for result in process_json_files(
             directory=os.path.join(report_path, "definition", "pages"),
             file_pattern="visual.json",
             func=_check_visual,
@@ -228,13 +167,12 @@ def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> Non
 
     unused_visuals = custom_visuals - used_visuals
     if unused_visuals:
-        report_data["publicCustomVisuals"] = (
-            list(used_visuals)
-            if used_visuals
-            else report_data.pop("publicCustomVisuals", None)
-        )
+        if used_visuals:
+            report_data["publicCustomVisuals"] = list(used_visuals)
+        else:
+            report_data.pop("publicCustomVisuals", None)
         if not dry_run:
-            _write_json(report_json_path, report_data)
+            write_json(report_json_path, report_data)
         print(f"Removed unused custom visuals: {', '.join(unused_visuals)}")
     else:
         print("No unused custom visuals found.")
@@ -264,7 +202,7 @@ def disable_show_items_with_no_data(report_path: str, dry_run: bool = False) -> 
             return any(_remove_show_all(item, _) for item in data)
         return False
 
-    visuals_modified = _process_or_check_json_files(
+    visuals_modified = process_json_files(
         os.path.join(report_path, "definition", "pages"),
         "visual.json",
         _remove_show_all,
@@ -301,15 +239,15 @@ def hide_tooltip_drillthrough_pages(report_path: str, dry_run: bool = False) -> 
             return page_data.get("displayName", "Unnamed Page")
         return None
 
-    results = _process_or_check_json_files(
+    results = process_json_files(
         os.path.join(report_path, "definition", "pages"), "page.json", _check_page
     )
 
     for file_path, page_name in results:
-        page_data = _load_json(file_path)
+        page_data = load_json(file_path)
         page_data["visibility"] = "HiddenInViewMode"
         if not dry_run:
-            _write_json(file_path, page_data)
+            write_json(file_path, page_data)
         print(f"Hidden page: {page_name}")
 
     if results:
@@ -331,7 +269,7 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     print(f"Action: Setting the first page as active{' (Dry Run)' if dry_run else ''}")
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_json_path = os.path.join(pages_dir, "pages.json")
-    pages_data = _load_json(pages_json_path)
+    pages_data = load_json(pages_json_path)
 
     page_order = pages_data["pageOrder"]
     current_active_page = pages_data.get("activePageName")
@@ -339,7 +277,7 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     if page_order[0] != current_active_page:
         pages_data["activePageName"] = page_order[0]
         if not dry_run:
-            _write_json(pages_json_path, pages_data)
+            write_json(pages_json_path, pages_data)
         print(f"Set '{page_order[0]}' as the active page.")
     else:
         print("No changes needed. The first page is already set as active.")
@@ -360,7 +298,7 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
     )
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_json_path = os.path.join(pages_dir, "pages.json")
-    pages_data = _load_json(pages_json_path)
+    pages_data = load_json(pages_json_path)
 
     page_order = pages_data.get("pageOrder", [])
     active_page_name = pages_data.get("activePageName")
@@ -386,7 +324,7 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
         print("All pages were empty. Keeping the first page as a placeholder.")
 
     if not dry_run:
-        _write_json(pages_json_path, pages_data)
+        write_json(pages_json_path, pages_data)
 
     existing_folders = set(os.listdir(pages_dir)) - {"pages.json"}
     folders_to_keep = set(pages_data["pageOrder"])
@@ -443,7 +381,7 @@ def _get_hidden_visuals_info(
             )
         return None
 
-    hidden_visuals_results = _process_or_check_json_files(
+    hidden_visuals_results = process_json_files(
         os.path.join(report_path, "definition", "pages"),
         "visual.json",
         _find_hidden_visuals,
@@ -511,7 +449,7 @@ def _get_shown_visuals_from_bookmarks(report_path: str) -> tuple[set, set]:
 
     shown_visuals = set()
     shown_groups = set()
-    for _, result in _process_or_check_json_files(
+    for _, result in process_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
         _check_bookmark,
@@ -544,7 +482,7 @@ def _get_visuals_filtered_by_bookmarks(report_path: str) -> set:
         return filtered_visuals
 
     filtered_visuals = set()
-    for _, result in _process_or_check_json_files(
+    for _, result in process_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
         _check_bookmark_filters,
@@ -632,7 +570,7 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
                 os.path.dirname(os.path.dirname(folder)), "page.json"
             )
             if os.path.exists(page_json_path):
-                page_data = _load_json(page_json_path)
+                page_data = load_json(page_json_path)
                 visual_interactions = page_data.get("visualInteractions", [])
                 new_interactions = []
                 for interaction in visual_interactions:
@@ -644,7 +582,7 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
                 if len(new_interactions) != len(visual_interactions):
                     page_data["visualInteractions"] = new_interactions
                     if not dry_run:
-                        _write_json(page_json_path, page_data)
+                        write_json(page_json_path, page_data)
                     print(
                         f"Removed visual interactions for {visual_name} from {page_json_path}"
                     )
@@ -653,17 +591,19 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
                 shutil.rmtree(folder)
             visual_type = "group" if visual_name in hidden_groups else "visual"
             visual_type = visual_types.get(visual_name, "unknown")
-            
+
             # Get page name
             page_name = "Unknown Page"
             if folder:
                 page_dir = os.path.dirname(os.path.dirname(folder))
                 page_json_path = os.path.join(page_dir, "page.json")
                 if os.path.exists(page_json_path):
-                    page_data = _load_json(page_json_path)
+                    page_data = load_json(page_json_path)
                     page_name = page_data.get("displayName", "Unknown Page")
 
-            print(f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}")
+            print(
+                f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
+            )
 
     # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
@@ -680,7 +620,7 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
         return updated
 
     # Update bookmarks to remove references to removed visuals
-    bookmarks_updated = _process_or_check_json_files(
+    bookmarks_updated = process_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
         _update_bookmark,
@@ -713,7 +653,7 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
 
     # Load pages.json to get valid page names
     pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
-    pages_data = _load_json(pages_json_path)
+    pages_data = load_json(pages_json_path)
     valid_pages = set(pages_data.get("pageOrder", []))
 
     # Track bookmarks to remove globally
@@ -745,7 +685,7 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
             # Get valid visuals for this page
             valid_visuals = {
                 result[1]
-                for result in _process_or_check_json_files(
+                for result in process_json_files(
                     os.path.join(
                         report_path, "definition", "pages", section_name, "visuals"
                     ),
@@ -782,7 +722,7 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
         return was_modified
 
     # Process all bookmark files
-    _process_or_check_json_files(
+    process_json_files(
         bookmarks_dir,
         ".bookmark.json",
         _process_bookmark,
@@ -792,7 +732,7 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
 
     # Update bookmarks.json
     bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
-    bookmarks_data = _load_json(bookmarks_json_path)
+    bookmarks_data = load_json(bookmarks_json_path)
 
     def _cleanup_bookmark_items(items: list) -> list:
         """Recursively clean up bookmark items."""
@@ -822,7 +762,7 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
             print(f"Processed {stats['processed']} bookmark files:")
             if stats["removed"] > 0:
                 if not dry_run:
-                    _write_json(bookmarks_json_path, bookmarks_data)
+                    write_json(bookmarks_json_path, bookmarks_data)
                 print(f"- Removed {stats['removed']} invalid bookmarks")
             if stats["cleaned"] > 0:
                 print(f"- Cleaned {stats['cleaned']} invalid visual references")

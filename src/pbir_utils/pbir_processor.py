@@ -2,7 +2,7 @@ import csv
 import os
 import re
 
-from .json_utils import _load_json, _write_json
+from .common import load_json, write_json
 
 
 def _load_csv_mapping(csv_path: str) -> list[dict]:
@@ -225,7 +225,7 @@ def _update_pbir_component(
     - table_map: A dictionary mapping old table names to new table names.
     - column_map: A dictionary mapping old (table, column) pairs to new column names.
     """
-    data = _load_json(file_path)
+    data = load_json(file_path)
 
     entity_updated = False
     property_updated = False
@@ -242,7 +242,7 @@ def _update_pbir_component(
 
     if entity_updated or property_updated:
         if not dry_run:
-            _write_json(file_path, data)
+            write_json(file_path, data)
         else:
             print(f"Dry Run: Would update {file_path}")
 
