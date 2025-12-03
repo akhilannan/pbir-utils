@@ -13,6 +13,7 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Get Measure Dependencies**: Extract the dependency tree for report-level measures.
 - **Update Report Level Filters**: Update the filters added to the Power BI report level filter pane.
 - **Sort Report Level Filters**: Reorder filters in report filter pane on a specified sorting strategy.
+- **Standardize Folder Names**: Standardize page and visual folder names to be descriptive.
 - **Sanitize Power BI Report**: Clean up and optimize Power BI reports.
 
 ## Installation

@@ -1,3 +1,13 @@
-### Improved
-- Enhanced the visual removal message in the `sanitize` command to display both the visual type and page name
-- General fixes and improvements
+### Added
+- New `standardize-folder-names` command to rename page and visual folders to be more descriptive (`<DisplayName>_<Name>`)
+- Added `standardize_folder_names` action to the `sanitize` command
+- Exposed internal sanitization functions as independent CLI commands:
+  - `remove-unused-bookmarks`
+  - `remove-unused-custom-visuals`
+  - `disable-show-items-with-no-data`
+  - `hide-tooltip-drillthrough-pages`
+  - `set-first-page-as-active`
+  - `remove-empty-pages`
+  - `remove-hidden-visuals`
+  - `cleanup-invalid-bookmarks`
+- Exposed sanitization functions in the Python API (`pbir_utils`).

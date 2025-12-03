@@ -1,4 +1,5 @@
 from .pbir_measure_utils import remove_measures
+from .folder_standardizer import standardize_pbir_folders
 from .common import load_json, write_json, process_json_files
 import os
 import shutil
@@ -782,6 +783,7 @@ AVAILABLE_ACTIONS = {
     "remove_empty_pages": remove_empty_pages,
     "remove_hidden_visuals_never_shown": remove_hidden_visuals_never_shown,
     "cleanup_invalid_bookmarks": cleanup_invalid_bookmarks,
+    "standardize_folder_names": standardize_pbir_folders,
 }
 
 

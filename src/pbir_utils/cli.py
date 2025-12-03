@@ -5,13 +5,25 @@ import textwrap
 from typing import List, Dict, Set, Optional
 
 from .common import resolve_report_path
-from .pbir_report_sanitizer import sanitize_powerbi_report, AVAILABLE_ACTIONS
+from .pbir_report_sanitizer import (
+    sanitize_powerbi_report,
+    AVAILABLE_ACTIONS,
+    remove_unused_bookmarks,
+    remove_unused_custom_visuals,
+    disable_show_items_with_no_data,
+    hide_tooltip_drillthrough_pages,
+    set_first_page_as_active,
+    remove_empty_pages,
+    remove_hidden_visuals_never_shown,
+    cleanup_invalid_bookmarks,
+)
 from .metadata_extractor import export_pbir_metadata_to_csv
 from .report_wireframe_visualizer import display_report_wireframes
 from .pbir_processor import batch_update_pbir_project
 from .visual_interactions_utils import disable_visual_interactions
 from .pbir_measure_utils import remove_measures, generate_measure_dependencies_report
 from .filter_utils import update_report_filters, sort_report_filters
+from .folder_standardizer import standardize_pbir_folders
 
 
 def parse_filters(filters_str: str) -> Optional[Dict[str, Set[str]]]:
@@ -71,7 +83,9 @@ def main():
           - set_first_page_as_active: Sets the first page as active.
           - remove_empty_pages: Removes pages with no visuals.
           - remove_hidden_visuals_never_shown: Removes permanently hidden visuals.
+
           - cleanup_invalid_bookmarks: Removes bookmarks referencing non-existent pages/visuals.
+          - standardize_folder_names: Standardizes page and visual folder names to be descriptive.
     """
     )
     sanitize_epilog = textwrap.dedent(
@@ -479,6 +493,183 @@ def main():
         help="Perform a dry run without making changes",
     )
 
+    # Standardize Folder Names Command
+    standardize_folders_desc = textwrap.dedent(
+        """
+        Standardize page and visual folder names to be descriptive.
+        
+        Renames page folders to "<DisplayName>_<Name>" and visual folders to "<VisualType>_<Name>".
+        Sanitizes display names to be safe for file systems.
+    """
+    )
+    standardize_folders_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils standardize-folder-names "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
+    standardize_folders_parser = subparsers.add_parser(
+        "standardize-folder-names",
+        help="Standardize page and visual folder names",
+        description=standardize_folders_desc,
+        epilog=standardize_folders_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    standardize_folders_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    standardize_folders_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Remove Unused Bookmarks Command
+    remove_unused_bookmarks_parser = subparsers.add_parser(
+        "remove-unused-bookmarks",
+        help="Remove unused bookmarks",
+        description="Remove bookmarks which are not activated in report using bookmark navigator or actions.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    remove_unused_bookmarks_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    remove_unused_bookmarks_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Remove Unused Custom Visuals Command
+    remove_unused_custom_visuals_parser = subparsers.add_parser(
+        "remove-unused-custom-visuals",
+        help="Remove unused custom visuals",
+        description="Remove unused custom visuals from the report.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    remove_unused_custom_visuals_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    remove_unused_custom_visuals_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Disable Show Items With No Data Command
+    disable_show_items_with_no_data_parser = subparsers.add_parser(
+        "disable-show-items-with-no-data",
+        help="Disable 'Show items with no data'",
+        description="Disable the 'Show items with no data' option for visuals.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    disable_show_items_with_no_data_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    disable_show_items_with_no_data_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Hide Tooltip Drillthrough Pages Command
+    hide_tooltip_drillthrough_pages_parser = subparsers.add_parser(
+        "hide-tooltip-drillthrough-pages",
+        help="Hide tooltip and drillthrough pages",
+        description="Hide tooltip and drillthrough pages in the report.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    hide_tooltip_drillthrough_pages_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    hide_tooltip_drillthrough_pages_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Set First Page As Active Command
+    set_first_page_as_active_parser = subparsers.add_parser(
+        "set-first-page-as-active",
+        help="Set the first page as active",
+        description="Set the first page of the report as active.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    set_first_page_as_active_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    set_first_page_as_active_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Remove Empty Pages Command
+    remove_empty_pages_parser = subparsers.add_parser(
+        "remove-empty-pages",
+        help="Remove empty pages",
+        description="Remove empty pages and clean up rogue folders in the report.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    remove_empty_pages_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    remove_empty_pages_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Remove Hidden Visuals Command
+    remove_hidden_visuals_parser = subparsers.add_parser(
+        "remove-hidden-visuals",
+        help="Remove hidden visuals never shown",
+        description="Remove hidden visuals that are never shown using bookmarks.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    remove_hidden_visuals_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    remove_hidden_visuals_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+    # Cleanup Invalid Bookmarks Command
+    cleanup_invalid_bookmarks_parser = subparsers.add_parser(
+        "cleanup-invalid-bookmarks",
+        help="Cleanup invalid bookmarks",
+        description="Clean up invalid bookmarks that reference non-existent pages or visuals.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    cleanup_invalid_bookmarks_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    cleanup_invalid_bookmarks_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
     args = parser.parse_args()
 
     if args.command == "sanitize":
@@ -590,6 +781,42 @@ def main():
             custom_order=args.custom_order,
             dry_run=args.dry_run,
         )
+
+    elif args.command == "standardize-folder-names":
+        report_path = resolve_report_path(args.report_path)
+        standardize_pbir_folders(report_path, dry_run=args.dry_run)
+
+    elif args.command == "remove-unused-bookmarks":
+        report_path = resolve_report_path(args.report_path)
+        remove_unused_bookmarks(report_path, dry_run=args.dry_run)
+
+    elif args.command == "remove-unused-custom-visuals":
+        report_path = resolve_report_path(args.report_path)
+        remove_unused_custom_visuals(report_path, dry_run=args.dry_run)
+
+    elif args.command == "disable-show-items-with-no-data":
+        report_path = resolve_report_path(args.report_path)
+        disable_show_items_with_no_data(report_path, dry_run=args.dry_run)
+
+    elif args.command == "hide-tooltip-drillthrough-pages":
+        report_path = resolve_report_path(args.report_path)
+        hide_tooltip_drillthrough_pages(report_path, dry_run=args.dry_run)
+
+    elif args.command == "set-first-page-as-active":
+        report_path = resolve_report_path(args.report_path)
+        set_first_page_as_active(report_path, dry_run=args.dry_run)
+
+    elif args.command == "remove-empty-pages":
+        report_path = resolve_report_path(args.report_path)
+        remove_empty_pages(report_path, dry_run=args.dry_run)
+
+    elif args.command == "remove-hidden-visuals":
+        report_path = resolve_report_path(args.report_path)
+        remove_hidden_visuals_never_shown(report_path, dry_run=args.dry_run)
+
+    elif args.command == "cleanup-invalid-bookmarks":
+        report_path = resolve_report_path(args.report_path)
+        cleanup_invalid_bookmarks(report_path, dry_run=args.dry_run)
 
     else:
         parser.print_help()
