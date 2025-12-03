@@ -259,7 +259,7 @@ def hide_tooltip_drillthrough_pages(report_path: str, dry_run: bool = False) -> 
 
 def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     """
-    Set the first page of the report as active.
+    Set the first non-hidden page of the report as active.
 
     Args:
         report_path (str): The path to the report.
@@ -267,7 +267,9 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(f"Action: Setting the first page as active{' (Dry Run)' if dry_run else ''}")
+    print(
+        f"Action: Setting the first non-hidden page as active{' (Dry Run)' if dry_run else ''}"
+    )
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_json_path = os.path.join(pages_dir, "pages.json")
     pages_data = load_json(pages_json_path)
@@ -275,13 +277,49 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     page_order = pages_data["pageOrder"]
     current_active_page = pages_data.get("activePageName")
 
-    if page_order[0] != current_active_page:
-        pages_data["activePageName"] = page_order[0]
+    # Find the first non-hidden page
+    first_non_hidden_page = None
+    first_non_hidden_page_display_name = None
+    for page_name in page_order:
+        page_json_path = os.path.join(pages_dir, page_name, "page.json")
+        if os.path.exists(page_json_path):
+            page_data = load_json(page_json_path)
+            if page_data.get("visibility") != "HiddenInViewMode":
+                first_non_hidden_page = page_name
+                first_non_hidden_page_display_name = page_data.get(
+                    "displayName", page_name
+                )
+                break
+
+    # If all pages are hidden or no page.json exists, default to first page
+    if first_non_hidden_page is None:
+        first_non_hidden_page = page_order[0]
+        # Try to get display name for the fallback page
+        fallback_page_json_path = os.path.join(
+            pages_dir, first_non_hidden_page, "page.json"
+        )
+        if os.path.exists(fallback_page_json_path):
+            fallback_page_data = load_json(fallback_page_json_path)
+            first_non_hidden_page_display_name = fallback_page_data.get(
+                "displayName", first_non_hidden_page
+            )
+        else:
+            first_non_hidden_page_display_name = first_non_hidden_page
+        print(
+            f"Warning: All pages are hidden or no page.json found. Defaulting to first page: '{first_non_hidden_page_display_name}' ({first_non_hidden_page})"
+        )
+
+    if first_non_hidden_page != current_active_page:
+        pages_data["activePageName"] = first_non_hidden_page
         if not dry_run:
             write_json(pages_json_path, pages_data)
-        print(f"Set '{page_order[0]}' as the active page.")
+        print(
+            f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
+        )
     else:
-        print("No changes needed. The first page is already set as active.")
+        print(
+            f"No changes needed. '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) is already set as active."
+        )
 
 
 def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:

@@ -1,2 +1,2 @@
-### Fixed
-- Fixed `remove-measures` to correctly identify measure usage in visuals even when the `Property` key appears before the `Entity` key in the PBIR JSON structure.
+### Changed
+- Improved `set_first_page_as_active` to skip hidden pages (pages with `visibility: HiddenInViewMode`) and set the first visible page as active instead.

@@ -15,6 +15,7 @@ from pbir_utils.pbir_report_sanitizer import (
     remove_empty_pages,
     remove_hidden_visuals_never_shown,
     cleanup_invalid_bookmarks,
+    set_first_page_as_active,
 )
 from pbir_utils.common import load_json
 
@@ -243,3 +244,110 @@ def test_remove_hidden_visuals_never_shown_cleanup(tmp_path):
     interactions = page_data["visualInteractions"]
     assert len(interactions) == 1
     assert interactions[0]["target"] == "v2"
+
+
+def test_set_first_page_as_active_with_hidden_pages(tmp_path):
+    """Test that the first non-hidden page is set as active."""
+    report_path = str(tmp_path)
+
+    # Create pages.json with three pages in order
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/pages.json",
+        {
+            "pageOrder": ["Page1", "Page2", "Page3"],
+            "activePageName": "Page1",  # Initially set to first page
+        },
+    )
+
+    # Page 1: Hidden (Tooltip page)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {
+            "name": "Page1",
+            "displayName": "Tooltip",
+            "visibility": "HiddenInViewMode",
+            "type": "Tooltip",
+        },
+    )
+
+    # Page 2: Also hidden
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page2/page.json",
+        {
+            "name": "Page2",
+            "displayName": "Another Hidden Page",
+            "visibility": "HiddenInViewMode",
+        },
+    )
+
+    # Page 3: Visible (this should become the active page)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page3/page.json",
+        {
+            "name": "Page3",
+            "displayName": "Main Page",
+            "visibility": "Visible",
+        },
+    )
+
+    # Run the function
+    set_first_page_as_active(report_path)
+
+    # Verify that Page3 is now the active page
+    pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+    assert (
+        pages_data["activePageName"] == "Page3"
+    ), f"Expected 'Page3' to be active, but got '{pages_data['activePageName']}'"
+
+
+def test_set_first_page_as_active_all_hidden(tmp_path):
+    """Test that when all pages are hidden, the first page is still set as active."""
+    report_path = str(tmp_path)
+
+    # Create pages.json with two pages, both hidden
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/pages.json",
+        {
+            "pageOrder": ["Page1", "Page2"],
+            "activePageName": "Page2",  # Currently set to second page
+        },
+    )
+
+    # Page 1: Hidden
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {
+            "name": "Page1",
+            "displayName": "Hidden Page 1",
+            "visibility": "HiddenInViewMode",
+        },
+    )
+
+    # Page 2: Also hidden
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page2/page.json",
+        {
+            "name": "Page2",
+            "displayName": "Hidden Page 2",
+            "visibility": "HiddenInViewMode",
+        },
+    )
+
+    # Run the function
+    with patch("builtins.print") as mock_print:
+        set_first_page_as_active(report_path)
+        # Check that a warning was printed
+        assert any("Warning" in str(call) for call in mock_print.call_args_list)
+
+    # Verify that Page1 is the active page (fallback to first page)
+    pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+    assert (
+        pages_data["activePageName"] == "Page1"
+    ), f"Expected 'Page1' to be active (fallback), but got '{pages_data['activePageName']}'"
