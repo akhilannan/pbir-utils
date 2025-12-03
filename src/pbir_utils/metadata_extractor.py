@@ -178,15 +178,34 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
                 )
             )
 
-            if expression is None:
+            if expression is not None:
+                # If we have a pending temp_row, yield it first
+                if temp_row is not None:
+                    yield temp_row
+                    temp_row = None
+                yield row
+            else:
                 if temp_row is None:
                     temp_row = row
                 else:
-                    temp_row["Column or Measure"] = column
-                    yield temp_row
-                    temp_row = None
-            else:
-                yield row
+                    merged = False
+                    # Check if we can merge into temp_row
+                    if row["Table"] and not temp_row["Table"]:
+                        temp_row["Table"] = row["Table"]
+                        merged = True
+                    elif row["Column or Measure"] and not temp_row["Column or Measure"]:
+                        temp_row["Column or Measure"] = row["Column or Measure"]
+                        merged = True
+
+                    if merged:
+                        # If we now have both, yield and reset
+                        if temp_row["Table"] and temp_row["Column or Measure"]:
+                            yield temp_row
+                            temp_row = None
+                    else:
+                        # Cannot merge, yield previous and start new
+                        yield temp_row
+                        temp_row = row
 
         if temp_row is not None:
             yield temp_row
