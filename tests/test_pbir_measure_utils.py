@@ -66,6 +66,11 @@ def test_get_visual_ids_for_measure(mock_extract, mock_load, mock_walk):
     ids = _get_visual_ids_for_measure("dummy_path", "MeasureA")
     assert ids == []
 
+    # Case 3: Measure is used with qualified name (Table.Measure)
+    mock_extract.return_value = [{"Column or Measure": "Table.MeasureA"}]
+    ids = _get_visual_ids_for_measure("dummy_path", "MeasureA")
+    assert ids == ["Visual123"]
+
 
 @patch("pbir_utils.pbir_measure_utils._get_visual_ids_for_measure")
 def test_is_measure_used_in_visuals(mock_get_ids):

@@ -527,10 +527,17 @@ def main():
     )
 
     # Remove Unused Bookmarks Command
+    remove_unused_bookmarks_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils remove-unused-bookmarks "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     remove_unused_bookmarks_parser = subparsers.add_parser(
         "remove-unused-bookmarks",
         help="Remove unused bookmarks",
         description="Remove bookmarks which are not activated in report using bookmark navigator or actions.",
+        epilog=remove_unused_bookmarks_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     remove_unused_bookmarks_parser.add_argument(
@@ -545,10 +552,17 @@ def main():
     )
 
     # Remove Unused Custom Visuals Command
+    remove_unused_custom_visuals_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils remove-unused-custom-visuals "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     remove_unused_custom_visuals_parser = subparsers.add_parser(
         "remove-unused-custom-visuals",
         help="Remove unused custom visuals",
         description="Remove unused custom visuals from the report.",
+        epilog=remove_unused_custom_visuals_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     remove_unused_custom_visuals_parser.add_argument(
@@ -563,10 +577,17 @@ def main():
     )
 
     # Disable Show Items With No Data Command
+    disable_show_items_with_no_data_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils disable-show-items-with-no-data "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     disable_show_items_with_no_data_parser = subparsers.add_parser(
         "disable-show-items-with-no-data",
         help="Disable 'Show items with no data'",
         description="Disable the 'Show items with no data' option for visuals.",
+        epilog=disable_show_items_with_no_data_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     disable_show_items_with_no_data_parser.add_argument(
@@ -581,10 +602,17 @@ def main():
     )
 
     # Hide Tooltip Drillthrough Pages Command
+    hide_tooltip_drillthrough_pages_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils hide-tooltip-drillthrough-pages "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     hide_tooltip_drillthrough_pages_parser = subparsers.add_parser(
         "hide-tooltip-drillthrough-pages",
         help="Hide tooltip and drillthrough pages",
         description="Hide tooltip and drillthrough pages in the report.",
+        epilog=hide_tooltip_drillthrough_pages_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     hide_tooltip_drillthrough_pages_parser.add_argument(
@@ -599,10 +627,17 @@ def main():
     )
 
     # Set First Page As Active Command
+    set_first_page_as_active_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils set-first-page-as-active "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     set_first_page_as_active_parser = subparsers.add_parser(
         "set-first-page-as-active",
         help="Set the first page as active",
         description="Set the first page of the report as active.",
+        epilog=set_first_page_as_active_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     set_first_page_as_active_parser.add_argument(
@@ -617,10 +652,17 @@ def main():
     )
 
     # Remove Empty Pages Command
+    remove_empty_pages_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils remove-empty-pages "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     remove_empty_pages_parser = subparsers.add_parser(
         "remove-empty-pages",
         help="Remove empty pages",
         description="Remove empty pages and clean up rogue folders in the report.",
+        epilog=remove_empty_pages_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     remove_empty_pages_parser.add_argument(
@@ -635,10 +677,17 @@ def main():
     )
 
     # Remove Hidden Visuals Command
+    remove_hidden_visuals_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils remove-hidden-visuals "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     remove_hidden_visuals_parser = subparsers.add_parser(
         "remove-hidden-visuals",
         help="Remove hidden visuals never shown",
         description="Remove hidden visuals that are never shown using bookmarks.",
+        epilog=remove_hidden_visuals_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     remove_hidden_visuals_parser.add_argument(
@@ -653,10 +702,17 @@ def main():
     )
 
     # Cleanup Invalid Bookmarks Command
+    cleanup_invalid_bookmarks_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils cleanup-invalid-bookmarks "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
     cleanup_invalid_bookmarks_parser = subparsers.add_parser(
         "cleanup-invalid-bookmarks",
         help="Cleanup invalid bookmarks",
         description="Clean up invalid bookmarks that reference non-existent pages or visuals.",
+        epilog=cleanup_invalid_bookmarks_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
     cleanup_invalid_bookmarks_parser.add_argument(

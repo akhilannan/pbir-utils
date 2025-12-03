@@ -66,6 +66,10 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
             visual_data = load_json(visual_file_path)
             if any(
                 row["Column or Measure"] == measure_name
+                or (
+                    row["Column or Measure"]
+                    and row["Column or Measure"].endswith(f".{measure_name}")
+                )
                 for row in _extract_metadata_from_file(visual_file_path)
             ):
                 visual_ids.append(visual_data.get("name"))
