@@ -47,12 +47,21 @@ def _extract_visual_info(visuals_folder: str) -> dict:
               Each tuple contains (x, y, width, height, visualType, parentGroupName, isHidden).
     """
     visuals = {}
-    for visual_id in os.listdir(visuals_folder):
-        visual_json_path = os.path.join(visuals_folder, visual_id, "visual.json")
+    for visual_folder_name in os.listdir(visuals_folder):
+        visual_json_path = os.path.join(
+            visuals_folder, visual_folder_name, "visual.json"
+        )
         if not os.path.exists(visual_json_path):
             continue
 
         visual_data = load_json(visual_json_path)
+        visual_id = visual_data.get(
+            "name"
+        )  # Use the ID from the JSON, not the folder name
+
+        if not visual_id:
+            continue
+
         position = visual_data["position"]
 
         visuals[visual_id] = (

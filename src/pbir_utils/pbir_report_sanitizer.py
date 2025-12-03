@@ -277,17 +277,30 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     page_order = pages_data["pageOrder"]
     current_active_page = pages_data.get("activePageName")
 
+    # Map Page ID to (Folder Path, Page Data)
+    page_map = {}
+    if os.path.exists(pages_dir):
+        for folder_name in os.listdir(pages_dir):
+            folder_path = os.path.join(pages_dir, folder_name)
+            if os.path.isdir(folder_path):
+                page_json_path = os.path.join(folder_path, "page.json")
+                if os.path.exists(page_json_path):
+                    page_data = load_json(page_json_path)
+                    page_id = page_data.get("name")
+                    if page_id:
+                        page_map[page_id] = (folder_path, page_data)
+
     # Find the first non-hidden page
     first_non_hidden_page = None
     first_non_hidden_page_display_name = None
-    for page_name in page_order:
-        page_json_path = os.path.join(pages_dir, page_name, "page.json")
-        if os.path.exists(page_json_path):
-            page_data = load_json(page_json_path)
+
+    for page_id in page_order:
+        if page_id in page_map:
+            _, page_data = page_map[page_id]
             if page_data.get("visibility") != "HiddenInViewMode":
-                first_non_hidden_page = page_name
+                first_non_hidden_page = page_id
                 first_non_hidden_page_display_name = page_data.get(
-                    "displayName", page_name
+                    "displayName", page_id
                 )
                 break
 
@@ -295,11 +308,8 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     if first_non_hidden_page is None:
         first_non_hidden_page = page_order[0]
         # Try to get display name for the fallback page
-        fallback_page_json_path = os.path.join(
-            pages_dir, first_non_hidden_page, "page.json"
-        )
-        if os.path.exists(fallback_page_json_path):
-            fallback_page_data = load_json(fallback_page_json_path)
+        if first_non_hidden_page in page_map:
+            _, fallback_page_data = page_map[first_non_hidden_page]
             first_non_hidden_page_display_name = fallback_page_data.get(
                 "displayName", first_non_hidden_page
             )
@@ -342,41 +352,79 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
     page_order = pages_data.get("pageOrder", [])
     active_page_name = pages_data.get("activePageName")
 
-    non_empty_pages = [
-        page
-        for page in page_order
-        if os.path.exists(
-            os.path.join(pages_dir, page, "visuals")
-        )  # check if page has visuals folder
-        and os.listdir(
-            os.path.join(pages_dir, page, "visuals")
-        )  # check if visuals folder is not empty
-    ]
+    # Map Page ID to Folder Path
+    page_id_to_folder = {}
+    folder_to_page_id = {}
+
+    if os.path.exists(pages_dir):
+        for folder_name in os.listdir(pages_dir):
+            folder_path = os.path.join(pages_dir, folder_name)
+            if os.path.isdir(folder_path):
+                page_json_path = os.path.join(folder_path, "page.json")
+                if os.path.exists(page_json_path):
+                    page_data = load_json(page_json_path)
+                    page_id = page_data.get("name")
+                    if page_id:
+                        page_id_to_folder[page_id] = folder_path
+                        folder_to_page_id[folder_name] = page_id
+
+    non_empty_pages = []
+    for page_id in page_order:
+        if page_id in page_id_to_folder:
+            folder_path = page_id_to_folder[page_id]
+            visuals_dir = os.path.join(folder_path, "visuals")
+
+            has_visuals = False
+            if os.path.exists(visuals_dir) and os.listdir(visuals_dir):
+                has_visuals = True
+
+            if has_visuals:
+                non_empty_pages.append(page_id)
 
     if non_empty_pages:
         pages_data["pageOrder"] = non_empty_pages
         if active_page_name not in non_empty_pages:
             pages_data["activePageName"] = non_empty_pages[0]
     else:
-        pages_data["pageOrder"] = [page_order[0]]
-        pages_data["activePageName"] = page_order[0]
+        # If all pages are empty, keep the first one from the original order
+        # We need to make sure we don't delete its folder later
+        first_page_id = page_order[0]
+        pages_data["pageOrder"] = [first_page_id]
+        pages_data["activePageName"] = first_page_id
+        non_empty_pages.append(first_page_id)  # Mark as non-empty so we keep it
         print("All pages were empty. Keeping the first page as a placeholder.")
 
     if not dry_run:
         write_json(pages_json_path, pages_data)
 
-    existing_folders = set(os.listdir(pages_dir)) - {"pages.json"}
-    folders_to_keep = set(pages_data["pageOrder"])
-    folders_to_remove = existing_folders - folders_to_keep
+    # Identify folders to remove
+    # Rogue folders are those that:
+    # 1. Don't contain a valid page.json with an ID
+    # 2. OR contain a valid page.json but the ID is NOT in the new pageOrder (meaning it was empty and removed)
+
+    folders_to_remove = []
+    existing_folders = [
+        f for f in os.listdir(pages_dir) if os.path.isdir(os.path.join(pages_dir, f))
+    ]
+
+    for folder_name in existing_folders:
+        folder_path = os.path.join(pages_dir, folder_name)
+        page_id = folder_to_page_id.get(folder_name)
+
+        if not page_id:
+            # Case 1: No valid ID found (rogue folder)
+            folders_to_remove.append(folder_name)
+        elif page_id not in non_empty_pages:
+            # Case 2: Valid ID but page was removed (empty page)
+            folders_to_remove.append(folder_name)
 
     if folders_to_remove:
         print(f"Removing empty and rogue page folders: {', '.join(folders_to_remove)}")
         for folder in folders_to_remove:
             folder_path = os.path.join(pages_dir, folder)
-            if os.path.isdir(folder_path):
-                if not dry_run:
-                    shutil.rmtree(folder_path)
-                print(f"Removed folder: {folder}")
+            if not dry_run:
+                shutil.rmtree(folder_path)
+            print(f"Removed folder: {folder}")
     else:
         print("No empty or rogue page folders found.")
 

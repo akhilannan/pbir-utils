@@ -351,3 +351,94 @@ def test_set_first_page_as_active_all_hidden(tmp_path):
     assert (
         pages_data["activePageName"] == "Page1"
     ), f"Expected 'Page1' to be active (fallback), but got '{pages_data['activePageName']}'"
+
+
+def test_set_first_page_as_active_renamed_folders(tmp_path):
+    """Test that it works when folder names don't match page IDs."""
+    report_path = str(tmp_path)
+
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/pages.json",
+        {
+            "pageOrder": ["Page1", "Page2"],
+            "activePageName": "Page2",
+        },
+    )
+
+    # Page 1: Visible, but folder is named "Folder_Page1"
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Folder_Page1/page.json",
+        {
+            "name": "Page1",
+            "displayName": "Page 1",
+            "visibility": "Visible",
+        },
+    )
+
+    # Page 2: Hidden
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page2/page.json",
+        {
+            "name": "Page2",
+            "displayName": "Page 2",
+            "visibility": "HiddenInViewMode",
+        },
+    )
+
+    set_first_page_as_active(report_path)
+
+    pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+    assert pages_data["activePageName"] == "Page1"
+
+
+def test_remove_empty_pages_renamed_folders(tmp_path):
+    """Test removing empty pages when folders are renamed."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/pages.json",
+        {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
+    )
+
+    # Page 1: Valid, has visuals, folder renamed
+    create_dummy_file(
+        tmp_path, "definition/pages/Folder_Page1/page.json", {"name": "Page1"}
+    )
+    create_dummy_file(
+        tmp_path, "definition/pages/Folder_Page1/visuals/v1/visual.json", {"name": "v1"}
+    )
+
+    # Page 2: Empty (no visuals), folder renamed
+    create_dummy_file(
+        tmp_path, "definition/pages/Folder_Page2/page.json", {"name": "Page2"}
+    )
+    os.makedirs(
+        os.path.join(report_path, "definition/pages/Folder_Page2/visuals"),
+        exist_ok=True,
+    )
+
+    # Rogue folder (no page.json)
+    os.makedirs(
+        os.path.join(report_path, "definition/pages/RogueFolder"), exist_ok=True
+    )
+
+    with patch("builtins.print") as mock_print:
+        remove_empty_pages(report_path)
+
+        # Check pages.json
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["pageOrder"] == ["Page1"]
+
+        # Check folders
+        assert os.path.exists(
+            os.path.join(report_path, "definition/pages/Folder_Page1")
+        )
+        assert not os.path.exists(
+            os.path.join(report_path, "definition/pages/Folder_Page2")
+        )
+        assert not os.path.exists(
+            os.path.join(report_path, "definition/pages/RogueFolder")
+        )

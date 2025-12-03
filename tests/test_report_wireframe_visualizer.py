@@ -29,6 +29,7 @@ def mock_page_json():
 @pytest.fixture
 def mock_visual_json():
     return {
+        "name": "visual1",
         "position": {"x": 10, "y": 20, "width": 100, "height": 200},
         "visual": {"visualType": "columnChart"},
         "parentGroupName": None,
@@ -39,6 +40,7 @@ def mock_visual_json():
 @pytest.fixture
 def mock_group_json():
     return {
+        "name": "group1",
         "position": {"x": 5, "y": 5, "width": 300, "height": 300},
         "visual": {"visualType": "Group"},
         "parentGroupName": None,
@@ -49,6 +51,7 @@ def mock_group_json():
 @pytest.fixture
 def mock_child_visual_json():
     return {
+        "name": "child1",
         "position": {"x": 10, "y": 10, "width": 50, "height": 50},
         "visual": {"visualType": "card"},
         "parentGroupName": "visual_group",
@@ -86,7 +89,10 @@ def test_extract_visual_info(
     def side_effect(path):
         if "visual1" in path:
             return mock_visual_json
-        return mock_child_visual_json
+        # Create a copy for visual2 with correct name
+        v2 = mock_child_visual_json.copy()
+        v2["name"] = "visual2"
+        return v2
 
     mock_load_json.side_effect = side_effect
 
@@ -95,6 +101,28 @@ def test_extract_visual_info(
     assert "visual1" in visuals
     assert "visual2" in visuals
     assert visuals["visual1"][4] == "columnChart"
+
+
+@patch("pbir_utils.report_wireframe_visualizer.load_json")
+@patch("os.path.exists")
+@patch("os.listdir")
+def test_extract_visual_info_renamed_folders(
+    mock_listdir, mock_exists, mock_load_json, mock_visual_json
+):
+    """Test that visual info is extracted correctly even if folder name differs from visual ID."""
+    mock_listdir.return_value = ["Folder_Visual1"]
+    mock_exists.return_value = True
+
+    # Mock visual.json content where name="Visual1" but folder is "Folder_Visual1"
+    visual_data = mock_visual_json.copy()
+    visual_data["name"] = "Visual1"
+    mock_load_json.return_value = visual_data
+
+    visuals = _extract_visual_info("dummy/visuals")
+
+    assert len(visuals) == 1
+    assert "Visual1" in visuals  # Key should be the ID from JSON
+    assert "Folder_Visual1" not in visuals  # Key should NOT be the folder name
 
 
 def test_adjust_visual_positions():
