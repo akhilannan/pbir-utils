@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from unittest.mock import patch
 import pytest
 
@@ -15,7 +16,129 @@ from pbir_utils.filter_utils import (
     _validate_filters,
     update_report_filters,
     sort_report_filters,
+    collapse_filter_pane,
+    reset_filter_pane_width,
 )
+from pbir_utils.common import load_json
+
+
+def create_dummy_file(test_dir, path, content):
+    full_path = test_dir / path
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(full_path, "w", encoding="utf-8") as f:
+        json.dump(content, f)
+
+
+def test_collapse_filter_pane_already_collapsed(tmp_path):
+    """Test that no changes are made if filter pane is already collapsed."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/report.json",
+        {
+            "objects": {
+                "outspacePane": [
+                    {
+                        "properties": {
+                            "expanded": {"expr": {"Literal": {"Value": "false"}}}
+                        }
+                    }
+                ]
+            }
+        },
+    )
+
+    result = collapse_filter_pane(report_path)
+    assert result is False
+
+
+def test_collapse_filter_pane_expanded(tmp_path):
+    """Test that filter pane is collapsed when expanded."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/report.json",
+        {
+            "objects": {
+                "outspacePane": [
+                    {
+                        "properties": {
+                            "expanded": {"expr": {"Literal": {"Value": "true"}}}
+                        }
+                    }
+                ]
+            }
+        },
+    )
+
+    result = collapse_filter_pane(report_path)
+    assert result is True
+
+    report_data = load_json(os.path.join(report_path, "definition/report.json"))
+    assert (
+        report_data["objects"]["outspacePane"][0]["properties"]["expanded"]["expr"][
+            "Literal"
+        ]["Value"]
+        == "false"
+    )
+
+
+def test_collapse_filter_pane_no_outspace_pane(tmp_path):
+    """Test that outspacePane is created if it doesn't exist."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/report.json",
+        {},
+    )
+
+    result = collapse_filter_pane(report_path)
+    assert result is True
+
+    report_data = load_json(os.path.join(report_path, "definition/report.json"))
+    assert (
+        report_data["objects"]["outspacePane"][0]["properties"]["expanded"]["expr"][
+            "Literal"
+        ]["Value"]
+        == "false"
+    )
+
+
+def test_reset_filter_pane_width(tmp_path):
+    """Test that filter pane width is removed from page.json."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {
+            "name": "Page1",
+            "objects": {
+                "outspacePane": [
+                    {"properties": {"width": {"expr": {"Literal": {"Value": "274L"}}}}}
+                ]
+            },
+        },
+    )
+
+    result = reset_filter_pane_width(report_path)
+    assert result is True
+
+    page_data = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
+    # objects should be removed since it's now empty
+    assert "objects" not in page_data
+
+
+def test_reset_filter_pane_width_no_width(tmp_path):
+    """Test that no changes are made if width is not set."""
+    report_path = str(tmp_path)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {"name": "Page1"},
+    )
+
+    result = reset_filter_pane_width(report_path)
+    assert result is False
 
 
 def test_format_date():

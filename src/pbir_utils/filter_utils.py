@@ -538,3 +538,137 @@ def sort_report_filters(
             console.print_success(msg)
 
     return any_changes
+
+
+def collapse_filter_pane(
+    report_path: str, dry_run: bool = False, summary: bool = False
+) -> bool:
+    """
+    Collapse the filter pane in the report by setting outspacePane expanded to false.
+
+    Args:
+        report_path (str): The path to the report.
+        dry_run (bool): Whether to perform a dry run.
+        summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
+    """
+    console.print_heading(
+        f"Action: Collapsing filter pane{' (Dry Run)' if dry_run else ''}"
+    )
+
+    report_json_path = os.path.join(report_path, "definition", "report.json")
+    report_data = load_json(report_json_path)
+
+    objects = report_data.get("objects", {})
+    outspace_pane = objects.get("outspacePane", [])
+
+    # Check if outspacePane exists and has expanded property
+    if outspace_pane:
+        properties = outspace_pane[0].get("properties", {})
+        expanded = properties.get("expanded", {})
+        current_value = expanded.get("expr", {}).get("Literal", {}).get("Value")
+
+        if current_value == "false":
+            console.print_info("Filter pane is already collapsed.")
+            return False
+    else:
+        # outspacePane doesn't exist, need to create it
+        current_value = None
+
+    # Set expanded to false
+    if "objects" not in report_data:
+        report_data["objects"] = {}
+    if "outspacePane" not in report_data["objects"]:
+        report_data["objects"]["outspacePane"] = [{"properties": {}}]
+    if "properties" not in report_data["objects"]["outspacePane"][0]:
+        report_data["objects"]["outspacePane"][0]["properties"] = {}
+
+    report_data["objects"]["outspacePane"][0]["properties"]["expanded"] = {
+        "expr": {"Literal": {"Value": "false"}}
+    }
+
+    if not dry_run:
+        write_json(report_json_path, report_data)
+
+    if dry_run:
+        console.print_dry_run("Would collapse the filter pane.")
+    else:
+        console.print_success("Collapsed the filter pane.")
+
+    return True
+
+
+def reset_filter_pane_width(
+    report_path: str, dry_run: bool = False, summary: bool = False
+) -> bool:
+    """
+    Reset the filter pane width by removing the width property from outspacePane in all page.json files.
+
+    Args:
+        report_path (str): The path to the report.
+        dry_run (bool): Whether to perform a dry run.
+        summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
+    """
+    console.print_heading(
+        f"Action: Resetting filter pane width{' (Dry Run)' if dry_run else ''}"
+    )
+
+    pages_dir = os.path.join(report_path, "definition", "pages")
+    pages_modified = 0
+
+    def _remove_width_property(page_data: dict, file_path: str) -> bool:
+        objects = page_data.get("objects", {})
+        outspace_pane = objects.get("outspacePane", [])
+
+        if not outspace_pane:
+            return False
+
+        properties = outspace_pane[0].get("properties", {})
+        if "width" not in properties:
+            return False
+
+        # Remove width property
+        del properties["width"]
+
+        # If properties is now empty, remove it
+        if not properties:
+            del outspace_pane[0]["properties"]
+
+        # If outspacePane[0] is now empty, remove outspacePane
+        if not outspace_pane[0]:
+            del objects["outspacePane"]
+
+        # If objects is now empty, remove it
+        if not objects:
+            del page_data["objects"]
+
+        return True
+
+    # Import process_json_files here to avoid circular import if common imports filter_utils (unlikely but safe)
+    # Actually common.py doesn't import filter_utils. But let's check imports in filter_utils.py
+    from .common import process_json_files
+
+    results = process_json_files(
+        pages_dir, "page.json", _remove_width_property, process=True, dry_run=dry_run
+    )
+
+    pages_modified = results if isinstance(results, int) else len(results)
+
+    if pages_modified > 0:
+        if dry_run:
+            console.print_dry_run(
+                f"Would reset filter pane width on {pages_modified} page(s)."
+            )
+        else:
+            console.print_success(
+                f"Reset filter pane width on {pages_modified} page(s)."
+            )
+        return True
+    else:
+        console.print_info("No pages found with filter pane width set.")
+        return False

@@ -14,6 +14,11 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Update Report Level Filters**: Update the filters added to the Power BI report level filter pane.
 - **Sort Report Level Filters**: Reorder filters in report filter pane on a specified sorting strategy.
 - **Standardize Folder Names**: Standardize page and visual folder names to be descriptive.
+- **Remove Unused Bookmarks**: Remove bookmarks not used in the report.
+- **Remove Unused Custom Visuals**: Remove custom visuals not used in the report.
+- **Disable Show Items With No Data**: Disable "Show items with no data" property for visuals.
+- **Hide Tooltip/Drillthrough Pages**: Hide pages used as tooltips or drillthroughs.
+- **Set First Page Active**: Set the first page of the report as the active page.
 - **Sanitize Power BI Report**: Clean up and optimize Power BI reports.
 
 ## Installation
@@ -86,6 +91,42 @@ Sort report-level filter pane items.
 ```bash
 pbir-utils sort-filters "C:\Reports" --sort-order Ascending --dry-run
 pbir-utils sort-filters "C:\Reports" --sort-order Custom --custom-order "Region" "Date"
+```
+
+### 10. Standardize Folder Names
+Standardize page and visual folder names to be descriptive.
+```bash
+pbir-utils standardize-folder-names "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 11. Remove Unused Bookmarks
+Remove bookmarks which are not activated in report using bookmark navigator or actions.
+```bash
+pbir-utils remove-unused-bookmarks "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 12. Remove Unused Custom Visuals
+Remove unused custom visuals from the report.
+```bash
+pbir-utils remove-unused-custom-visuals "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 13. Disable Show Items With No Data
+Disable the 'Show items with no data' option for visuals.
+```bash
+pbir-utils disable-show-items-with-no-data "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 14. Hide Tooltip/Drillthrough Pages
+Hide tooltip and drillthrough pages in the report.
+```bash
+pbir-utils hide-tooltip-drillthrough-pages "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 15. Set First Page As Active
+Set the first page of the report as active.
+```bash
+pbir-utils set-first-page-as-active "C:\Reports\MyReport.Report" --dry-run
 ```
 
 ## CI/CD Integration

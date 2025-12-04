@@ -23,7 +23,12 @@ from .report_wireframe_visualizer import display_report_wireframes
 from .pbir_processor import batch_update_pbir_project
 from .visual_interactions_utils import disable_visual_interactions
 from .pbir_measure_utils import remove_measures, generate_measure_dependencies_report
-from .filter_utils import update_report_filters, sort_report_filters
+from .filter_utils import (
+    update_report_filters,
+    sort_report_filters,
+    collapse_filter_pane,
+    reset_filter_pane_width,
+)
 from .folder_standardizer import standardize_pbir_folders
 
 
@@ -105,6 +110,8 @@ def main():
           - set_first_page_as_active: Sets the first page as active.
           - remove_empty_pages: Removes pages with no visuals.
           - remove_hidden_visuals_never_shown: Removes permanently hidden visuals.
+          - collapse_filter_pane: Collapses the filter pane in the report.
+          - reset_filter_pane_width: Resets filter pane width on all pages.
 
           - cleanup_invalid_bookmarks: Removes bookmarks referencing non-existent pages/visuals.
           - standardize_folder_names: Standardizes page and visual folder names to be descriptive.
@@ -902,6 +909,76 @@ def main():
         help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
+    # Collapse Filter Pane Command
+    collapse_filter_pane_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils collapse-filter-pane "C:\\\\Reports\\\\MyReport.Report" --dry-run
+    """
+    )
+    collapse_filter_pane_parser = subparsers.add_parser(
+        "collapse-filter-pane",
+        help="Collapse the filter pane",
+        description="Collapse the filter pane in the report by setting outspacePane expanded to false.",
+        epilog=collapse_filter_pane_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    collapse_filter_pane_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    collapse_filter_pane_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+    collapse_filter_pane_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
+    collapse_filter_pane_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
+
+    # Reset Filter Pane Width Command
+    reset_filter_pane_width_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils reset-filter-pane-width "C:\\\\Reports\\\\MyReport.Report" --dry-run
+    """
+    )
+    reset_filter_pane_width_parser = subparsers.add_parser(
+        "reset-filter-pane-width",
+        help="Reset the filter pane width",
+        description="Reset the filter pane width by removing the width property from outspacePane in all page.json files.",
+        epilog=reset_filter_pane_width_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    reset_filter_pane_width_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    reset_filter_pane_width_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+    reset_filter_pane_width_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
+    reset_filter_pane_width_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "sanitize":
@@ -1175,6 +1252,28 @@ def main():
             report_path, dry_run=args.dry_run, summary=args.summary
         )
         _check_error_on_change(args, has_changes, "cleanup-invalid-bookmarks")
+
+    elif args.command == "collapse-filter-pane":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = collapse_filter_pane(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "collapse-filter-pane")
+
+    elif args.command == "reset-filter-pane-width":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = reset_filter_pane_width(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "reset-filter-pane-width")
 
     else:
         parser.print_help()

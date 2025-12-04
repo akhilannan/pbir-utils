@@ -1,5 +1,6 @@
 from .pbir_measure_utils import remove_measures
 from .folder_standardizer import standardize_pbir_folders
+from .filter_utils import collapse_filter_pane, reset_filter_pane_width
 from .common import load_json, write_json, process_json_files
 from .console_utils import console
 import os
@@ -1046,6 +1047,8 @@ AVAILABLE_ACTIONS = {
     "remove_hidden_visuals_never_shown": remove_hidden_visuals_never_shown,
     "cleanup_invalid_bookmarks": cleanup_invalid_bookmarks,
     "standardize_folder_names": standardize_pbir_folders,
+    "collapse_filter_pane": collapse_filter_pane,
+    "reset_filter_pane_width": reset_filter_pane_width,
 }
 
 
