@@ -36,3 +36,29 @@ def test_load_json_errors(tmp_path):
         assert data == {}
         mock_print.assert_called()
         assert "Error: Unable to read or write file" in mock_print.call_args[0][0]
+
+
+def test_get_report_paths(tmp_path):
+    from pbir_utils.common import get_report_paths
+
+    # Create dummy report structure
+    report1_dir = tmp_path / "Report1.Report" / "definition"
+    report1_dir.mkdir(parents=True)
+    (report1_dir / "report.json").touch()
+
+    report2_dir = tmp_path / "Report2.Report" / "definition"
+    report2_dir.mkdir(parents=True)
+    (report2_dir / "report.json").touch()
+
+    # Test finding all reports in root
+    paths = get_report_paths(str(tmp_path))
+    assert len(paths) == 2
+    assert any("Report1.Report" in p for p in paths)
+    assert any("Report2.Report" in p for p in paths)
+
+    # Test finding specific report by folder path (The Fix)
+    report1_path = tmp_path / "Report1.Report"
+    paths = get_report_paths(str(report1_path))
+    assert len(paths) == 1
+    assert "Report1.Report" in paths[0]
+    assert paths[0].endswith("report.json")

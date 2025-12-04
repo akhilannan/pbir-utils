@@ -1,2 +1,5 @@
-### Fixed
-- Refactored `set_first_page_as_active`, `remove_empty_pages`, and `report_wireframe_visualizer` to rely on IDs from `page.json`/`visual.json` instead of folder names, ensuring robustness when folders are renamed.
+### Changed
+- Enhanced CLI output with colors and better formatting using ANSI escape codes.
+- Improved dry run output with distinct `[DRY RUN]` labeling.
+- Reduced noise in "Hidden Visuals" removal output.
+- Introduced `console_utils` for centralized output management.

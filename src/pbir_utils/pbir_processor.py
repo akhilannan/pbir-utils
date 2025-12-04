@@ -3,6 +3,7 @@ import os
 import re
 
 from .common import load_json, write_json
+from .console_utils import console
 
 
 def _load_csv_mapping(csv_path: str) -> list[dict]:
@@ -233,18 +234,18 @@ def _update_pbir_component(
     if table_map:
         entity_updated = _update_entity(data, table_map)
         if entity_updated:
-            print(f"Entity updated in file: {file_path}")
+            console.print_success(f"Entity updated in file: {file_path}")
 
     if column_map:
         property_updated = _update_property(data, column_map)
         if property_updated:
-            print(f"Property updated in file: {file_path}")
+            console.print_success(f"Property updated in file: {file_path}")
 
     if entity_updated or property_updated:
         if not dry_run:
             write_json(file_path, data)
         else:
-            print(f"Dry Run: Would update {file_path}")
+            console.print_dry_run(f"Would update {file_path}")
 
 
 def batch_update_pbir_project(
@@ -261,6 +262,9 @@ def batch_update_pbir_project(
     - directory_path: Path to the root directory of the PBIR project (usually the 'definition' folder).
     - csv_path: Path to the CSV file with the mapping of old and new table/column names.
     """
+    console.print_heading(
+        f"Action: Batch updating PBIR project{' (Dry Run)' if dry_run else ''}"
+    )
     try:
         mappings = _load_csv_mapping(csv_path)
 
@@ -288,4 +292,4 @@ def batch_update_pbir_project(
                         file_path, table_map, column_map, dry_run=dry_run
                     )
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        console.print_error(f"An error occurred: {str(e)}")

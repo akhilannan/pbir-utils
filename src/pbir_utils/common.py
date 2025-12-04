@@ -76,6 +76,11 @@ def get_report_paths(directory_path: str, reports: list = None) -> list:
     Returns:
     list: List of paths to report JSON files.
     """
+    if directory_path.endswith(".Report") and os.path.exists(
+        os.path.join(directory_path, "definition", "report.json")
+    ):
+        return [os.path.join(directory_path, "definition", "report.json")]
+
     reports = reports or [
         d for d in os.listdir(directory_path) if d.endswith(".Report")
     ]

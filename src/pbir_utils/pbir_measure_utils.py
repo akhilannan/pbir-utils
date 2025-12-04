@@ -2,6 +2,7 @@ import os
 
 from .common import load_json, write_json
 from .metadata_extractor import _extract_metadata_from_file
+from .console_utils import console
 
 
 def _get_dependent_measures(
@@ -177,6 +178,8 @@ def _load_report_extension_data(report_path: str) -> tuple:
         tuple: A tuple containing the report file path and the loaded report extension data as a dictionary.
     """
     report_file = os.path.join(report_path, "definition", "reportExtensions.json")
+    if not os.path.exists(report_file):
+        return report_file, {}
     return report_file, load_json(report_file)
 
 
@@ -200,6 +203,7 @@ def generate_measure_dependencies_report(
              If measure_names is None or an empty list, it returns a report with dependencies for all measures.
              Returns an empty string if no measures are found or have no dependencies.
     """
+    console.print_heading("Action: Generating measure dependencies report")
     _, report_data = _load_report_extension_data(report_path)
     measures_dict = {
         measure["name"]: measure.get("expression", "")
@@ -242,6 +246,7 @@ def remove_measures(
     measure_names: list = None,
     check_visual_usage: bool = True,
     dry_run: bool = False,
+    print_heading: bool = True,
 ) -> None:
     """
     Remove specified measures or all measures from a Power BI PBIX report,
@@ -257,10 +262,15 @@ def remove_measures(
     Returns:
         None
     """
+    if print_heading:
+        console.print_heading(
+            f"Action: Removing measures{' (Dry Run)' if dry_run else ''}"
+        )
+
     report_file, report_data = _load_report_extension_data(report_path)
 
     if not report_data:
-        print("No report extensions found.")
+        console.print_info("No measures found in the report.")
         return
 
     removed_measures = []
@@ -307,14 +317,23 @@ def remove_measures(
         if not dry_run:
             write_json(report_file, report_data)
         if removed_measures:
-            print(
-                f"Measures removed: {', '.join(removed_measures)}{' (Dry Run)' if dry_run else ''}"
-            )
+            if dry_run:
+                console.print_dry_run(
+                    f"Measures removed: {', '.join(removed_measures)}"
+                )
+            else:
+                console.print_success(
+                    f"Measures removed: {', '.join(removed_measures)}"
+                )
         else:
-            print("No measures were removed.")
+            console.print_info("No measures were removed.")
     else:
         if not dry_run:
             os.remove(report_file)
-        print(
-            f"All measures removed. The reportExtensions.json file has been deleted.{' (Dry Run)' if dry_run else ''}"
-        )
+            console.print_success(
+                "All measures removed. The reportExtensions.json file has been deleted."
+            )
+        else:
+            console.print_dry_run(
+                "All measures removed. The reportExtensions.json file has been deleted."
+            )

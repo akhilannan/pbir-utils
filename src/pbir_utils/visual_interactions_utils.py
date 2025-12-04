@@ -1,6 +1,7 @@
 import os
 
 from .common import load_json, write_json
+from .console_utils import console
 
 
 def _get_visuals(visuals_folder: str) -> tuple:
@@ -150,7 +151,7 @@ def _process_page(
     if not dry_run:
         write_json(page_json_path, page_json)
     else:
-        print(f"Dry Run: Would update visual interactions in {page_json_path}")
+        console.print_dry_run(f"Would update visual interactions in {page_json_path}")
 
 
 def _process_all_pages(
@@ -227,6 +228,9 @@ def disable_visual_interactions(
     Raises:
         ValueError: If any of the provided parameters are not lists when expected.
     """
+    console.print_heading(
+        f"Action: Disabling visual interactions{' (Dry Run)' if dry_run else ''}"
+    )
     # Validate that parameters are lists if they are not None
     for param_name, param_value in {
         "pages": pages,

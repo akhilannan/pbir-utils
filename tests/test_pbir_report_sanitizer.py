@@ -37,7 +37,10 @@ def test_remove_unused_bookmarks_no_file(tmp_path):
     with patch("builtins.print") as mock_print:
         remove_unused_bookmarks(report_path)
         mock_print.assert_called()
-        assert "No bookmarks found" in mock_print.call_args[0][0]
+        mock_print.assert_called()
+        assert any(
+            "No bookmarks found" in str(call) for call in mock_print.call_args_list
+        )
 
 
 def test_remove_unused_custom_visuals_none(tmp_path):
@@ -47,7 +50,10 @@ def test_remove_unused_custom_visuals_none(tmp_path):
     with patch("builtins.print") as mock_print:
         remove_unused_custom_visuals(report_path)
         mock_print.assert_called()
-        assert "No custom visuals found" in mock_print.call_args[0][0]
+        mock_print.assert_called()
+        assert any(
+            "No custom visuals found" in str(call) for call in mock_print.call_args_list
+        )
 
 
 def test_disable_show_items_with_no_data_nested(tmp_path):

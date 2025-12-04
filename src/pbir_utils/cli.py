@@ -3,6 +3,7 @@ import json
 import sys
 import textwrap
 from typing import List, Dict, Set, Optional
+from .console_utils import console
 
 from .common import resolve_report_path
 from .pbir_report_sanitizer import (
@@ -36,10 +37,10 @@ def parse_filters(filters_str: str) -> Optional[Dict[str, Set[str]]]:
         # Convert lists to sets
         return {k: set(v) if isinstance(v, list) else set([v]) for k, v in data.items()}
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON string for filters: {filters_str}", file=sys.stderr)
+        console.print_error(f"Invalid JSON string for filters: {filters_str}")
         sys.exit(1)
     except Exception as e:
-        print(f"Error parsing filters: {e}", file=sys.stderr)
+        console.print_error(f"Parsing filters: {e}")
         sys.exit(1)
 
 
@@ -57,7 +58,7 @@ def parse_json_arg(json_str: Optional[str], arg_name: str):
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON string for {arg_name}: {json_str}", file=sys.stderr)
+        console.print_error(f"Invalid JSON string for {arg_name}: {json_str}")
         sys.exit(1)
 
 
@@ -736,9 +737,8 @@ def main():
             actions = list(AVAILABLE_ACTIONS.keys())
 
         if not actions:
-            print(
-                "Warning: No actions specified. Use --actions to specify sanitization actions.",
-                file=sys.stderr,
+            console.print_warning(
+                "No actions specified. Use --actions to specify sanitization actions."
             )
 
         sanitize_powerbi_report(report_path, actions, dry_run=args.dry_run)
@@ -750,7 +750,7 @@ def main():
         output_path = None
 
         if len(cmd_args) == 0:
-            print("Error: Output path required.", file=sys.stderr)
+            console.print_error("Output path required.")
             sys.exit(1)
         elif len(cmd_args) == 1:
             if cmd_args[0].lower().endswith(".csv"):
@@ -758,13 +758,13 @@ def main():
                 output_path = cmd_args[0]
             else:
                 report_path = cmd_args[0]
-                print("Error: Output path required.", file=sys.stderr)
+                console.print_error("Output path required.")
                 sys.exit(1)
         elif len(cmd_args) == 2:
             report_path = cmd_args[0]
             output_path = cmd_args[1]
         else:
-            print("Error: Too many arguments.", file=sys.stderr)
+            console.print_error("Too many arguments.")
             sys.exit(1)
 
         filters = parse_filters(args.filters)

@@ -1,6 +1,7 @@
 import os
 import re
 from .common import load_json
+from .console_utils import console
 
 
 def _sanitize_name(name: str) -> str:
@@ -24,9 +25,12 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
         report_path (str): Path to the root folder of the report.
         dry_run (bool): If True, only prints what would be renamed without making changes.
     """
+    console.print_heading(
+        f"Action: Standardizing folder names{' (Dry Run)' if dry_run else ''}"
+    )
     pages_dir = os.path.join(report_path, "definition", "pages")
     if not os.path.exists(pages_dir):
-        print(f"Pages directory not found: {pages_dir}")
+        console.print_warning(f"Pages directory not found: {pages_dir}")
         return
 
     # Iterate over page folders
@@ -56,20 +60,22 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
         if page_folder_name != new_page_folder_name:
             new_page_path = os.path.join(pages_dir, new_page_folder_name)
             if dry_run:
-                print(
-                    f"[Dry Run] Would rename page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
+                console.print_dry_run(
+                    f"Would rename page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
                 )
             else:
                 try:
                     os.rename(current_page_path, new_page_path)
-                    print(
+                    console.print_success(
                         f"Renamed page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
                     )
                     current_page_path = (
                         new_page_path  # Update path for visual processing
                     )
                 except OSError as e:
-                    print(f"Error renaming page folder '{page_folder_name}': {e}")
+                    console.print_error(
+                        f"Error renaming page folder '{page_folder_name}': {e}"
+                    )
                     continue
 
         # Process visuals within the page
@@ -100,16 +106,16 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
                 if visual_folder_name != new_visual_folder_name:
                     new_visual_path = os.path.join(visuals_dir, new_visual_folder_name)
                     if dry_run:
-                        print(
-                            f"[Dry Run] Would rename visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
+                        console.print_dry_run(
+                            f"Would rename visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
                         )
                     else:
                         try:
                             os.rename(current_visual_path, new_visual_path)
-                            print(
+                            console.print_success(
                                 f"Renamed visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
                             )
                         except OSError as e:
-                            print(
+                            console.print_error(
                                 f"Error renaming visual folder '{visual_folder_name}': {e}"
                             )

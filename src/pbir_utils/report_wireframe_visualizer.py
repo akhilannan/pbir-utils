@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 
 from .common import load_json
 from .metadata_extractor import _get_page_order
+from .console_utils import console
 
 
 def _extract_page_info(page_folder: str) -> tuple:
@@ -229,6 +230,7 @@ def display_report_wireframes(
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
         show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
     """
+    console.print_heading("Action: Displaying report wireframes")
     pages_folder = os.path.join(report_path, "definition", "pages")
     pages_info = []
 

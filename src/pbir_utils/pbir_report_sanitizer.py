@@ -1,6 +1,7 @@
 from .pbir_measure_utils import remove_measures
 from .folder_standardizer import standardize_pbir_folders
 from .common import load_json, write_json, process_json_files
+from .console_utils import console
 import os
 import shutil
 
@@ -15,8 +16,12 @@ def remove_unused_measures(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(f"Action: Removing unused measures{' (Dry Run)' if dry_run else ''}")
-    remove_measures(report_path, check_visual_usage=True, dry_run=dry_run)
+    console.print_heading(
+        f"Action: Removing unused measures{' (Dry Run)' if dry_run else ''}"
+    )
+    remove_measures(
+        report_path, check_visual_usage=True, dry_run=dry_run, print_heading=False
+    )
 
 
 def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
@@ -29,13 +34,15 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(f"Action: Removing unused bookmarks{' (Dry Run)' if dry_run else ''}")
+    console.print_heading(
+        f"Action: Removing unused bookmarks{' (Dry Run)' if dry_run else ''}"
+    )
 
     bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
     bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
 
     if not os.path.exists(bookmarks_json_path):
-        print("No bookmarks found.")
+        console.print_info("No bookmarks found.")
         return
 
     bookmarks_data = load_json(bookmarks_json_path)
@@ -120,7 +127,10 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
                 if not dry_run:
                     os.remove(os.path.join(bookmarks_dir, filename))
                 removed_bookmarks += 1
-                print(f"Removed unused bookmark file: {filename}")
+                if dry_run:
+                    console.print_dry_run(f"Removed unused bookmark file: {filename}")
+                else:
+                    console.print_success(f"Removed unused bookmark file: {filename}")
 
     if not dry_run:
         write_json(bookmarks_json_path, bookmarks_data)
@@ -128,9 +138,13 @@ def remove_unused_bookmarks(report_path: str, dry_run: bool = False) -> None:
     if not bookmarks_data["items"]:  # if no bookmarks left, remove the directory
         if not dry_run:
             shutil.rmtree(bookmarks_dir)
-        print("Removed empty bookmarks folder")
+            console.print_success("Removed empty bookmarks folder")
+        else:
+            console.print_dry_run("Removed empty bookmarks folder")
+    if dry_run:
+        console.print_dry_run(f"Removed {removed_bookmarks} unused bookmarks")
     else:
-        print(f"Removed {removed_bookmarks} unused bookmarks")
+        console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
 
 
 def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> None:
@@ -143,14 +157,16 @@ def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> Non
     Returns:
         None
     """
-    print(f"Action: Removing unused custom visuals{' (Dry Run)' if dry_run else ''}")
+    console.print_heading(
+        f"Action: Removing unused custom visuals{' (Dry Run)' if dry_run else ''}"
+    )
 
     report_json_path = os.path.join(report_path, "definition", "report.json")
     report_data = load_json(report_json_path)
 
     custom_visuals = set(report_data.get("publicCustomVisuals", []))
     if not custom_visuals:
-        print("No custom visuals found in the report.")
+        console.print_info("No custom visuals found in the report.")
         return
 
     def _check_visual(visual_data: dict, _: str) -> str:
@@ -174,9 +190,16 @@ def remove_unused_custom_visuals(report_path: str, dry_run: bool = False) -> Non
             report_data.pop("publicCustomVisuals", None)
         if not dry_run:
             write_json(report_json_path, report_data)
-        print(f"Removed unused custom visuals: {', '.join(unused_visuals)}")
+        if dry_run:
+            console.print_dry_run(
+                f"Removed unused custom visuals: {', '.join(unused_visuals)}"
+            )
+        else:
+            console.print_success(
+                f"Removed unused custom visuals: {', '.join(unused_visuals)}"
+            )
     else:
-        print("No unused custom visuals found.")
+        console.print_info("No unused custom visuals found.")
 
 
 def disable_show_items_with_no_data(report_path: str, dry_run: bool = False) -> None:
@@ -189,7 +212,7 @@ def disable_show_items_with_no_data(report_path: str, dry_run: bool = False) -> 
     Returns:
         None
     """
-    print(
+    console.print_heading(
         f"Action: Disabling 'Show items with no data'{' (Dry Run)' if dry_run else ''}"
     )
 
@@ -212,9 +235,16 @@ def disable_show_items_with_no_data(report_path: str, dry_run: bool = False) -> 
     )
 
     if visuals_modified > 0:
-        print(f"Disabled 'Show items with no data' for {visuals_modified} visual(s).")
+        if dry_run:
+            console.print_dry_run(
+                f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
+            )
+        else:
+            console.print_success(
+                f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
+            )
     else:
-        print("No visuals found with 'Show items with no data' enabled.")
+        console.print_info("No visuals found with 'Show items with no data' enabled.")
 
 
 def hide_tooltip_drillthrough_pages(report_path: str, dry_run: bool = False) -> None:
@@ -227,7 +257,9 @@ def hide_tooltip_drillthrough_pages(report_path: str, dry_run: bool = False) -> 
     Returns:
         None
     """
-    print(f"Action: Hiding tooltip drillthrough pages{' (Dry Run)' if dry_run else ''}")
+    console.print_heading(
+        f"Action: Hiding tooltip drillthrough pages{' (Dry Run)' if dry_run else ''}"
+    )
 
     def _check_page(page_data: dict, _: str) -> str:
         page_binding = page_data.get("pageBinding", {})
@@ -249,12 +281,19 @@ def hide_tooltip_drillthrough_pages(report_path: str, dry_run: bool = False) -> 
         page_data["visibility"] = "HiddenInViewMode"
         if not dry_run:
             write_json(file_path, page_data)
-        print(f"Hidden page: {page_name}")
+        console.print_success(f"Hidden page: {page_name}")
 
     if results:
-        print(f"Hidden {len(results)} tooltip/drillthrough page(s).")
+        if dry_run:
+            console.print_dry_run(
+                f"Hidden {len(results)} tooltip/drillthrough page(s)."
+            )
+        else:
+            console.print_success(
+                f"Hidden {len(results)} tooltip/drillthrough page(s)."
+            )
     else:
-        print("No tooltip/drillthrough pages found that needed hiding.")
+        console.print_info("No tooltip/drillthrough pages found that needed hiding.")
 
 
 def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
@@ -267,7 +306,7 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(
+    console.print_heading(
         f"Action: Setting the first non-hidden page as active{' (Dry Run)' if dry_run else ''}"
     )
     pages_dir = os.path.join(report_path, "definition", "pages")
@@ -315,7 +354,7 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
             )
         else:
             first_non_hidden_page_display_name = first_non_hidden_page
-        print(
+        console.print_warning(
             f"Warning: All pages are hidden or no page.json found. Defaulting to first page: '{first_non_hidden_page_display_name}' ({first_non_hidden_page})"
         )
 
@@ -323,11 +362,16 @@ def set_first_page_as_active(report_path: str, dry_run: bool = False) -> None:
         pages_data["activePageName"] = first_non_hidden_page
         if not dry_run:
             write_json(pages_json_path, pages_data)
-        print(
-            f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
-        )
+        if dry_run:
+            console.print_dry_run(
+                f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
+            )
+        else:
+            console.print_success(
+                f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
+            )
     else:
-        print(
+        console.print_info(
             f"No changes needed. '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) is already set as active."
         )
 
@@ -342,7 +386,7 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(
+    console.print_heading(
         f"Action: Removing empty pages and cleaning up rogue folders{' (Dry Run)' if dry_run else ''}"
     )
     pages_dir = os.path.join(report_path, "definition", "pages")
@@ -392,7 +436,9 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
         pages_data["pageOrder"] = [first_page_id]
         pages_data["activePageName"] = first_page_id
         non_empty_pages.append(first_page_id)  # Mark as non-empty so we keep it
-        print("All pages were empty. Keeping the first page as a placeholder.")
+        console.print_warning(
+            "All pages were empty. Keeping the first page as a placeholder."
+        )
 
     if not dry_run:
         write_json(pages_json_path, pages_data)
@@ -419,14 +465,19 @@ def remove_empty_pages(report_path: str, dry_run: bool = False) -> None:
             folders_to_remove.append(folder_name)
 
     if folders_to_remove:
-        print(f"Removing empty and rogue page folders: {', '.join(folders_to_remove)}")
+        console.print_info(
+            f"Removing empty and rogue page folders: {', '.join(folders_to_remove)}"
+        )
         for folder in folders_to_remove:
             folder_path = os.path.join(pages_dir, folder)
             if not dry_run:
                 shutil.rmtree(folder_path)
-            print(f"Removed folder: {folder}")
+            if dry_run:
+                console.print_dry_run(f"Removed folder: {folder}")
+            else:
+                console.print_success(f"Removed folder: {folder}")
     else:
-        print("No empty or rogue page folders found.")
+        console.print_info("No empty or rogue page folders found.")
 
 
 def _get_hidden_visuals_info(
@@ -593,7 +644,7 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
     Returns:
         None
     """
-    print(
+    console.print_heading(
         f"Action: Removing hidden visuals that are never shown using bookmarks{' (Dry Run)' if dry_run else ''}"
     )
 
@@ -625,12 +676,12 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
             if visual_type and "slicer" in visual_type.lower():
                 # Check if it has default filters or bookmark filters
                 if visual in visuals_with_default_filters:
-                    print(
+                    console.print_info(
                         f"Skipping removal of hidden slicer: {visual} (type: {visual_type}) (has default selection)"
                     )
                     continue
                 if visual in filtered_visuals:
-                    print(
+                    console.print_info(
                         f"Skipping removal of hidden slicer: {visual} (type: {visual_type}) (filtered by bookmark)"
                     )
                     continue
@@ -670,9 +721,14 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
                     page_data["visualInteractions"] = new_interactions
                     if not dry_run:
                         write_json(page_json_path, page_data)
-                    print(
-                        f"Removed visual interactions for {visual_name} from {page_json_path}"
-                    )
+                    if dry_run:
+                        console.print_dry_run(
+                            f"Removed visual interactions for {visual_name} from {page_json_path}"
+                        )
+                    else:
+                        console.print_success(
+                            f"Removed visual interactions for {visual_name} from {page_json_path}"
+                        )
             # Remove the visual folder
             if not dry_run:
                 shutil.rmtree(folder)
@@ -688,9 +744,14 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
                     page_data = load_json(page_json_path)
                     page_name = page_data.get("displayName", "Unknown Page")
 
-            print(
-                f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
-            )
+            if dry_run:
+                console.print_dry_run(
+                    f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
+                )
+            else:
+                console.print_success(
+                    f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
+                )
 
     # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
@@ -715,10 +776,21 @@ def remove_hidden_visuals_never_shown(report_path: str, dry_run: bool = False) -
         dry_run=dry_run,
     )
 
-    print(
-        f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
-    )
-    print(f"Updated {bookmarks_updated} bookmark files")
+    if len(visuals_to_remove) > 0 or bookmarks_updated > 0:
+        if dry_run:
+            console.print_dry_run(
+                f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
+            )
+            if bookmarks_updated > 0:
+                console.print_dry_run(f"Updated {bookmarks_updated} bookmark files")
+        else:
+            console.print_success(
+                f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
+            )
+            if bookmarks_updated > 0:
+                console.print_success(f"Updated {bookmarks_updated} bookmark files")
+    else:
+        console.print_info("No hidden visuals removed.")
 
 
 def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
@@ -731,11 +803,13 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
     Returns:
         None
     """
-    print(f"Action: Cleaning up invalid bookmarks{' (Dry Run)' if dry_run else ''}")
+    console.print_heading(
+        f"Action: Cleaning up invalid bookmarks{' (Dry Run)' if dry_run else ''}"
+    )
 
     bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
     if not os.path.exists(bookmarks_dir):
-        print("No bookmarks directory found.")
+        console.print_info("No bookmarks directory found.")
         return
 
     # Load pages.json to get valid page names
@@ -843,20 +917,42 @@ def cleanup_invalid_bookmarks(report_path: str, dry_run: bool = False) -> None:
     if not bookmarks_data["items"]:
         if not dry_run:
             shutil.rmtree(bookmarks_dir)
-        print("Removed empty bookmarks directory")
+            console.print_success("Removed empty bookmarks directory")
+        else:
+            console.print_dry_run("Removed empty bookmarks directory")
     else:
         if stats["processed"] > 0:
-            print(f"Processed {stats['processed']} bookmark files:")
+            console.print_info(f"Processed {stats['processed']} bookmark files:")
             if stats["removed"] > 0:
                 if not dry_run:
                     write_json(bookmarks_json_path, bookmarks_data)
-                print(f"- Removed {stats['removed']} invalid bookmarks")
+                    console.print_success(
+                        f"- Removed {stats['removed']} invalid bookmarks"
+                    )
+                else:
+                    console.print_dry_run(
+                        f"- Removed {stats['removed']} invalid bookmarks"
+                    )
             if stats["cleaned"] > 0:
-                print(f"- Cleaned {stats['cleaned']} invalid visual references")
+                if dry_run:
+                    console.print_dry_run(
+                        f"- Cleaned {stats['cleaned']} invalid visual references"
+                    )
+                else:
+                    console.print_success(
+                        f"- Cleaned {stats['cleaned']} invalid visual references"
+                    )
             if stats["updated"] > 0:
-                print(f"- Updated {stats['updated']} bookmark files")
+                if dry_run:
+                    console.print_dry_run(
+                        f"- Updated {stats['updated']} bookmark files"
+                    )
+                else:
+                    console.print_success(
+                        f"- Updated {stats['updated']} bookmark files"
+                    )
         else:
-            print("No invalid bookmarks or references found.")
+            console.print_info("No invalid bookmarks or references found.")
 
 
 AVAILABLE_ACTIONS = {
@@ -890,6 +986,6 @@ def sanitize_powerbi_report(
         if action in AVAILABLE_ACTIONS:
             AVAILABLE_ACTIONS[action](report_path, dry_run=dry_run)
         else:
-            print(f"Warning: Unknown action '{action}' skipped.")
+            console.print_warning(f"Warning: Unknown action '{action}' skipped.")
 
-    print("Power BI report sanitization completed.")
+    console.print_success("Power BI report sanitization completed.")

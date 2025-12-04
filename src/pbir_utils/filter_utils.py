@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 
 from .common import load_json, write_json, get_report_paths
+from .console_utils import console
 
 
 def _format_date(date_str: str) -> str:
@@ -290,12 +291,15 @@ def update_report_filters(
     Returns:
     None
     """
+    console.print_heading(
+        f"Action: Updating report filters{' (Dry Run)' if dry_run else ''}"
+    )
     if filters is None or not filters:
         raise ValueError("The 'filters' parameter is required and cannot be empty.")
 
     valid_filters, ignored_filters = _validate_filters(filters)
     for filter_config, reason in ignored_filters:
-        print(f"Ignored filter: {filter_config} - Reason: {reason}")
+        console.print_warning(f"Ignored filter: {filter_config} - Reason: {reason}")
 
     report_paths = get_report_paths(directory_path, reports)
 
@@ -306,7 +310,7 @@ def update_report_filters(
             or "filterConfig" not in data
             or "filters" not in data["filterConfig"]
         ):
-            print(
+            console.print_info(
                 f"No existing filters found in report: {os.path.basename(report_path)}"
             )
             continue
@@ -361,22 +365,29 @@ def update_report_filters(
                         )
                     updated = True
                 else:
-                    print(
+                    console.print_warning(
                         f"Skipping filter update for {table}.{column} in report {os.path.basename(report_path)} - filter item not found"
                     )
             else:
-                print(
+                console.print_warning(
                     f"Skipping filter update for {table}.{column} in report {os.path.basename(report_path)} - entity or property not found"
                 )
 
         if updated:
             if not dry_run:
                 write_json(report_path, data)
-            print(
-                f"Updated filters in report: {os.path.basename(report_path)}{' (Dry Run)' if dry_run else ''}"
-            )
+            if dry_run:
+                console.print_dry_run(
+                    f"Updated filters in report: {os.path.basename(report_path)}"
+                )
+            else:
+                console.print_success(
+                    f"Updated filters in report: {os.path.basename(report_path)}"
+                )
         else:
-            print(f"No filters were updated in report: {os.path.basename(report_path)}")
+            console.print_info(
+                f"No filters were updated in report: {os.path.basename(report_path)}"
+            )
 
 
 def sort_report_filters(
@@ -404,6 +415,9 @@ def sort_report_filters(
     Returns:
     None
     """
+    console.print_heading(
+        f"Action: Sorting report filters{' (Dry Run)' if dry_run else ''}"
+    )
     report_paths = get_report_paths(directory_path, reports)
 
     for report_path in report_paths:
@@ -413,7 +427,7 @@ def sort_report_filters(
             or "filterConfig" not in data
             or "filters" not in data["filterConfig"]
         ):
-            print(
+            console.print_info(
                 f"No existing filters found in report: {os.path.basename(report_path)}"
             )
             continue
@@ -466,13 +480,14 @@ def sort_report_filters(
             pass
 
         else:
-            print(
+            console.print_error(
                 f"Invalid sort_order: {sort_order}. No changes applied to report: {report_path}"
             )
             continue
 
         if not dry_run:
             write_json(report_path, data)
-        print(
-            f"Sorted filters in report: {report_path}{' (Dry Run)' if dry_run else ''}"
-        )
+        if dry_run:
+            console.print_dry_run(f"Sorted filters in report: {report_path}")
+        else:
+            console.print_success(f"Sorted filters in report: {report_path}")

@@ -3,6 +3,7 @@ import csv
 import fnmatch
 
 from .common import load_json, traverse_pbir_json
+from .console_utils import console
 
 HEADER_FIELDS = [
     "Report",
@@ -312,6 +313,7 @@ def export_pbir_metadata_to_csv(
     Returns:
         None
     """
+    console.print_heading("Action: Extracting metadata")
 
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
@@ -349,7 +351,11 @@ def export_pbir_metadata_to_csv(
     )
 
     # Write to CSV
-    with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
-        writer.writeheader()
-        writer.writerows(metadata)
+    try:
+        with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
+            writer.writeheader()
+            writer.writerows(metadata)
+        console.print_success(f"Metadata exported to {csv_output_path}")
+    except Exception as e:
+        console.print_error(f"Error exporting metadata: {e}")
