@@ -322,13 +322,17 @@ def remove_measures(
         if not dry_run:
             write_json(report_file, report_data)
         if removed_measures:
-            if summary:
-                msg = f"Removed {len(removed_measures)} measures"
-            else:
-                msg = f"Measures removed: {', '.join(removed_measures)}"
             if dry_run:
+                if summary:
+                    msg = f"Would remove {len(removed_measures)} measures"
+                else:
+                    msg = f"Would remove measures: {', '.join(removed_measures)}"
                 console.print_dry_run(msg)
             else:
+                if summary:
+                    msg = f"Removed {len(removed_measures)} measures"
+                else:
+                    msg = f"Measures removed: {', '.join(removed_measures)}"
                 console.print_success(msg)
             return True
         else:
@@ -342,6 +346,6 @@ def remove_measures(
             )
         else:
             console.print_dry_run(
-                "All measures removed. The reportExtensions.json file has been deleted."
+                "Would remove all measures. The reportExtensions.json file would be deleted."
             )
         return True

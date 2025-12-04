@@ -142,7 +142,7 @@ def remove_unused_bookmarks(
                 if not summary:
                     if dry_run:
                         console.print_dry_run(
-                            f"Removed unused bookmark file: {filename}"
+                            f"Would remove unused bookmark file: {filename}"
                         )
                     else:
                         console.print_success(
@@ -157,11 +157,16 @@ def remove_unused_bookmarks(
             shutil.rmtree(bookmarks_dir)
             console.print_success("Removed empty bookmarks folder")
         else:
-            console.print_dry_run("Removed empty bookmarks folder")
-    if dry_run:
-        console.print_dry_run(f"Removed {removed_bookmarks} unused bookmarks")
-    else:
-        console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
+            console.print_dry_run("Would remove empty bookmarks folder")
+
+    if removed_bookmarks > 0:
+        if dry_run:
+            console.print_dry_run(f"Would remove {removed_bookmarks} unused bookmarks")
+        else:
+            console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
+    elif bookmarks_data["items"]:  # Only show "no unused" if there are still bookmarks
+        console.print_info("No unused bookmarks found.")
+
     return removed_bookmarks > 0 or not bookmarks_data["items"]
 
 
@@ -211,13 +216,17 @@ def remove_unused_custom_visuals(
             report_data.pop("publicCustomVisuals", None)
         if not dry_run:
             write_json(report_json_path, report_data)
-        if summary:
-            msg = f"Removed {len(unused_visuals)} unused custom visuals"
-        else:
-            msg = f"Removed unused custom visuals: {', '.join(unused_visuals)}"
         if dry_run:
+            if summary:
+                msg = f"Would remove {len(unused_visuals)} unused custom visuals"
+            else:
+                msg = f"Would remove unused custom visuals: {', '.join(unused_visuals)}"
             console.print_dry_run(msg)
         else:
+            if summary:
+                msg = f"Removed {len(unused_visuals)} unused custom visuals"
+            else:
+                msg = f"Removed unused custom visuals: {', '.join(unused_visuals)}"
             console.print_success(msg)
         return True
     else:
@@ -263,7 +272,7 @@ def disable_show_items_with_no_data(
     if visuals_modified > 0:
         if dry_run:
             console.print_dry_run(
-                f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
+                f"Would disable 'Show items with no data' for {visuals_modified} visual(s)."
             )
         else:
             console.print_success(
@@ -318,7 +327,7 @@ def hide_tooltip_drillthrough_pages(
     if results:
         if dry_run:
             console.print_dry_run(
-                f"Hidden {len(results)} tooltip/drillthrough page(s)."
+                f"Would hide {len(results)} tooltip/drillthrough page(s)."
             )
         else:
             console.print_success(
@@ -401,7 +410,7 @@ def set_first_page_as_active(
             write_json(pages_json_path, pages_data)
         if dry_run:
             console.print_dry_run(
-                f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
+                f"Would set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
             )
         else:
             console.print_success(
@@ -517,13 +526,13 @@ def remove_empty_pages(
                 shutil.rmtree(folder_path)
             if not summary:
                 if dry_run:
-                    console.print_dry_run(f"Removed folder: {folder}")
+                    console.print_dry_run(f"Would remove folder: {folder}")
                 else:
                     console.print_success(f"Removed folder: {folder}")
         if summary:
             if dry_run:
                 console.print_dry_run(
-                    f"Removed {len(folders_to_remove)} empty/rogue page folders"
+                    f"Would remove {len(folders_to_remove)} empty/rogue page folders"
                 )
             else:
                 console.print_success(
@@ -784,7 +793,7 @@ def remove_hidden_visuals_never_shown(
                     if not summary:
                         if dry_run:
                             console.print_dry_run(
-                                f"Removed visual interactions for {visual_name} from {page_json_path}"
+                                f"Would remove visual interactions for {visual_name} from {page_json_path}"
                             )
                         else:
                             console.print_success(
@@ -808,7 +817,7 @@ def remove_hidden_visuals_never_shown(
             if not summary:
                 if dry_run:
                     console.print_dry_run(
-                        f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
+                        f"Would remove '{visual_type}' visual in '{page_name}' page: {visual_name}"
                     )
                 else:
                     console.print_success(
@@ -841,10 +850,12 @@ def remove_hidden_visuals_never_shown(
     if len(visuals_to_remove) > 0 or bookmarks_updated > 0:
         if dry_run:
             console.print_dry_run(
-                f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
+                f"Would remove {len(visuals_to_remove)} visuals (including groups and their children)"
             )
             if bookmarks_updated > 0:
-                console.print_dry_run(f"Updated {bookmarks_updated} bookmark files")
+                console.print_dry_run(
+                    f"Would update {bookmarks_updated} bookmark files"
+                )
         else:
             console.print_success(
                 f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
@@ -986,7 +997,7 @@ def cleanup_invalid_bookmarks(
             shutil.rmtree(bookmarks_dir)
             console.print_success("Removed empty bookmarks directory")
         else:
-            console.print_dry_run("Removed empty bookmarks directory")
+            console.print_dry_run("Would remove empty bookmarks directory")
     else:
         if stats["processed"] > 0:
             console.print_info(f"Processed {stats['processed']} bookmark files:")
@@ -998,12 +1009,12 @@ def cleanup_invalid_bookmarks(
                     )
                 else:
                     console.print_dry_run(
-                        f"- Removed {stats['removed']} invalid bookmarks"
+                        f"- Would remove {stats['removed']} invalid bookmarks"
                     )
             if stats["cleaned"] > 0:
                 if dry_run:
                     console.print_dry_run(
-                        f"- Cleaned {stats['cleaned']} invalid visual references"
+                        f"- Would clean {stats['cleaned']} invalid visual references"
                     )
                 else:
                     console.print_success(
@@ -1012,7 +1023,7 @@ def cleanup_invalid_bookmarks(
             if stats["updated"] > 0:
                 if dry_run:
                     console.print_dry_run(
-                        f"- Updated {stats['updated']} bookmark files"
+                        f"- Would update {stats['updated']} bookmark files"
                     )
                 else:
                     console.print_success(

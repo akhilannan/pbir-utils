@@ -140,12 +140,11 @@ def standardize_pbir_folders(
     has_changes = pages_renamed > 0 or visuals_renamed > 0
 
     if summary:
-        msg = (
-            f"Renamed {pages_renamed} page folders and {visuals_renamed} visual folders"
-        )
         if dry_run:
+            msg = f"Would rename {pages_renamed} page folders and {visuals_renamed} visual folders"
             console.print_dry_run(msg)
         else:
+            msg = f"Renamed {pages_renamed} page folders and {visuals_renamed} visual folders"
             console.print_success(msg)
     elif not has_changes:
         console.print_info("All folders are already using standard naming.")

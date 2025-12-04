@@ -196,7 +196,7 @@ def test_remove_empty_pages_with_summary(complex_report, run_cli):
     result = run_cli(["remove-empty-pages", complex_report, "--dry-run", "--summary"])
     assert result.returncode == 0
     # Summary output should contain count-based message
-    assert "Removed" in result.stdout or "No empty" in result.stdout
+    assert "Would remove" in result.stdout or "No empty" in result.stdout
 
 
 def test_sanitize_with_summary(simple_report, run_cli):
@@ -218,8 +218,8 @@ def test_disable_interactions_with_summary(simple_report, run_cli):
     """Test that --summary flag works with disable-interactions command."""
     result = run_cli(["disable-interactions", simple_report, "--dry-run", "--summary"])
     assert result.returncode == 0
-    # Summary should contain count of pages updated
-    assert "Updated visual interactions" in result.stdout
+    # Summary should contain count of pages updated (dry run uses "Would update")
+    assert "Would update visual interactions" in result.stdout
 
 
 def test_remove_measures_with_summary(simple_report, run_cli):
@@ -234,8 +234,8 @@ def test_standardize_folder_names_with_summary(simple_report, run_cli):
         ["standardize-folder-names", simple_report, "--dry-run", "--summary"]
     )
     assert result.returncode == 0
-    # Summary should contain count of renamed folders
-    assert "Renamed" in result.stdout
+    # Summary should contain count of renamed folders (dry run uses "Would rename")
+    assert "Would rename" in result.stdout
 
 
 # Tests for --error-on-change flag

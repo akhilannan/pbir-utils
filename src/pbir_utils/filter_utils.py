@@ -386,7 +386,7 @@ def update_report_filters(
             if not summary:
                 if dry_run:
                     console.print_dry_run(
-                        f"Updated filters in report: {os.path.basename(report_path)}"
+                        f"Would update filters in report: {os.path.basename(report_path)}"
                     )
                 else:
                     console.print_success(
@@ -398,10 +398,11 @@ def update_report_filters(
             )
 
     if summary:
-        msg = f"Updated filters in {len(report_paths)} reports"
         if dry_run:
+            msg = f"Would update filters in {len(report_paths)} reports"
             console.print_dry_run(msg)
         else:
+            msg = f"Updated filters in {len(report_paths)} reports"
             console.print_success(msg)
 
     return any_changes
@@ -520,17 +521,20 @@ def sort_report_filters(
                 write_json(report_path, data)
             if not summary:
                 if dry_run:
-                    console.print_dry_run(f"Sorted filters in report: {report_path}")
+                    console.print_dry_run(
+                        f"Would sort filters in report: {report_path}"
+                    )
                 else:
                     console.print_success(f"Sorted filters in report: {report_path}")
         elif not summary:
             console.print_info(f"No changes needed for report: {report_path}")
 
     if summary:
-        msg = f"Sorted filters in {len(report_paths)} reports"
         if dry_run:
+            msg = f"Would sort filters in {len(report_paths)} reports"
             console.print_dry_run(msg)
         else:
+            msg = f"Sorted filters in {len(report_paths)} reports"
             console.print_success(msg)
 
     return any_changes
