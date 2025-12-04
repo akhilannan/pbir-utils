@@ -382,3 +382,59 @@ def test_error_on_change_cleanup_invalid_bookmarks(complex_report, run_cli):
         ["cleanup-invalid-bookmarks", complex_report, "--dry-run", "--error-on-change"]
     )
     assert result.returncode in [0, 1]
+
+
+# Tests for --exclude flag
+
+
+def test_sanitize_exclude_single_action(complex_report, run_cli):
+    """Test that --exclude works with a single action when using --actions all."""
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "all",
+            "--exclude",
+            "standardize_folder_names",
+            "--dry-run",
+        ]
+    )
+    assert result.returncode == 0
+
+
+def test_sanitize_exclude_multiple_actions(complex_report, run_cli):
+    """Test that --exclude works with multiple actions when using --actions all."""
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "all",
+            "--exclude",
+            "standardize_folder_names",
+            "set_first_page_as_active",
+            "--dry-run",
+        ]
+    )
+    assert result.returncode == 0
+
+
+def test_sanitize_exclude_invalid_action_warning(complex_report, run_cli):
+    """Test that --exclude warns when invalid action names are provided."""
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "all",
+            "--exclude",
+            "invalid_action",
+            "standardize_folder_names",
+            "--dry-run",
+        ]
+    )
+    assert result.returncode == 0
+    assert (
+        "Unknown actions in --exclude will be ignored: invalid_action" in result.stdout
+    )

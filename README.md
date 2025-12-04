@@ -32,6 +32,7 @@ Sanitize a Power BI report by removing unused or unwanted components.
 ```bash
 pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
 pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all
+pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all --exclude set_first_page_as_active standardize_folder_names --dry-run
 pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all --summary  # Concise output
 ```
 

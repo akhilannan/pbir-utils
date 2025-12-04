@@ -1,4 +1,3 @@
-### Changed
-- Improved CLI feedback: all commands now display helpful messages when no changes are needed (e.g., "All folders are already using standard naming.").
-- Improved dry-run messages: all dry-run messages now use future tense (e.g., "Would rename 7 folders" instead of "Renamed 7 folders") to clearly indicate that no changes were actually made.
+### Added
+- **Sanitize command**: Added `--exclude` flag to run all sanitization actions except specified ones (e.g., `--actions all --exclude standardize_folder_names set_first_page_as_active`)
 

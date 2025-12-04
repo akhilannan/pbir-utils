@@ -115,6 +115,7 @@ def main():
         Examples:
           pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
           pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --exclude set_first_page_as_active standardize_folder_names --dry-run
           pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run --error-on-change set_first_page_as_active remove_empty_pages
     """
     )
@@ -142,6 +143,12 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    sanitize_parser.add_argument(
+        "--exclude",
+        nargs="+",
+        metavar="ACTION",
+        help="Actions to exclude when using '--actions all'. Ignored if specific actions are listed.",
     )
     sanitize_parser.add_argument(
         "--error-on-change",
@@ -903,6 +910,16 @@ def main():
 
         if "all" in actions:
             actions = list(AVAILABLE_ACTIONS.keys())
+            # Apply exclusions if specified
+            if args.exclude:
+                invalid_excludes = [
+                    e for e in args.exclude if e not in AVAILABLE_ACTIONS
+                ]
+                if invalid_excludes:
+                    console.print_warning(
+                        f"Unknown actions in --exclude will be ignored: {', '.join(invalid_excludes)}"
+                    )
+                actions = [a for a in actions if a not in args.exclude]
 
         if not actions:
             console.print_warning(
