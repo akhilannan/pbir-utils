@@ -214,7 +214,7 @@ def _update_property(data: dict, column_map: dict) -> bool:
 
 def _update_pbir_component(
     file_path: str, table_map: dict, column_map: dict, dry_run: bool = False
-):
+) -> bool:
     """
     Update a single component within a Power BI Enhanced Report Format (PBIR) structure.
 
@@ -225,6 +225,9 @@ def _update_pbir_component(
     - file_path: Path to the PBIR component JSON file.
     - table_map: A dictionary mapping old table names to new table names.
     - column_map: A dictionary mapping old (table, column) pairs to new column names.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     data = load_json(file_path)
 
@@ -246,11 +249,13 @@ def _update_pbir_component(
             write_json(file_path, data)
         else:
             console.print_dry_run(f"Would update {file_path}")
+        return True
+    return False
 
 
 def batch_update_pbir_project(
     directory_path: str, csv_path: str, dry_run: bool = False
-):
+) -> bool:
     """
     Perform a batch update on all components of a Power BI Enhanced Report Format (PBIR) project.
 
@@ -261,10 +266,14 @@ def batch_update_pbir_project(
     Parameters:
     - directory_path: Path to the root directory of the PBIR project (usually the 'definition' folder).
     - csv_path: Path to the CSV file with the mapping of old and new table/column names.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Batch updating PBIR project{' (Dry Run)' if dry_run else ''}"
     )
+    any_changes = False
     try:
         mappings = _load_csv_mapping(csv_path)
 
@@ -288,8 +297,11 @@ def batch_update_pbir_project(
             for file in files:
                 if file.endswith(".json"):
                     file_path = os.path.join(root, file)
-                    _update_pbir_component(
+                    if _update_pbir_component(
                         file_path, table_map, column_map, dry_run=dry_run
-                    )
+                    ):
+                        any_changes = True
     except Exception as e:
         console.print_error(f"An error occurred: {str(e)}")
+
+    return any_changes

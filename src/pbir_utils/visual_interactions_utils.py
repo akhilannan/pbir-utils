@@ -117,7 +117,7 @@ def _process_page(
     interaction_type: str,
     dry_run: bool = False,
     summary: bool = False,
-):
+) -> bool:
     """
     Processes and updates visual interactions for a specific page.
 
@@ -131,6 +131,9 @@ def _process_page(
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
         summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     page_json = load_json(page_json_path)
     visual_ids, visual_types = _get_visuals(visuals_folder)
@@ -142,18 +145,25 @@ def _process_page(
         set(source_ids or visual_ids), source_types, visual_types
     )
 
+    existing_interactions = page_json.get("visualInteractions", [])
     updated_interactions = _update_interactions(
-        page_json.get("visualInteractions", []),
+        existing_interactions,
         list(source_ids),
         list(target_ids),
         update_type,
         interaction_type,
     )
+
+    # Check if there were any changes
+    has_changes = updated_interactions != existing_interactions
+
     page_json["visualInteractions"] = updated_interactions
     if not dry_run:
         write_json(page_json_path, page_json)
-    elif not summary:
+    elif not summary and has_changes:
         console.print_dry_run(f"Would update visual interactions in {page_json_path}")
+
+    return has_changes
 
 
 def _process_all_pages(
@@ -167,7 +177,7 @@ def _process_all_pages(
     interaction_type: str = "NoFilter",
     dry_run: bool = False,
     summary: bool = False,
-):
+) -> bool:
     """
     Processes all pages or specific pages based on provided parameters.
 
@@ -181,9 +191,13 @@ def _process_all_pages(
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
         summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if any changes were made (or would be made in dry run), False otherwise.
     """
     pages_folder = os.path.join(report_path, "definition", "pages")
     pages_updated = 0
+    any_changes = False
 
     for root, _, files in os.walk(pages_folder):
         for file_name in files:
@@ -195,7 +209,7 @@ def _process_all_pages(
                 if not pages or page_json.get("displayName") in pages:
                     visuals_folder = os.path.join(os.path.dirname(file_path), "visuals")
                     if os.path.isdir(visuals_folder):
-                        _process_page(
+                        page_changed = _process_page(
                             file_path,
                             visuals_folder,
                             source_ids,
@@ -207,6 +221,8 @@ def _process_all_pages(
                             dry_run=dry_run,
                             summary=summary,
                         )
+                        if page_changed:
+                            any_changes = True
                         pages_updated += 1
 
     if summary:
@@ -215,6 +231,8 @@ def _process_all_pages(
             console.print_dry_run(msg)
         else:
             console.print_success(msg)
+
+    return any_changes
 
 
 def disable_visual_interactions(
@@ -227,7 +245,7 @@ def disable_visual_interactions(
     update_type: str = "Upsert",
     dry_run: bool = False,
     summary: bool = False,
-) -> None:
+) -> bool:
     """
     Main function to disable visual interactions based on provided parameters.
 
@@ -240,6 +258,9 @@ def disable_visual_interactions(
         target_visual_types (list, optional): List of target visual types. If None, all visuals are used as targets.
         update_type (str, optional): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite". Default is "Upsert".
         summary (bool, optional): If True, show summary instead of detailed messages. Default is False.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
 
     Raises:
         ValueError: If any of the provided parameters are not lists when expected.
@@ -259,7 +280,7 @@ def disable_visual_interactions(
             raise ValueError(f"{param_name} must be a list")
 
     # Proceed with processing all pages
-    _process_all_pages(
+    return _process_all_pages(
         report_path,
         pages,
         source_visual_ids,

@@ -8,7 +8,7 @@ import shutil
 
 def remove_unused_measures(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Remove unused measures from the report.
 
@@ -17,12 +17,12 @@ def remove_unused_measures(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Removing unused measures{' (Dry Run)' if dry_run else ''}"
     )
-    remove_measures(
+    return remove_measures(
         report_path,
         check_visual_usage=True,
         dry_run=dry_run,
@@ -33,7 +33,7 @@ def remove_unused_measures(
 
 def remove_unused_bookmarks(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Remove bookmarks which are not activated in report using bookmark navigator or actions
 
@@ -42,7 +42,7 @@ def remove_unused_bookmarks(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Removing unused bookmarks{' (Dry Run)' if dry_run else ''}"
@@ -53,7 +53,7 @@ def remove_unused_bookmarks(
 
     if not os.path.exists(bookmarks_json_path):
         console.print_info("No bookmarks found.")
-        return
+        return False
 
     bookmarks_data = load_json(bookmarks_json_path)
 
@@ -162,11 +162,12 @@ def remove_unused_bookmarks(
         console.print_dry_run(f"Removed {removed_bookmarks} unused bookmarks")
     else:
         console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
+    return removed_bookmarks > 0 or not bookmarks_data["items"]
 
 
 def remove_unused_custom_visuals(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Remove unused custom visuals from the report.
 
@@ -175,7 +176,7 @@ def remove_unused_custom_visuals(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Removing unused custom visuals{' (Dry Run)' if dry_run else ''}"
@@ -187,7 +188,7 @@ def remove_unused_custom_visuals(
     custom_visuals = set(report_data.get("publicCustomVisuals", []))
     if not custom_visuals:
         console.print_info("No custom visuals found in the report.")
-        return
+        return False
 
     def _check_visual(visual_data: dict, _: str) -> str:
         visual_type = visual_data.get("visual", {}).get("visualType")
@@ -218,13 +219,15 @@ def remove_unused_custom_visuals(
             console.print_dry_run(msg)
         else:
             console.print_success(msg)
+        return True
     else:
         console.print_info("No unused custom visuals found.")
+        return False
 
 
 def disable_show_items_with_no_data(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Disable the 'Show items with no data' option for visuals.
 
@@ -233,7 +236,7 @@ def disable_show_items_with_no_data(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Disabling 'Show items with no data'{' (Dry Run)' if dry_run else ''}"
@@ -266,13 +269,15 @@ def disable_show_items_with_no_data(
             console.print_success(
                 f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
             )
+        return True
     else:
         console.print_info("No visuals found with 'Show items with no data' enabled.")
+        return False
 
 
 def hide_tooltip_drillthrough_pages(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Hide tooltip and drillthrough pages in the report.
 
@@ -281,7 +286,7 @@ def hide_tooltip_drillthrough_pages(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Hiding tooltip drillthrough pages{' (Dry Run)' if dry_run else ''}"
@@ -319,13 +324,15 @@ def hide_tooltip_drillthrough_pages(
             console.print_success(
                 f"Hidden {len(results)} tooltip/drillthrough page(s)."
             )
+        return True
     else:
         console.print_info("No tooltip/drillthrough pages found that needed hiding.")
+        return False
 
 
 def set_first_page_as_active(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Set the first non-hidden page of the report as active.
 
@@ -334,7 +341,7 @@ def set_first_page_as_active(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Setting the first non-hidden page as active{' (Dry Run)' if dry_run else ''}"
@@ -400,15 +407,17 @@ def set_first_page_as_active(
             console.print_success(
                 f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
             )
+        return True
     else:
         console.print_info(
             f"No changes needed. '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) is already set as active."
         )
+        return False
 
 
 def remove_empty_pages(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Remove empty pages and clean up rogue folders in the report.
 
@@ -417,7 +426,7 @@ def remove_empty_pages(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Removing empty pages and cleaning up rogue folders{' (Dry Run)' if dry_run else ''}"
@@ -520,8 +529,10 @@ def remove_empty_pages(
                 console.print_success(
                     f"Removed {len(folders_to_remove)} empty/rogue page folders"
                 )
+        return True
     else:
         console.print_info("No empty or rogue page folders found.")
+        return False
 
 
 def _get_hidden_visuals_info(
@@ -677,7 +688,7 @@ def _get_visuals_filtered_by_bookmarks(report_path: str) -> set:
 
 def remove_hidden_visuals_never_shown(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Remove hidden visuals that are never shown using bookmarks.
     Also removes hidden visual groups and their children.
@@ -689,7 +700,7 @@ def remove_hidden_visuals_never_shown(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Removing hidden visuals that are never shown using bookmarks{' (Dry Run)' if dry_run else ''}"
@@ -840,13 +851,15 @@ def remove_hidden_visuals_never_shown(
             )
             if bookmarks_updated > 0:
                 console.print_success(f"Updated {bookmarks_updated} bookmark files")
+        return True
     else:
         console.print_info("No hidden visuals removed.")
+        return False
 
 
 def cleanup_invalid_bookmarks(
     report_path: str, dry_run: bool = False, summary: bool = False
-) -> None:
+) -> bool:
     """
     Clean up invalid bookmarks that reference non-existent pages or visuals.
 
@@ -855,7 +868,7 @@ def cleanup_invalid_bookmarks(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Cleaning up invalid bookmarks{' (Dry Run)' if dry_run else ''}"
@@ -864,7 +877,7 @@ def cleanup_invalid_bookmarks(
     bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
     if not os.path.exists(bookmarks_dir):
         console.print_info("No bookmarks directory found.")
-        return
+        return False
 
     # Load pages.json to get valid page names
     pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
@@ -1005,8 +1018,10 @@ def cleanup_invalid_bookmarks(
                     console.print_success(
                         f"- Updated {stats['updated']} bookmark files"
                     )
+            return True
         else:
             console.print_info("No invalid bookmarks or references found.")
+            return False
 
 
 AVAILABLE_ACTIONS = {
@@ -1025,7 +1040,7 @@ AVAILABLE_ACTIONS = {
 
 def sanitize_powerbi_report(
     report_path: str, actions: list[str], dry_run: bool = False, summary: bool = False
-) -> None:
+) -> dict[str, bool]:
     """
     Sanitize a Power BI report by performing specified actions.
 
@@ -1035,12 +1050,16 @@ def sanitize_powerbi_report(
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
-        None
+        dict[str, bool]: A dictionary mapping action names to whether changes were made.
     """
+    results = {}
     for action in actions:
         if action in AVAILABLE_ACTIONS:
-            AVAILABLE_ACTIONS[action](report_path, dry_run=dry_run, summary=summary)
+            results[action] = AVAILABLE_ACTIONS[action](
+                report_path, dry_run=dry_run, summary=summary
+            )
         else:
             console.print_warning(f"Warning: Unknown action '{action}' skipped.")
 
     console.print_success("Power BI report sanitization completed.")
+    return results

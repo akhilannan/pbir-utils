@@ -62,6 +62,27 @@ def parse_json_arg(json_str: Optional[str], arg_name: str):
         sys.exit(1)
 
 
+def _check_error_on_change(args, has_changes: bool, command_name: str):
+    """
+    Check if --error-on-change is specified and if changes would be made.
+    Exits with code 1 if validation fails.
+
+    Args:
+        args: Parsed command line arguments.
+        has_changes: Whether changes were made (or would be made in dry run).
+        command_name: Name of the command for error messages.
+    """
+    error_on_change = getattr(args, "error_on_change", False)
+    if error_on_change:
+        if not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        if has_changes:
+            console.print_error(f"Error: {command_name} would make changes.")
+            console.print_error("Build failed due to --error-on-change policy.")
+            sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="PBIR Utilities CLI - A tool for managing Power BI Enhanced Report Format (PBIR) projects.",
@@ -94,6 +115,7 @@ def main():
         Examples:
           pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
           pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run --error-on-change set_first_page_as_active remove_empty_pages
     """
     )
     sanitize_parser = subparsers.add_parser(
@@ -120,6 +142,12 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    sanitize_parser.add_argument(
+        "--error-on-change",
+        nargs="+",
+        metavar="ACTION",
+        help="Exit with error code 1 if specified actions would make changes during dry run. Only valid with --dry-run.",
     )
 
     # Extract Metadata Command
@@ -242,6 +270,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    batch_update_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Disable Interactions Command
     disable_interactions_desc = textwrap.dedent(
@@ -311,6 +344,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    disable_interactions_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Remove Measures Command
     remove_measures_desc = textwrap.dedent(
@@ -365,6 +403,11 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    remove_measures_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
     # Measure Dependencies Command
@@ -463,6 +506,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    update_filters_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Sort Filters Command
     sort_filters_desc = textwrap.dedent(
@@ -518,6 +566,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    sort_filters_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Standardize Folder Names Command
     standardize_folders_desc = textwrap.dedent(
@@ -556,6 +609,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    standardize_folders_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Remove Unused Bookmarks Command
     remove_unused_bookmarks_epilog = textwrap.dedent(
@@ -585,6 +643,11 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    remove_unused_bookmarks_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
     # Remove Unused Custom Visuals Command
@@ -616,6 +679,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    remove_unused_custom_visuals_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Disable Show Items With No Data Command
     disable_show_items_with_no_data_epilog = textwrap.dedent(
@@ -645,6 +713,11 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    disable_show_items_with_no_data_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
     # Hide Tooltip Drillthrough Pages Command
@@ -676,6 +749,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    hide_tooltip_drillthrough_pages_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Set First Page As Active Command
     set_first_page_as_active_epilog = textwrap.dedent(
@@ -705,6 +783,11 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    set_first_page_as_active_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
     # Remove Empty Pages Command
@@ -736,6 +819,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    remove_empty_pages_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     # Remove Hidden Visuals Command
     remove_hidden_visuals_epilog = textwrap.dedent(
@@ -765,6 +853,11 @@ def main():
         "--summary",
         action="store_true",
         help="Show summary instead of detailed messages",
+    )
+    remove_hidden_visuals_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
     )
 
     # Cleanup Invalid Bookmarks Command
@@ -796,6 +889,11 @@ def main():
         action="store_true",
         help="Show summary instead of detailed messages",
     )
+    cleanup_invalid_bookmarks_parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
 
     args = parser.parse_args()
 
@@ -811,9 +909,32 @@ def main():
                 "No actions specified. Use --actions to specify sanitization actions."
             )
 
-        sanitize_powerbi_report(
+        # Validate --error-on-change requires --dry-run
+        error_on_change = (
+            args.error_on_change if hasattr(args, "error_on_change") else None
+        )
+        if error_on_change and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+
+        # Run sanitization and get results
+        results = sanitize_powerbi_report(
             report_path, actions, dry_run=args.dry_run, summary=args.summary
         )
+
+        # Check if any error_on_change actions would make changes
+        if error_on_change:
+            actions_with_changes = [
+                action
+                for action in error_on_change
+                if action in results and results[action]
+            ]
+            if actions_with_changes:
+                console.print_error(
+                    f"Error: The following checks would make changes: {', '.join(actions_with_changes)}"
+                )
+                console.print_error("Build failed due to --error-on-change policy.")
+                sys.exit(1)
 
     elif args.command == "extract-metadata":
         # Argument resolution logic for extract-metadata
@@ -853,13 +974,22 @@ def main():
         )
 
     elif args.command == "batch-update":
-        batch_update_pbir_project(
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        has_changes = batch_update_pbir_project(
             args.directory_path, args.csv_path, dry_run=args.dry_run
         )
+        _check_error_on_change(args, has_changes, "batch-update")
 
     elif args.command == "disable-interactions":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        disable_visual_interactions(
+        has_changes = disable_visual_interactions(
             report_path,
             pages=args.pages,
             source_visual_ids=args.source_visual_ids,
@@ -870,16 +1000,22 @@ def main():
             dry_run=args.dry_run,
             summary=args.summary,
         )
+        _check_error_on_change(args, has_changes, "disable-interactions")
 
     elif args.command == "remove-measures":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        remove_measures(
+        has_changes = remove_measures(
             report_path,
             measure_names=args.measure_names,
             check_visual_usage=args.check_visual_usage,
             dry_run=args.dry_run,
             summary=args.summary,
         )
+        _check_error_on_change(args, has_changes, "remove-measures")
 
     elif args.command == "measure-dependencies":
         report_path = resolve_report_path(args.report_path)
@@ -891,21 +1027,30 @@ def main():
         print(report)
 
     elif args.command == "update-filters":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         filters_list = parse_json_arg(args.filters, "filters")
         if not isinstance(filters_list, list):
             print("Error: Filters must be a JSON list of objects.", file=sys.stderr)
             sys.exit(1)
 
-        update_report_filters(
+        has_changes = update_report_filters(
             args.directory_path,
             filters=filters_list,
             reports=args.reports,
             dry_run=args.dry_run,
             summary=args.summary,
         )
+        _check_error_on_change(args, has_changes, "update-filters")
 
     elif args.command == "sort-filters":
-        sort_report_filters(
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        has_changes = sort_report_filters(
             args.directory_path,
             reports=args.reports,
             sort_order=args.sort_order,
@@ -913,56 +1058,106 @@ def main():
             dry_run=args.dry_run,
             summary=args.summary,
         )
+        _check_error_on_change(args, has_changes, "sort-filters")
 
     elif args.command == "standardize-folder-names":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        standardize_pbir_folders(
+        has_changes = standardize_pbir_folders(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "standardize-folder-names")
 
     elif args.command == "remove-unused-bookmarks":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        remove_unused_bookmarks(report_path, dry_run=args.dry_run, summary=args.summary)
+        has_changes = remove_unused_bookmarks(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "remove-unused-bookmarks")
 
     elif args.command == "remove-unused-custom-visuals":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        remove_unused_custom_visuals(
+        has_changes = remove_unused_custom_visuals(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "remove-unused-custom-visuals")
 
     elif args.command == "disable-show-items-with-no-data":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        disable_show_items_with_no_data(
+        has_changes = disable_show_items_with_no_data(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "disable-show-items-with-no-data")
 
     elif args.command == "hide-tooltip-drillthrough-pages":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        hide_tooltip_drillthrough_pages(
+        has_changes = hide_tooltip_drillthrough_pages(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "hide-tooltip-drillthrough-pages")
 
     elif args.command == "set-first-page-as-active":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        set_first_page_as_active(
+        has_changes = set_first_page_as_active(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "set-first-page-as-active")
 
     elif args.command == "remove-empty-pages":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        remove_empty_pages(report_path, dry_run=args.dry_run, summary=args.summary)
+        has_changes = remove_empty_pages(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "remove-empty-pages")
 
     elif args.command == "remove-hidden-visuals":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        remove_hidden_visuals_never_shown(
+        has_changes = remove_hidden_visuals_never_shown(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "remove-hidden-visuals")
 
     elif args.command == "cleanup-invalid-bookmarks":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
         report_path = resolve_report_path(args.report_path)
-        cleanup_invalid_bookmarks(
+        has_changes = cleanup_invalid_bookmarks(
             report_path, dry_run=args.dry_run, summary=args.summary
         )
+        _check_error_on_change(args, has_changes, "cleanup-invalid-bookmarks")
 
     else:
         parser.print_help()

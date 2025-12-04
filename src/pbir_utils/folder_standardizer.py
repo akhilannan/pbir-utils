@@ -19,7 +19,7 @@ def _sanitize_name(name: str) -> str:
 
 def standardize_pbir_folders(
     report_path: str, dry_run: bool = False, summary: bool = False
-):
+) -> bool:
     """
     Standardizes folder names for pages and visuals in a PBIR report structure.
 
@@ -27,6 +27,9 @@ def standardize_pbir_folders(
         report_path (str): Path to the root folder of the report.
         dry_run (bool): If True, only prints what would be renamed without making changes.
         summary (bool): If True, shows a count summary instead of individual renames.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_heading(
         f"Action: Standardizing folder names{' (Dry Run)' if dry_run else ''}"
@@ -34,7 +37,7 @@ def standardize_pbir_folders(
     pages_dir = os.path.join(report_path, "definition", "pages")
     if not os.path.exists(pages_dir):
         console.print_warning(f"Pages directory not found: {pages_dir}")
-        return
+        return False
 
     # Iterate over page folders
     # We list directories first to avoid issues if we rename them while iterating
@@ -142,3 +145,5 @@ def standardize_pbir_folders(
             console.print_dry_run(msg)
         else:
             console.print_success(msg)
+
+    return pages_renamed > 0 or visuals_renamed > 0

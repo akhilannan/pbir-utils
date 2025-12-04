@@ -248,7 +248,7 @@ def remove_measures(
     dry_run: bool = False,
     print_heading: bool = True,
     summary: bool = False,
-) -> None:
+) -> bool:
     """
     Remove specified measures or all measures from a Power BI PBIX report,
     with an optional check for their usage in visuals.
@@ -262,7 +262,7 @@ def remove_measures(
         summary (bool, optional): If True, show summary instead of detailed messages. Default is False.
 
     Returns:
-        None
+        bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     if print_heading:
         console.print_heading(
@@ -273,7 +273,7 @@ def remove_measures(
 
     if not report_data:
         console.print_info("No measures found in the report.")
-        return
+        return False
 
     removed_measures = []
     entities_to_keep = []
@@ -327,8 +327,10 @@ def remove_measures(
                 console.print_dry_run(msg)
             else:
                 console.print_success(msg)
+            return True
         else:
             console.print_info("No measures were removed.")
+            return False
     else:
         if not dry_run:
             os.remove(report_file)
@@ -339,3 +341,4 @@ def remove_measures(
             console.print_dry_run(
                 "All measures removed. The reportExtensions.json file has been deleted."
             )
+        return True

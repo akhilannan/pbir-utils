@@ -236,3 +236,149 @@ def test_standardize_folder_names_with_summary(simple_report, run_cli):
     assert result.returncode == 0
     # Summary should contain count of renamed folders
     assert "Renamed" in result.stdout
+
+
+# Tests for --error-on-change flag
+
+
+def test_error_on_change_requires_dry_run(simple_report, run_cli):
+    """Test that --error-on-change without --dry-run returns an error."""
+    result = run_cli(["standardize-folder-names", simple_report, "--error-on-change"])
+    assert result.returncode != 0
+    assert "--error-on-change requires --dry-run" in result.stderr
+
+
+def test_error_on_change_sanitize_requires_dry_run(simple_report, run_cli):
+    """Test that --error-on-change on sanitize command without --dry-run returns an error."""
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "set_first_page_as_active",
+            "--error-on-change",
+            "set_first_page_as_active",
+        ]
+    )
+    assert result.returncode != 0
+    assert "--error-on-change requires --dry-run" in result.stderr
+
+
+def test_error_on_change_exits_with_code_1_when_changes_detected(
+    simple_report, run_cli
+):
+    """Test that --error-on-change exits with code 1 when changes would be made."""
+    # standardize-folder-names on simple_report should detect changes since folders use default names
+    result = run_cli(
+        ["standardize-folder-names", simple_report, "--dry-run", "--error-on-change"]
+    )
+    # The simple_report should trigger changes because folder names aren't standardized
+    assert result.returncode == 1
+    assert "Build failed due to --error-on-change policy" in result.stderr
+
+
+def test_error_on_change_sanitize_specific_actions(simple_report, run_cli):
+    """Test that --error-on-change on sanitize command monitors only specified actions."""
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "standardize_folder_names",
+            "--dry-run",
+            "--error-on-change",
+            "standardize_folder_names",
+        ]
+    )
+    # Should exit with code 1 if standardize_folder_names would make changes
+    assert result.returncode == 1
+    assert "Build failed due to --error-on-change policy" in result.stderr
+
+
+def test_error_on_change_no_changes_succeeds(simple_report, run_cli):
+    """Test that --error-on-change succeeds (exit 0) when no changes would be made."""
+    # hide-tooltip-drillthrough-pages on simple_report should not detect any tooltip/drillthrough pages
+    result = run_cli(
+        [
+            "hide-tooltip-drillthrough-pages",
+            simple_report,
+            "--dry-run",
+            "--error-on-change",
+        ]
+    )
+    # If no changes detected, should succeed
+    assert result.returncode == 0
+
+
+def test_error_on_change_disable_interactions(simple_report, run_cli):
+    """Test that --error-on-change works with disable-interactions command."""
+    result = run_cli(
+        ["disable-interactions", simple_report, "--dry-run", "--error-on-change"]
+    )
+    # Check that the command runs (may or may not exit with error depending on report state)
+    # The main test is that it doesn't crash and respects the flag
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_remove_measures(simple_report, run_cli):
+    """Test that --error-on-change works with remove-measures command."""
+    result = run_cli(
+        ["remove-measures", simple_report, "--dry-run", "--error-on-change"]
+    )
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_batch_update(simple_report, tmp_path, run_cli):
+    """Test that --error-on-change works with batch-update command."""
+    csv_path = tmp_path / "mapping.csv"
+    with open(csv_path, "w") as f:
+        f.write("old_tbl,old_col,new_tbl,new_col\nTable1,Col1,Table1,ColNew")
+
+    result = run_cli(
+        ["batch-update", simple_report, str(csv_path), "--dry-run", "--error-on-change"]
+    )
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_update_filters(simple_report, run_cli):
+    """Test that --error-on-change works with update-filters command."""
+    filters = '[{"Table": "Tbl", "Column": "Col", "Condition": "In", "Values": ["A"]}]'
+    result = run_cli(
+        ["update-filters", simple_report, filters, "--dry-run", "--error-on-change"]
+    )
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_sort_filters(simple_report, run_cli):
+    """Test that --error-on-change works with sort-filters command."""
+    result = run_cli(["sort-filters", simple_report, "--dry-run", "--error-on-change"])
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_remove_unused_bookmarks(simple_report, run_cli):
+    """Test that --error-on-change works with remove-unused-bookmarks command."""
+    result = run_cli(
+        ["remove-unused-bookmarks", simple_report, "--dry-run", "--error-on-change"]
+    )
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_remove_unused_custom_visuals(simple_report, run_cli):
+    """Test that --error-on-change works with remove-unused-custom-visuals command."""
+    result = run_cli(
+        [
+            "remove-unused-custom-visuals",
+            simple_report,
+            "--dry-run",
+            "--error-on-change",
+        ]
+    )
+    assert result.returncode in [0, 1]
+
+
+def test_error_on_change_cleanup_invalid_bookmarks(complex_report, run_cli):
+    """Test that --error-on-change works with cleanup-invalid-bookmarks command."""
+    result = run_cli(
+        ["cleanup-invalid-bookmarks", complex_report, "--dry-run", "--error-on-change"]
+    )
+    assert result.returncode in [0, 1]

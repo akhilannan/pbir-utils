@@ -87,6 +87,19 @@ pbir-utils sort-filters "C:\Reports" --sort-order Ascending --dry-run
 pbir-utils sort-filters "C:\Reports" --sort-order Custom --custom-order "Region" "Date"
 ```
 
+## CI/CD Integration
+
+The `--error-on-change` flag enables automated validation in CI/CD pipelines. When used with `--dry-run`, the CLI exits with code 1 if any changes would be made, allowing builds to fail automatically when reports don't meet standards.
+
+### Usage
+```bash
+# Fail if standardize-folder-names would make changes
+pbir-utils standardize-folder-names "MyReport.Report" --dry-run --error-on-change
+
+# For sanitize: specify which actions should trigger failure
+pbir-utils sanitize "MyReport.Report" --actions all --dry-run --error-on-change set_first_page_as_active remove_empty_pages
+```
+
 ## Python API Usage
 You can also use the library in your Python scripts:
 ```python
