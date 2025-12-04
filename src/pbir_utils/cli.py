@@ -116,6 +116,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    sanitize_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Extract Metadata Command
     extract_desc = textwrap.dedent(
@@ -301,6 +306,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    disable_interactions_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Remove Measures Command
     remove_measures_desc = textwrap.dedent(
@@ -350,6 +360,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making changes",
+    )
+    remove_measures_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
     )
 
     # Measure Dependencies Command
@@ -443,6 +458,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    update_filters_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Sort Filters Command
     sort_filters_desc = textwrap.dedent(
@@ -493,6 +513,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    sort_filters_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Standardize Folder Names Command
     standardize_folders_desc = textwrap.dedent(
@@ -526,6 +551,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    standardize_folders_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Remove Unused Bookmarks Command
     remove_unused_bookmarks_epilog = textwrap.dedent(
@@ -550,6 +580,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making changes",
+    )
+    remove_unused_bookmarks_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
     )
 
     # Remove Unused Custom Visuals Command
@@ -576,6 +611,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    remove_unused_custom_visuals_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Disable Show Items With No Data Command
     disable_show_items_with_no_data_epilog = textwrap.dedent(
@@ -600,6 +640,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making changes",
+    )
+    disable_show_items_with_no_data_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
     )
 
     # Hide Tooltip Drillthrough Pages Command
@@ -626,6 +671,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    hide_tooltip_drillthrough_pages_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Set First Page As Active Command
     set_first_page_as_active_epilog = textwrap.dedent(
@@ -650,6 +700,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making changes",
+    )
+    set_first_page_as_active_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
     )
 
     # Remove Empty Pages Command
@@ -676,6 +731,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    remove_empty_pages_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     # Remove Hidden Visuals Command
     remove_hidden_visuals_epilog = textwrap.dedent(
@@ -700,6 +760,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making changes",
+    )
+    remove_hidden_visuals_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
     )
 
     # Cleanup Invalid Bookmarks Command
@@ -726,6 +791,11 @@ def main():
         action="store_true",
         help="Perform a dry run without making changes",
     )
+    cleanup_invalid_bookmarks_parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
 
     args = parser.parse_args()
 
@@ -741,7 +811,9 @@ def main():
                 "No actions specified. Use --actions to specify sanitization actions."
             )
 
-        sanitize_powerbi_report(report_path, actions, dry_run=args.dry_run)
+        sanitize_powerbi_report(
+            report_path, actions, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "extract-metadata":
         # Argument resolution logic for extract-metadata
@@ -796,6 +868,7 @@ def main():
             target_visual_types=args.target_visual_types,
             update_type=args.update_type,
             dry_run=args.dry_run,
+            summary=args.summary,
         )
 
     elif args.command == "remove-measures":
@@ -805,6 +878,7 @@ def main():
             measure_names=args.measure_names,
             check_visual_usage=args.check_visual_usage,
             dry_run=args.dry_run,
+            summary=args.summary,
         )
 
     elif args.command == "measure-dependencies":
@@ -827,6 +901,7 @@ def main():
             filters=filters_list,
             reports=args.reports,
             dry_run=args.dry_run,
+            summary=args.summary,
         )
 
     elif args.command == "sort-filters":
@@ -836,43 +911,58 @@ def main():
             sort_order=args.sort_order,
             custom_order=args.custom_order,
             dry_run=args.dry_run,
+            summary=args.summary,
         )
 
     elif args.command == "standardize-folder-names":
         report_path = resolve_report_path(args.report_path)
-        standardize_pbir_folders(report_path, dry_run=args.dry_run)
+        standardize_pbir_folders(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "remove-unused-bookmarks":
         report_path = resolve_report_path(args.report_path)
-        remove_unused_bookmarks(report_path, dry_run=args.dry_run)
+        remove_unused_bookmarks(report_path, dry_run=args.dry_run, summary=args.summary)
 
     elif args.command == "remove-unused-custom-visuals":
         report_path = resolve_report_path(args.report_path)
-        remove_unused_custom_visuals(report_path, dry_run=args.dry_run)
+        remove_unused_custom_visuals(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "disable-show-items-with-no-data":
         report_path = resolve_report_path(args.report_path)
-        disable_show_items_with_no_data(report_path, dry_run=args.dry_run)
+        disable_show_items_with_no_data(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "hide-tooltip-drillthrough-pages":
         report_path = resolve_report_path(args.report_path)
-        hide_tooltip_drillthrough_pages(report_path, dry_run=args.dry_run)
+        hide_tooltip_drillthrough_pages(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "set-first-page-as-active":
         report_path = resolve_report_path(args.report_path)
-        set_first_page_as_active(report_path, dry_run=args.dry_run)
+        set_first_page_as_active(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "remove-empty-pages":
         report_path = resolve_report_path(args.report_path)
-        remove_empty_pages(report_path, dry_run=args.dry_run)
+        remove_empty_pages(report_path, dry_run=args.dry_run, summary=args.summary)
 
     elif args.command == "remove-hidden-visuals":
         report_path = resolve_report_path(args.report_path)
-        remove_hidden_visuals_never_shown(report_path, dry_run=args.dry_run)
+        remove_hidden_visuals_never_shown(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     elif args.command == "cleanup-invalid-bookmarks":
         report_path = resolve_report_path(args.report_path)
-        cleanup_invalid_bookmarks(report_path, dry_run=args.dry_run)
+        cleanup_invalid_bookmarks(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
 
     else:
         parser.print_help()

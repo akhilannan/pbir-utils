@@ -247,6 +247,7 @@ def remove_measures(
     check_visual_usage: bool = True,
     dry_run: bool = False,
     print_heading: bool = True,
+    summary: bool = False,
 ) -> None:
     """
     Remove specified measures or all measures from a Power BI PBIX report,
@@ -258,6 +259,7 @@ def remove_measures(
                                         all measures will be considered for removal. Default is None.
         check_visual_usage (bool, optional): If True, only remove a measure if neither the measure itself nor any
                                              of its dependents are used in any visuals. Default is True.
+        summary (bool, optional): If True, show summary instead of detailed messages. Default is False.
 
     Returns:
         None
@@ -317,14 +319,14 @@ def remove_measures(
         if not dry_run:
             write_json(report_file, report_data)
         if removed_measures:
-            if dry_run:
-                console.print_dry_run(
-                    f"Measures removed: {', '.join(removed_measures)}"
-                )
+            if summary:
+                msg = f"Removed {len(removed_measures)} measures"
             else:
-                console.print_success(
-                    f"Measures removed: {', '.join(removed_measures)}"
-                )
+                msg = f"Measures removed: {', '.join(removed_measures)}"
+            if dry_run:
+                console.print_dry_run(msg)
+            else:
+                console.print_success(msg)
         else:
             console.print_info("No measures were removed.")
     else:

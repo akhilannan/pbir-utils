@@ -186,3 +186,53 @@ def test_cleanup_invalid_bookmarks_dry_run(complex_report, run_cli):
 def test_standardize_folder_names_dry_run(simple_report, run_cli):
     result = run_cli(["standardize-folder-names", simple_report, "--dry-run"])
     assert result.returncode == 0
+
+
+# Tests for --summary flag
+
+
+def test_remove_empty_pages_with_summary(complex_report, run_cli):
+    """Test that --summary flag works with remove-empty-pages command."""
+    result = run_cli(["remove-empty-pages", complex_report, "--dry-run", "--summary"])
+    assert result.returncode == 0
+    # Summary output should contain count-based message
+    assert "Removed" in result.stdout or "No empty" in result.stdout
+
+
+def test_sanitize_with_summary(simple_report, run_cli):
+    """Test that --summary flag works with sanitize command."""
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "remove_unused_measures",
+            "--dry-run",
+            "--summary",
+        ]
+    )
+    assert result.returncode == 0
+
+
+def test_disable_interactions_with_summary(simple_report, run_cli):
+    """Test that --summary flag works with disable-interactions command."""
+    result = run_cli(["disable-interactions", simple_report, "--dry-run", "--summary"])
+    assert result.returncode == 0
+    # Summary should contain count of pages updated
+    assert "Updated visual interactions" in result.stdout
+
+
+def test_remove_measures_with_summary(simple_report, run_cli):
+    """Test that --summary flag works with remove-measures command."""
+    result = run_cli(["remove-measures", simple_report, "--dry-run", "--summary"])
+    assert result.returncode == 0
+
+
+def test_standardize_folder_names_with_summary(simple_report, run_cli):
+    """Test that --summary flag works with standardize-folder-names command."""
+    result = run_cli(
+        ["standardize-folder-names", simple_report, "--dry-run", "--summary"]
+    )
+    assert result.returncode == 0
+    # Summary should contain count of renamed folders
+    assert "Renamed" in result.stdout

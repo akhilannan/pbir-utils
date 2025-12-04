@@ -17,13 +17,16 @@ def _sanitize_name(name: str) -> str:
     return sanitized.strip("_")
 
 
-def standardize_pbir_folders(report_path: str, dry_run: bool = False):
+def standardize_pbir_folders(
+    report_path: str, dry_run: bool = False, summary: bool = False
+):
     """
     Standardizes folder names for pages and visuals in a PBIR report structure.
 
     Args:
         report_path (str): Path to the root folder of the report.
         dry_run (bool): If True, only prints what would be renamed without making changes.
+        summary (bool): If True, shows a count summary instead of individual renames.
     """
     console.print_heading(
         f"Action: Standardizing folder names{' (Dry Run)' if dry_run else ''}"
@@ -38,6 +41,9 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
     page_folders = [
         f for f in os.listdir(pages_dir) if os.path.isdir(os.path.join(pages_dir, f))
     ]
+
+    pages_renamed = 0
+    visuals_renamed = 0
 
     for page_folder_name in page_folders:
         current_page_path = os.path.join(pages_dir, page_folder_name)
@@ -60,15 +66,19 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
         if page_folder_name != new_page_folder_name:
             new_page_path = os.path.join(pages_dir, new_page_folder_name)
             if dry_run:
-                console.print_dry_run(
-                    f"Would rename page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
-                )
+                pages_renamed += 1
+                if not summary:
+                    console.print_dry_run(
+                        f"Would rename page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
+                    )
             else:
                 try:
                     os.rename(current_page_path, new_page_path)
-                    console.print_success(
-                        f"Renamed page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
-                    )
+                    pages_renamed += 1
+                    if not summary:
+                        console.print_success(
+                            f"Renamed page folder: '{page_folder_name}' -> '{new_page_folder_name}'"
+                        )
                     current_page_path = (
                         new_page_path  # Update path for visual processing
                     )
@@ -106,16 +116,29 @@ def standardize_pbir_folders(report_path: str, dry_run: bool = False):
                 if visual_folder_name != new_visual_folder_name:
                     new_visual_path = os.path.join(visuals_dir, new_visual_folder_name)
                     if dry_run:
-                        console.print_dry_run(
-                            f"Would rename visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
-                        )
+                        visuals_renamed += 1
+                        if not summary:
+                            console.print_dry_run(
+                                f"Would rename visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
+                            )
                     else:
                         try:
                             os.rename(current_visual_path, new_visual_path)
-                            console.print_success(
-                                f"Renamed visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
-                            )
+                            visuals_renamed += 1
+                            if not summary:
+                                console.print_success(
+                                    f"Renamed visual folder in '{new_page_folder_name}': '{visual_folder_name}' -> '{new_visual_folder_name}'"
+                                )
                         except OSError as e:
                             console.print_error(
                                 f"Error renaming visual folder '{visual_folder_name}': {e}"
                             )
+
+    if summary:
+        msg = (
+            f"Renamed {pages_renamed} page folders and {visuals_renamed} visual folders"
+        )
+        if dry_run:
+            console.print_dry_run(msg)
+        else:
+            console.print_success(msg)

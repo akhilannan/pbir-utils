@@ -278,7 +278,11 @@ def _validate_filters(filters: list[dict]) -> tuple[list, list]:
 
 
 def update_report_filters(
-    directory_path: str, filters: list, reports: list = None, dry_run: bool = False
+    directory_path: str,
+    filters: list,
+    reports: list = None,
+    dry_run: bool = False,
+    summary: bool = False,
 ):
     """
     Updates report filters based on the given filters.
@@ -287,6 +291,7 @@ def update_report_filters(
     directory_path (str): Root folder containing reports.
     filters (list): List of filters to apply.
     reports (list, optional): List of reports to update. Defaults to None.
+    summary (bool, optional): Show summary instead of detailed messages. Defaults to False.
 
     Returns:
     None
@@ -376,18 +381,26 @@ def update_report_filters(
         if updated:
             if not dry_run:
                 write_json(report_path, data)
-            if dry_run:
-                console.print_dry_run(
-                    f"Updated filters in report: {os.path.basename(report_path)}"
-                )
-            else:
-                console.print_success(
-                    f"Updated filters in report: {os.path.basename(report_path)}"
-                )
-        else:
+            if not summary:
+                if dry_run:
+                    console.print_dry_run(
+                        f"Updated filters in report: {os.path.basename(report_path)}"
+                    )
+                else:
+                    console.print_success(
+                        f"Updated filters in report: {os.path.basename(report_path)}"
+                    )
+        elif not summary:
             console.print_info(
                 f"No filters were updated in report: {os.path.basename(report_path)}"
             )
+
+    if summary:
+        msg = f"Updated filters in {len(report_paths)} reports"
+        if dry_run:
+            console.print_dry_run(msg)
+        else:
+            console.print_success(msg)
 
 
 def sort_report_filters(
@@ -396,6 +409,7 @@ def sort_report_filters(
     sort_order: str = "SelectedFilterTop",
     custom_order: list = None,
     dry_run: bool = False,
+    summary: bool = False,
 ) -> None:
     """
     Sorts the report filters in all specified reports in the root folder based on the given sort order:
@@ -411,6 +425,7 @@ def sort_report_filters(
     reports (list, optional): List of reports to update. Defaults to None.
     sort_order (str, optional): Sorting strategy to use. Defaults to "SelectedFilterTop".
     custom_order (list, optional): List of filter names to prioritize in order (required for "Custom" sort order).
+    summary (bool, optional): Show summary instead of detailed messages. Defaults to False.
 
     Returns:
     None
@@ -487,7 +502,15 @@ def sort_report_filters(
 
         if not dry_run:
             write_json(report_path, data)
+        if not summary:
+            if dry_run:
+                console.print_dry_run(f"Sorted filters in report: {report_path}")
+            else:
+                console.print_success(f"Sorted filters in report: {report_path}")
+
+    if summary:
+        msg = f"Sorted filters in {len(report_paths)} reports"
         if dry_run:
-            console.print_dry_run(f"Sorted filters in report: {report_path}")
+            console.print_dry_run(msg)
         else:
-            console.print_success(f"Sorted filters in report: {report_path}")
+            console.print_success(msg)

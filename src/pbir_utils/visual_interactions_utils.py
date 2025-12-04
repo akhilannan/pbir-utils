@@ -116,6 +116,7 @@ def _process_page(
     update_type: str,
     interaction_type: str,
     dry_run: bool = False,
+    summary: bool = False,
 ):
     """
     Processes and updates visual interactions for a specific page.
@@ -129,6 +130,7 @@ def _process_page(
         target_types (list[str] or None): List of target visual types.
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
+        summary (bool): Whether to show summary instead of detailed messages.
     """
     page_json = load_json(page_json_path)
     visual_ids, visual_types = _get_visuals(visuals_folder)
@@ -150,7 +152,7 @@ def _process_page(
     page_json["visualInteractions"] = updated_interactions
     if not dry_run:
         write_json(page_json_path, page_json)
-    else:
+    elif not summary:
         console.print_dry_run(f"Would update visual interactions in {page_json_path}")
 
 
@@ -164,6 +166,7 @@ def _process_all_pages(
     update_type: str = "Upsert",
     interaction_type: str = "NoFilter",
     dry_run: bool = False,
+    summary: bool = False,
 ):
     """
     Processes all pages or specific pages based on provided parameters.
@@ -177,8 +180,10 @@ def _process_all_pages(
         target_types (list[str], optional): List of target visual types.
         update_type (str): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite".
         interaction_type (str): Type of interaction to apply. Default is "NoFilter".
+        summary (bool): Whether to show summary instead of detailed messages.
     """
     pages_folder = os.path.join(report_path, "definition", "pages")
+    pages_updated = 0
 
     for root, _, files in os.walk(pages_folder):
         for file_name in files:
@@ -200,7 +205,16 @@ def _process_all_pages(
                             update_type,
                             interaction_type,
                             dry_run=dry_run,
+                            summary=summary,
                         )
+                        pages_updated += 1
+
+    if summary:
+        msg = f"Updated visual interactions in {pages_updated} pages"
+        if dry_run:
+            console.print_dry_run(msg)
+        else:
+            console.print_success(msg)
 
 
 def disable_visual_interactions(
@@ -212,6 +226,7 @@ def disable_visual_interactions(
     target_visual_types: list = None,
     update_type: str = "Upsert",
     dry_run: bool = False,
+    summary: bool = False,
 ) -> None:
     """
     Main function to disable visual interactions based on provided parameters.
@@ -224,6 +239,7 @@ def disable_visual_interactions(
         target_visual_ids (list, optional): List of specific target visual IDs. If None, all visuals are used as targets.
         target_visual_types (list, optional): List of target visual types. If None, all visuals are used as targets.
         update_type (str, optional): Determines how interactions are handled. Options are "Upsert", "Insert", "Overwrite". Default is "Upsert".
+        summary (bool, optional): If True, show summary instead of detailed messages. Default is False.
 
     Raises:
         ValueError: If any of the provided parameters are not lists when expected.
@@ -253,4 +269,5 @@ def disable_visual_interactions(
         update_type,
         interaction_type="NoFilter",
         dry_run=dry_run,
+        summary=summary,
     )

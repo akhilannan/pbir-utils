@@ -25,11 +25,14 @@ pip install pbir-utils
 
 The `pbir-utils` command is available after installation.
 
+> **Tip:** Use the `--summary` flag with any command to get concise count-based output instead of detailed messages.
+
 ### 1. Sanitize Report
 Sanitize a Power BI report by removing unused or unwanted components.
 ```bash
 pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
 pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all
+pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all --summary  # Concise output
 ```
 
 ### 2. Extract Metadata
