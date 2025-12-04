@@ -238,6 +238,9 @@ def generate_measure_dependencies_report(
             ]
             dependency_report += "\n".join(formatted_paths) + "\n\n"
 
+    if not dependency_report:
+        console.print_info("No measure dependencies found in the report.")
+
     return dependency_report
 
 

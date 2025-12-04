@@ -274,6 +274,7 @@ def batch_update_pbir_project(
         f"Action: Batch updating PBIR project{' (Dry Run)' if dry_run else ''}"
     )
     any_changes = False
+    error_occurred = False
     try:
         mappings = _load_csv_mapping(csv_path)
 
@@ -302,6 +303,10 @@ def batch_update_pbir_project(
                     ):
                         any_changes = True
     except Exception as e:
+        error_occurred = True
         console.print_error(f"An error occurred: {str(e)}")
+
+    if not any_changes and not error_occurred:
+        console.print_info("No changes needed. All attributes are already up to date.")
 
     return any_changes

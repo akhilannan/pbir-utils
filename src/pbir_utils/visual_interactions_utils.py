@@ -231,6 +231,8 @@ def _process_all_pages(
             console.print_dry_run(msg)
         else:
             console.print_success(msg)
+    elif not any_changes:
+        console.print_info("No visual interactions were modified.")
 
     return any_changes
 
