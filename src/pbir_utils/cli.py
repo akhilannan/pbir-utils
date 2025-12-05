@@ -49,14 +49,6 @@ def parse_filters(filters_str: str) -> Optional[Dict[str, Set[str]]]:
         sys.exit(1)
 
 
-def parse_list_arg(arg_value: Optional[List[str]]) -> Optional[List[str]]:
-    """Helper to handle list arguments that might be passed as a single string or list."""
-    if not arg_value:
-        return None
-    # If it's already a list, return it (argparse nargs='+' produces a list)
-    return arg_value
-
-
 def parse_json_arg(json_str: Optional[str], arg_name: str):
     if not json_str:
         return None
@@ -64,6 +56,81 @@ def parse_json_arg(json_str: Optional[str], arg_name: str):
         return json.loads(json_str)
     except json.JSONDecodeError:
         console.print_error(f"Invalid JSON string for {arg_name}: {json_str}")
+        sys.exit(1)
+
+
+# =============================================================================
+# CLI Argument Helpers - Consolidate common argument patterns
+# =============================================================================
+
+
+def _add_report_path_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the standard optional report_path argument."""
+    parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+
+
+def _add_dry_run_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the --dry-run argument."""
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making changes",
+    )
+
+
+def _add_summary_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the --summary argument."""
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show summary instead of detailed messages",
+    )
+
+
+def _add_error_on_change_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the --error-on-change argument."""
+    parser.add_argument(
+        "--error-on-change",
+        action="store_true",
+        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
+    )
+
+
+def _add_common_args(
+    parser: argparse.ArgumentParser,
+    include_report_path: bool = True,
+    include_summary: bool = True,
+    include_error_on_change: bool = True,
+) -> None:
+    """
+    Add common CLI arguments to a parser.
+
+    Args:
+        parser: The argument parser to add arguments to.
+        include_report_path: Whether to add the report_path argument.
+        include_summary: Whether to add the --summary argument.
+        include_error_on_change: Whether to add the --error-on-change argument.
+    """
+    if include_report_path:
+        _add_report_path_arg(parser)
+    _add_dry_run_arg(parser)
+    if include_summary:
+        _add_summary_arg(parser)
+    if include_error_on_change:
+        _add_error_on_change_arg(parser)
+
+
+def _validate_error_on_change(args) -> None:
+    """
+    Validate that --error-on-change requires --dry-run.
+    Call this at the start of command handlers that support --error-on-change.
+    """
+    if getattr(args, "error_on_change", False) and not args.dry_run:
+        console.print_error("--error-on-change requires --dry-run to be specified.")
         sys.exit(1)
 
 
@@ -510,21 +577,9 @@ def main():
     update_filters_parser.add_argument(
         "--reports", nargs="+", help="List of specific reports to update"
     )
-    update_filters_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    update_filters_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    update_filters_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_dry_run_arg(update_filters_parser)
+    _add_summary_arg(update_filters_parser)
+    _add_error_on_change_arg(update_filters_parser)
 
     # Sort Filters Command
     sort_filters_desc = textwrap.dedent(
@@ -570,21 +625,9 @@ def main():
         nargs="+",
         help="Custom list of filter names (required for Custom sort order)",
     )
-    sort_filters_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    sort_filters_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    sort_filters_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_dry_run_arg(sort_filters_parser)
+    _add_summary_arg(sort_filters_parser)
+    _add_error_on_change_arg(sort_filters_parser)
 
     # Standardize Folder Names Command
     standardize_folders_desc = textwrap.dedent(
@@ -608,26 +651,7 @@ def main():
         epilog=standardize_folders_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    standardize_folders_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    standardize_folders_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    standardize_folders_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    standardize_folders_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(standardize_folders_parser)
 
     # Remove Unused Bookmarks Command
     remove_unused_bookmarks_epilog = textwrap.dedent(
@@ -643,26 +667,7 @@ def main():
         epilog=remove_unused_bookmarks_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    remove_unused_bookmarks_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    remove_unused_bookmarks_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    remove_unused_bookmarks_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    remove_unused_bookmarks_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(remove_unused_bookmarks_parser)
 
     # Remove Unused Custom Visuals Command
     remove_unused_custom_visuals_epilog = textwrap.dedent(
@@ -678,26 +683,7 @@ def main():
         epilog=remove_unused_custom_visuals_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    remove_unused_custom_visuals_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    remove_unused_custom_visuals_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    remove_unused_custom_visuals_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    remove_unused_custom_visuals_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(remove_unused_custom_visuals_parser)
 
     # Disable Show Items With No Data Command
     disable_show_items_with_no_data_epilog = textwrap.dedent(
@@ -713,26 +699,7 @@ def main():
         epilog=disable_show_items_with_no_data_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    disable_show_items_with_no_data_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    disable_show_items_with_no_data_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    disable_show_items_with_no_data_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    disable_show_items_with_no_data_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(disable_show_items_with_no_data_parser)
 
     # Hide Tooltip Drillthrough Pages Command
     hide_tooltip_drillthrough_pages_epilog = textwrap.dedent(
@@ -748,26 +715,7 @@ def main():
         epilog=hide_tooltip_drillthrough_pages_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    hide_tooltip_drillthrough_pages_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    hide_tooltip_drillthrough_pages_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    hide_tooltip_drillthrough_pages_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    hide_tooltip_drillthrough_pages_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(hide_tooltip_drillthrough_pages_parser)
 
     # Set First Page As Active Command
     set_first_page_as_active_epilog = textwrap.dedent(
@@ -783,26 +731,7 @@ def main():
         epilog=set_first_page_as_active_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    set_first_page_as_active_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    set_first_page_as_active_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    set_first_page_as_active_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    set_first_page_as_active_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(set_first_page_as_active_parser)
 
     # Remove Empty Pages Command
     remove_empty_pages_epilog = textwrap.dedent(
@@ -818,26 +747,7 @@ def main():
         epilog=remove_empty_pages_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    remove_empty_pages_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    remove_empty_pages_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    remove_empty_pages_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    remove_empty_pages_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(remove_empty_pages_parser)
 
     # Remove Hidden Visuals Command
     remove_hidden_visuals_epilog = textwrap.dedent(
@@ -853,26 +763,7 @@ def main():
         epilog=remove_hidden_visuals_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    remove_hidden_visuals_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    remove_hidden_visuals_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    remove_hidden_visuals_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    remove_hidden_visuals_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(remove_hidden_visuals_parser)
 
     # Cleanup Invalid Bookmarks Command
     cleanup_invalid_bookmarks_epilog = textwrap.dedent(
@@ -888,26 +779,7 @@ def main():
         epilog=cleanup_invalid_bookmarks_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    cleanup_invalid_bookmarks_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    cleanup_invalid_bookmarks_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    cleanup_invalid_bookmarks_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    cleanup_invalid_bookmarks_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(cleanup_invalid_bookmarks_parser)
 
     # Collapse Filter Pane Command
     collapse_filter_pane_epilog = textwrap.dedent(
@@ -923,26 +795,7 @@ def main():
         epilog=collapse_filter_pane_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    collapse_filter_pane_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    collapse_filter_pane_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    collapse_filter_pane_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    collapse_filter_pane_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(collapse_filter_pane_parser)
 
     # Reset Filter Pane Width Command
     reset_filter_pane_width_epilog = textwrap.dedent(
@@ -958,26 +811,7 @@ def main():
         epilog=reset_filter_pane_width_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    reset_filter_pane_width_parser.add_argument(
-        "report_path",
-        nargs="?",
-        help="Path to the Power BI report folder (optional if inside a .Report folder)",
-    )
-    reset_filter_pane_width_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform a dry run without making changes",
-    )
-    reset_filter_pane_width_parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="Show summary instead of detailed messages",
-    )
-    reset_filter_pane_width_parser.add_argument(
-        "--error-on-change",
-        action="store_true",
-        help="Exit with error code 1 if changes would be made during dry run. Only valid with --dry-run.",
-    )
+    _add_common_args(reset_filter_pane_width_parser)
 
     args = parser.parse_args()
 

@@ -97,6 +97,70 @@ def get_report_paths(directory_path: str, reports: list = None) -> list:
     return report_paths
 
 
+def iter_pages(report_path: str) -> Generator[tuple[str, str, dict], None, None]:
+    """
+    Iterate over pages in a Power BI report.
+
+    Args:
+        report_path: Path to the report root folder (e.g., MyReport.Report).
+
+    Yields:
+        tuple: (page_id, page_folder_path, page_data) for each valid page.
+            - page_id: The unique identifier of the page (from page.json "name" field)
+            - page_folder_path: Full path to the page folder
+            - page_data: Parsed contents of page.json
+    """
+    pages_dir = os.path.join(report_path, "definition", "pages")
+    if not os.path.isdir(pages_dir):
+        return
+
+    for folder_name in os.listdir(pages_dir):
+        folder_path = os.path.join(pages_dir, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+
+        page_json_path = os.path.join(folder_path, "page.json")
+        if not os.path.exists(page_json_path):
+            continue
+
+        page_data = load_json(page_json_path)
+        page_id = page_data.get("name")
+        if page_id:
+            yield page_id, folder_path, page_data
+
+
+def iter_visuals(page_folder: str) -> Generator[tuple[str, str, dict], None, None]:
+    """
+    Iterate over visuals in a page folder.
+
+    Args:
+        page_folder: Path to the page folder containing a 'visuals' subdirectory.
+
+    Yields:
+        tuple: (visual_id, visual_folder_path, visual_data) for each valid visual.
+            - visual_id: The unique identifier of the visual (from visual.json "name" field)
+            - visual_folder_path: Full path to the visual folder
+            - visual_data: Parsed contents of visual.json
+    """
+    visuals_dir = os.path.join(page_folder, "visuals")
+    if not os.path.isdir(visuals_dir):
+        return
+
+    for folder_name in os.listdir(visuals_dir):
+        folder_path = os.path.join(visuals_dir, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+
+        visual_json_path = os.path.join(folder_path, "visual.json")
+        if not os.path.exists(visual_json_path):
+            continue
+
+        visual_data = load_json(visual_json_path)
+        visual_id = visual_data.get("name")
+        if visual_id:
+            yield visual_id, folder_path, visual_data
+
+
 def walk_json_files(directory: str, file_pattern: str) -> Generator[str, None, None]:
     """
     Walk through JSON files in a directory matching a specific pattern.

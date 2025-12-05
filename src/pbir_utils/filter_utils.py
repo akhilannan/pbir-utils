@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from .common import load_json, write_json, get_report_paths
+from .common import load_json, write_json, get_report_paths, process_json_files
 from .console_utils import console
 
 
@@ -648,10 +648,6 @@ def reset_filter_pane_width(
             del page_data["objects"]
 
         return True
-
-    # Import process_json_files here to avoid circular import if common imports filter_utils (unlikely but safe)
-    # Actually common.py doesn't import filter_utils. But let's check imports in filter_utils.py
-    from .common import process_json_files
 
     results = process_json_files(
         pages_dir, "page.json", _remove_width_property, process=True, dry_run=dry_run

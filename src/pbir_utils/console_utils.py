@@ -56,6 +56,17 @@ class ConsoleUtils:
         print(f"\n{self._format(message, self.CYAN, self.BOLD)}")
         print(self._format("-" * len(message), self.CYAN, self.DIM))
 
+    def print_action_heading(self, action_name: str, dry_run: bool = False):
+        """
+        Prints a standardized action heading with optional dry run indicator.
+
+        Args:
+            action_name: Name of the action being performed.
+            dry_run: Whether this is a dry run.
+        """
+        suffix = " (Dry Run)" if dry_run else ""
+        self.print_heading(f"Action: {action_name}{suffix}")
+
     def print_action(self, message: str):
         """Prints an action message."""
         print(f"{self._format('Action:', self.BLUE, self.BOLD)} {message}")
