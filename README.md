@@ -18,8 +18,10 @@ pbir-utils is a python project designed to streamline the tasks that Power BI de
 - **Remove Unused Custom Visuals**: Remove custom visuals not used in the report.
 - **Disable Show Items With No Data**: Disable "Show items with no data" property for visuals.
 - **Hide Tooltip/Drillthrough Pages**: Hide pages used as tooltips or drillthroughs.
+- **Configure Filter Pane**: Configure filter pane visibility and expanded state.
+- **Set Page Size**: Set page dimensions for all non-tooltip pages.
 - **Set First Page Active**: Set the first page of the report as the active page.
-- **Sanitize Power BI Report**: Clean up and optimize Power BI reports.
+- **Sanitize Power BI Report**: Clean up and optimize Power BI reports with YAML configuration support.
 
 ## Installation
 ```bash
@@ -33,13 +35,50 @@ The `pbir-utils` command is available after installation.
 > **Tip:** Use the `--summary` flag with any command to get concise count-based output instead of detailed messages.
 
 ### 1. Sanitize Report
-Sanitize a Power BI report by removing unused or unwanted components.
+Sanitize a Power BI report by removing unused or unwanted components. Runs default actions from config when no `--actions` specified.
 ```bash
-pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
-pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all
-pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all --exclude set_first_page_as_active standardize_folder_names --dry-run
-pbir-utils sanitize "C:\Reports\MyReport.Report" --actions all --summary  # Concise output
+# Run default actions from config (--actions all is optional)
+pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
+
+# Run specific actions only
+pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures --dry-run
+
+# Exclude specific actions from defaults
+pbir-utils sanitize "C:\Reports\MyReport.Report" --exclude set_first_page_as_active --dry-run
+
+# Include additional actions beyond defaults
+pbir-utils sanitize "C:\Reports\MyReport.Report" --include standardize_pbir_folders set_page_size --dry-run
+
+# Concise output
+pbir-utils sanitize "C:\Reports\MyReport.Report" --summary
 ```
+
+#### YAML Configuration
+Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited:
+
+```yaml
+# pbir-sanitize.yaml - extends package defaults
+
+# Add new actions or override params for existing ones
+actions:
+  - name: set_page_size          # Add action with custom params
+    params:
+      width: 1920
+      height: 1080
+
+# Exclude specific actions from defaults
+exclude:
+  - set_first_page_as_active
+  - standardize_pbir_folders
+
+options:
+  summary: true                  # Override default options
+```
+
+**Config Resolution Priority** (highest to lowest):
+1. CLI flags (`--dry-run`, `--exclude`, etc.)
+2. User config (`pbir-sanitize.yaml` in CWD or report folder)
+3. Package defaults (`defaults/sanitize.yaml`)
 
 ### 2. Extract Metadata
 Export attribute metadata from PBIR to CSV.
@@ -127,6 +166,33 @@ pbir-utils hide-tooltip-drillthrough-pages "C:\Reports\MyReport.Report" --dry-ru
 Set the first page of the report as active.
 ```bash
 pbir-utils set-first-page-as-active "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 16. Configure Filter Pane
+Configure filter pane visibility and expanded state.
+```bash
+pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --dry-run
+pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --visible false --dry-run
+pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --expanded true --dry-run
+```
+
+### 17. Hide Tooltip Pages
+Hide only tooltip pages (not drillthrough).
+```bash
+pbir-utils hide-tooltip-pages "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 18. Hide Drillthrough Pages
+Hide only drillthrough pages (not tooltip).
+```bash
+pbir-utils hide-drillthrough-pages "C:\Reports\MyReport.Report" --dry-run
+```
+
+### 19. Set Page Size
+Set page dimensions for all non-tooltip pages.
+```bash
+pbir-utils set-page-size "C:\Reports\MyReport.Report" --dry-run
+pbir-utils set-page-size "C:\Reports\MyReport.Report" --width 1920 --height 1080 --dry-run
 ```
 
 ## CI/CD Integration

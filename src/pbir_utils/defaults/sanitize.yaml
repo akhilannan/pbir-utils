@@ -1,0 +1,18 @@
+# Default sanitization pipeline - ships with pbir-utils
+# Users can override by creating pbir-sanitize.yaml in their project
+
+actions:
+  - cleanup_invalid_bookmarks
+  - remove_unused_bookmarks
+  - remove_unused_measures
+  - remove_unused_custom_visuals
+  - remove_hidden_visuals_never_shown
+  - remove_empty_pages
+  - hide_tooltip_pages
+  - set_first_page_as_active
+  - disable_show_items_with_no_data
+  - reset_filter_pane_width
+
+options:
+  dry_run: false
+  summary: false

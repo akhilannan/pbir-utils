@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "dash",
     "plotly",
+    "PyYAML",
 ]
 dynamic = ["version"]
 
@@ -43,5 +44,8 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+pbir_utils = ["defaults/*.yaml"]
 
 [tool.setuptools_scm]

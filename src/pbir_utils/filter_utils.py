@@ -540,11 +540,94 @@ def sort_report_filters(
     return any_changes
 
 
+def configure_filter_pane(
+    report_path: str,
+    visible: bool = True,
+    expanded: bool = False,
+    dry_run: bool = False,
+    summary: bool = False,
+) -> bool:
+    """
+    Configure the filter pane visibility and expanded state.
+
+    Args:
+        report_path (str): The path to the report.
+        visible (bool): Show/hide the filter pane entirely (default: True).
+        expanded (bool): Expand/collapse the pane when visible (default: False).
+        dry_run (bool): Whether to perform a dry run.
+        summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
+    """
+    state_desc = "hidden" if not visible else ("expanded" if expanded else "collapsed")
+    console.print_heading(
+        f"Action: Configuring filter pane ({state_desc}){' (Dry Run)' if dry_run else ''}"
+    )
+
+    report_json_path = os.path.join(report_path, "definition", "report.json")
+    report_data = load_json(report_json_path)
+
+    objects = report_data.get("objects", {})
+    outspace_pane = objects.get("outspacePane", [])
+
+    # Get current values
+    current_visible = "true"
+    current_expanded = "true"
+    if outspace_pane:
+        properties = outspace_pane[0].get("properties", {})
+        current_visible = (
+            properties.get("visible", {})
+            .get("expr", {})
+            .get("Literal", {})
+            .get("Value", "true")
+        )
+        current_expanded = (
+            properties.get("expanded", {})
+            .get("expr", {})
+            .get("Literal", {})
+            .get("Value", "true")
+        )
+
+    target_visible = "true" if visible else "false"
+    target_expanded = "true" if expanded else "false"
+
+    # Check if changes are needed
+    if current_visible == target_visible and current_expanded == target_expanded:
+        console.print_info(f"Filter pane is already {state_desc}.")
+        return False
+
+    # Ensure objects structure exists
+    if "objects" not in report_data:
+        report_data["objects"] = {}
+    if "outspacePane" not in report_data["objects"]:
+        report_data["objects"]["outspacePane"] = [{"properties": {}}]
+    if "properties" not in report_data["objects"]["outspacePane"][0]:
+        report_data["objects"]["outspacePane"][0]["properties"] = {}
+
+    # Set properties
+    props = report_data["objects"]["outspacePane"][0]["properties"]
+    props["visible"] = {"expr": {"Literal": {"Value": target_visible}}}
+    props["expanded"] = {"expr": {"Literal": {"Value": target_expanded}}}
+
+    if not dry_run:
+        write_json(report_json_path, report_data)
+
+    if dry_run:
+        console.print_dry_run(f"Would configure filter pane to {state_desc}.")
+    else:
+        console.print_success(f"Configured filter pane to {state_desc}.")
+
+    return True
+
+
 def collapse_filter_pane(
     report_path: str, dry_run: bool = False, summary: bool = False
 ) -> bool:
     """
-    Collapse the filter pane in the report by setting outspacePane expanded to false.
+    Collapse the filter pane in the report.
+
+    This is a convenience wrapper for configure_filter_pane(visible=True, expanded=False).
 
     Args:
         report_path (str): The path to the report.
@@ -554,50 +637,9 @@ def collapse_filter_pane(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Collapsing filter pane{' (Dry Run)' if dry_run else ''}"
+    return configure_filter_pane(
+        report_path, visible=True, expanded=False, dry_run=dry_run, summary=summary
     )
-
-    report_json_path = os.path.join(report_path, "definition", "report.json")
-    report_data = load_json(report_json_path)
-
-    objects = report_data.get("objects", {})
-    outspace_pane = objects.get("outspacePane", [])
-
-    # Check if outspacePane exists and has expanded property
-    if outspace_pane:
-        properties = outspace_pane[0].get("properties", {})
-        expanded = properties.get("expanded", {})
-        current_value = expanded.get("expr", {}).get("Literal", {}).get("Value")
-
-        if current_value == "false":
-            console.print_info("Filter pane is already collapsed.")
-            return False
-    else:
-        # outspacePane doesn't exist, need to create it
-        current_value = None
-
-    # Set expanded to false
-    if "objects" not in report_data:
-        report_data["objects"] = {}
-    if "outspacePane" not in report_data["objects"]:
-        report_data["objects"]["outspacePane"] = [{"properties": {}}]
-    if "properties" not in report_data["objects"]["outspacePane"][0]:
-        report_data["objects"]["outspacePane"][0]["properties"] = {}
-
-    report_data["objects"]["outspacePane"][0]["properties"]["expanded"] = {
-        "expr": {"Literal": {"Value": "false"}}
-    }
-
-    if not dry_run:
-        write_json(report_json_path, report_data)
-
-    if dry_run:
-        console.print_dry_run("Would collapse the filter pane.")
-    else:
-        console.print_success("Collapsed the filter pane.")
-
-    return True
 
 
 def reset_filter_pane_width(

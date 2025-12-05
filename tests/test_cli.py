@@ -183,7 +183,7 @@ def test_cleanup_invalid_bookmarks_dry_run(complex_report, run_cli):
     assert result.returncode == 0
 
 
-def test_standardize_folder_names_dry_run(simple_report, run_cli):
+def test_standardize_pbir_folders_dry_run(simple_report, run_cli):
     result = run_cli(["standardize-folder-names", simple_report, "--dry-run"])
     assert result.returncode == 0
 
@@ -228,7 +228,7 @@ def test_remove_measures_with_summary(simple_report, run_cli):
     assert result.returncode == 0
 
 
-def test_standardize_folder_names_with_summary(simple_report, run_cli):
+def test_standardize_pbir_folders_with_summary(simple_report, run_cli):
     """Test that --summary flag works with standardize-folder-names command."""
     result = run_cli(
         ["standardize-folder-names", simple_report, "--dry-run", "--summary"]
@@ -284,13 +284,13 @@ def test_error_on_change_sanitize_specific_actions(simple_report, run_cli):
             "sanitize",
             simple_report,
             "--actions",
-            "standardize_folder_names",
+            "standardize_pbir_folders",
             "--dry-run",
             "--error-on-change",
-            "standardize_folder_names",
+            "standardize_pbir_folders",
         ]
     )
-    # Should exit with code 1 if standardize_folder_names would make changes
+    # Should exit with code 1 if standardize_pbir_folders would make changes
     assert result.returncode == 1
     assert "Build failed due to --error-on-change policy" in result.stderr
 
@@ -371,7 +371,7 @@ def test_sanitize_exclude_single_action(complex_report, run_cli):
             "--actions",
             "all",
             "--exclude",
-            "standardize_folder_names",
+            "standardize_pbir_folders",
             "--dry-run",
         ]
     )
@@ -387,7 +387,7 @@ def test_sanitize_exclude_multiple_actions(complex_report, run_cli):
             "--actions",
             "all",
             "--exclude",
-            "standardize_folder_names",
+            "standardize_pbir_folders",
             "set_first_page_as_active",
             "--dry-run",
         ]
@@ -405,7 +405,7 @@ def test_sanitize_exclude_invalid_action_warning(complex_report, run_cli):
             "all",
             "--exclude",
             "invalid_action",
-            "standardize_folder_names",
+            "standardize_pbir_folders",
             "--dry-run",
         ]
     )

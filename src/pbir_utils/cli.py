@@ -8,15 +8,22 @@ from .console_utils import console
 from .common import resolve_report_path
 from .pbir_report_sanitizer import (
     sanitize_powerbi_report,
-    AVAILABLE_ACTIONS,
-    remove_unused_bookmarks,
-    remove_unused_custom_visuals,
-    disable_show_items_with_no_data,
+    get_available_actions,
+    remove_unused_measures,
+)
+from .bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks
+from .page_utils import (
+    hide_tooltip_pages,
+    hide_drillthrough_pages,
     hide_tooltip_drillthrough_pages,
     set_first_page_as_active,
     remove_empty_pages,
+    set_page_size,
+)
+from .visual_utils import (
+    remove_unused_custom_visuals,
+    disable_show_items_with_no_data,
     remove_hidden_visuals_never_shown,
-    cleanup_invalid_bookmarks,
 )
 from .metadata_extractor import export_pbir_metadata_to_csv
 from .report_wireframe_visualizer import display_report_wireframes
@@ -27,6 +34,7 @@ from .filter_utils import (
     update_report_filters,
     sort_report_filters,
     collapse_filter_pane,
+    configure_filter_pane,
     reset_filter_pane_width,
 )
 from .folder_standardizer import standardize_pbir_folders
@@ -162,35 +170,62 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Sanitize Command
-    sanitize_desc = textwrap.dedent(
-        """
+    # Sanitize Command - Build description dynamically
+    from .sanitize_config import load_config, get_default_config_path, _load_yaml
+    from .pbir_report_sanitizer import get_simple_actions
+
+    # Get default actions from YAML config
+    default_config = _load_yaml(get_default_config_path())
+    default_action_names = [
+        a if isinstance(a, str) else a.get("name", "")
+        for a in default_config.get("actions", [])
+    ]
+
+    # Get simple-signature actions for display (not parameterized ones)
+    simple_actions = get_simple_actions()
+
+    # Calculate additional actions (not in defaults, only simple signature)
+    additional_action_names = [
+        a for a in simple_actions.keys() if a not in default_action_names
+    ]
+
+    # Build dynamic description
+    default_actions_list = "\n".join(
+        f"          - {name}" for name in default_action_names
+    )
+    additional_actions_list = "\n".join(
+        f"          - {name}" for name in sorted(additional_action_names)
+    )
+
+    sanitize_desc = f"""
         Sanitize a Power BI report by removing unused or unwanted components.
         
-        Available Actions:
-          - all: Performs ALL sanitization actions listed below.
-          - remove_unused_measures: Removes measures not used in any visuals.
-          - remove_unused_bookmarks: Removes bookmarks not activated by navigators/actions.
-          - remove_unused_custom_visuals: Removes unused custom visuals.
-          - disable_show_items_with_no_data: Disables "Show items with no data" for all visuals.
-          - hide_tooltip_drillthrough_pages: Hides tooltip and drillthrough pages.
-          - set_first_page_as_active: Sets the first page as active.
-          - remove_empty_pages: Removes pages with no visuals.
-          - remove_hidden_visuals_never_shown: Removes permanently hidden visuals.
-          - collapse_filter_pane: Collapses the filter pane in the report.
-          - reset_filter_pane_width: Resets filter pane width on all pages.
-
-          - cleanup_invalid_bookmarks: Removes bookmarks referencing non-existent pages/visuals.
-          - standardize_folder_names: Standardizes page and visual folder names to be descriptive.
+        If no --actions specified, runs actions from config file (defaults/sanitize.yaml).
+        
+        Default Actions (from config):
+{default_actions_list}
+        
+        Additional Actions (not in defaults):
+{additional_actions_list}
+        
+        Configuration:
+          Create a 'pbir-sanitize.yaml' in your project to customize defaults.
     """
-    )
+
     sanitize_epilog = textwrap.dedent(
         """
         Examples:
-          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks --dry-run
-          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run
-          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --exclude set_first_page_as_active standardize_folder_names --dry-run
-          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions all --dry-run --error-on-change set_first_page_as_active remove_empty_pages
+          # Run default actions from config (--actions all is optional)
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --dry-run
+          
+          # Run specific actions only
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --actions remove_unused_measures --dry-run
+          
+          # Exclude specific actions from defaults
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --exclude set_first_page_as_active --dry-run
+          
+          # Include additional actions beyond defaults
+          pbir-utils sanitize "C:\\Reports\\MyReport.Report" --include standardize_pbir_folders --dry-run
     """
     )
     sanitize_parser = subparsers.add_parser(
@@ -206,7 +241,9 @@ def main():
         help="Path to the Power BI report folder (optional if inside a .Report folder)",
     )
     sanitize_parser.add_argument(
-        "--actions", nargs="+", help="List of sanitization actions to perform"
+        "--actions",
+        nargs="+",
+        help="Actions to perform. If omitted, runs config defaults. Use 'all' explicitly if preferred.",
     )
     sanitize_parser.add_argument(
         "--dry-run",
@@ -222,7 +259,13 @@ def main():
         "--exclude",
         nargs="+",
         metavar="ACTION",
-        help="Actions to exclude when using '--actions all'. Ignored if specific actions are listed.",
+        help="Actions to exclude from config defaults.",
+    )
+    sanitize_parser.add_argument(
+        "--include",
+        nargs="+",
+        metavar="ACTION",
+        help="Additional actions to include beyond config defaults.",
     )
     sanitize_parser.add_argument(
         "--error-on-change",
@@ -797,6 +840,82 @@ def main():
     )
     _add_common_args(collapse_filter_pane_parser)
 
+    # Configure Filter Pane Command
+    configure_filter_pane_desc = textwrap.dedent(
+        """
+        Configure the filter pane visibility and expanded state.
+        
+        Use this to show/hide or expand/collapse the filter pane.
+    """
+    )
+    configure_filter_pane_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils configure-filter-pane "C:\\Reports\\MyReport.Report" --dry-run
+          pbir-utils configure-filter-pane "C:\\Reports\\MyReport.Report" --visible false --dry-run
+          pbir-utils configure-filter-pane "C:\\Reports\\MyReport.Report" --expanded true --dry-run
+    """
+    )
+    configure_filter_pane_parser = subparsers.add_parser(
+        "configure-filter-pane",
+        help="Configure the filter pane visibility and expanded state",
+        description=configure_filter_pane_desc,
+        epilog=configure_filter_pane_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    configure_filter_pane_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    configure_filter_pane_parser.add_argument(
+        "--visible",
+        type=lambda x: x.lower() == "true",
+        default=True,
+        help="Show/hide the filter pane (default: true)",
+    )
+    configure_filter_pane_parser.add_argument(
+        "--expanded",
+        type=lambda x: x.lower() == "true",
+        default=False,
+        help="Expand/collapse the filter pane (default: false)",
+    )
+    _add_dry_run_arg(configure_filter_pane_parser)
+    _add_summary_arg(configure_filter_pane_parser)
+    _add_error_on_change_arg(configure_filter_pane_parser)
+
+    # Hide Tooltip Pages Command
+    hide_tooltip_pages_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils hide-tooltip-pages "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
+    hide_tooltip_pages_parser = subparsers.add_parser(
+        "hide-tooltip-pages",
+        help="Hide tooltip pages",
+        description="Hide tooltip pages in the report.",
+        epilog=hide_tooltip_pages_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    _add_common_args(hide_tooltip_pages_parser)
+
+    # Hide Drillthrough Pages Command
+    hide_drillthrough_pages_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils hide-drillthrough-pages "C:\\Reports\\MyReport.Report" --dry-run
+    """
+    )
+    hide_drillthrough_pages_parser = subparsers.add_parser(
+        "hide-drillthrough-pages",
+        help="Hide drillthrough pages",
+        description="Hide drillthrough pages in the report.",
+        epilog=hide_drillthrough_pages_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    _add_common_args(hide_drillthrough_pages_parser)
+
     # Reset Filter Pane Width Command
     reset_filter_pane_width_epilog = textwrap.dedent(
         """
@@ -813,28 +932,98 @@ def main():
     )
     _add_common_args(reset_filter_pane_width_parser)
 
+    # Set Page Size Command
+    set_page_size_desc = textwrap.dedent(
+        """
+        Set page size for all non-tooltip pages.
+        
+        Sets the width and height dimensions for all pages in the report except tooltip pages.
+        Tooltip pages retain their original dimensions.
+    """
+    )
+    set_page_size_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils set-page-size "C:\\Reports\\MyReport.Report" --dry-run
+          pbir-utils set-page-size "C:\\Reports\\MyReport.Report" --width 1920 --height 1080 --dry-run
+    """
+    )
+    set_page_size_parser = subparsers.add_parser(
+        "set-page-size",
+        help="Set page size for all non-tooltip pages",
+        description=set_page_size_desc,
+        epilog=set_page_size_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    set_page_size_parser.add_argument(
+        "report_path",
+        nargs="?",
+        help="Path to the Power BI report folder (optional if inside a .Report folder)",
+    )
+    set_page_size_parser.add_argument(
+        "--width",
+        type=int,
+        default=1280,
+        help="Target page width (default: 1280)",
+    )
+    set_page_size_parser.add_argument(
+        "--height",
+        type=int,
+        default=720,
+        help="Target page height (default: 720)",
+    )
+    _add_dry_run_arg(set_page_size_parser)
+    _add_summary_arg(set_page_size_parser)
+    _add_error_on_change_arg(set_page_size_parser)
+
     args = parser.parse_args()
 
     if args.command == "sanitize":
         report_path = resolve_report_path(args.report_path)
         actions = args.actions if args.actions else []
 
-        if "all" in actions:
-            actions = list(AVAILABLE_ACTIONS.keys())
+        # If no actions specified or "all", load from config
+        if not actions or "all" in actions:
+            from .sanitize_config import load_config
+
+            config = load_config(report_path=report_path)
+            config_actions = [a.name for a in config.actions]
+
+            if "all" in actions:
+                # "all" means all actions from config file
+                actions = config_actions
+            else:
+                # No actions specified, use config defaults
+                actions = config_actions
+
             # Apply exclusions if specified
             if args.exclude:
-                invalid_excludes = [
-                    e for e in args.exclude if e not in AVAILABLE_ACTIONS
-                ]
+                available = get_available_actions()
+                invalid_excludes = [e for e in args.exclude if e not in available]
                 if invalid_excludes:
                     console.print_warning(
                         f"Unknown actions in --exclude will be ignored: {', '.join(invalid_excludes)}"
                     )
                 actions = [a for a in actions if a not in args.exclude]
 
+            # Apply inclusions if specified (add actions not in config)
+            if args.include:
+                available = get_available_actions()
+                for inc in args.include:
+                    if inc not in available:
+                        console.print_warning(f"Unknown action in --include: '{inc}'")
+                    elif inc not in actions:
+                        actions.append(inc)
+        else:
+            # Specific actions provided - validate they exist
+            available = get_available_actions()
+            for action in actions:
+                if action not in available:
+                    console.print_warning(f"Unknown action '{action}' will be skipped.")
+
         if not actions:
             console.print_warning(
-                "No actions specified. Use --actions to specify sanitization actions."
+                "No actions to run. Check your config file or use --actions to specify sanitization actions."
             )
 
         # Validate --error-on-change requires --dry-run
@@ -1098,6 +1287,43 @@ def main():
         )
         _check_error_on_change(args, has_changes, "collapse-filter-pane")
 
+    elif args.command == "configure-filter-pane":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = configure_filter_pane(
+            report_path,
+            visible=args.visible,
+            expanded=args.expanded,
+            dry_run=args.dry_run,
+            summary=args.summary,
+        )
+        _check_error_on_change(args, has_changes, "configure-filter-pane")
+
+    elif args.command == "hide-tooltip-pages":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = hide_tooltip_pages(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "hide-tooltip-pages")
+
+    elif args.command == "hide-drillthrough-pages":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = hide_drillthrough_pages(
+            report_path, dry_run=args.dry_run, summary=args.summary
+        )
+        _check_error_on_change(args, has_changes, "hide-drillthrough-pages")
+
     elif args.command == "reset-filter-pane-width":
         # Validate --error-on-change requires --dry-run
         if getattr(args, "error_on_change", False) and not args.dry_run:
@@ -1108,6 +1334,21 @@ def main():
             report_path, dry_run=args.dry_run, summary=args.summary
         )
         _check_error_on_change(args, has_changes, "reset-filter-pane-width")
+
+    elif args.command == "set-page-size":
+        # Validate --error-on-change requires --dry-run
+        if getattr(args, "error_on_change", False) and not args.dry_run:
+            console.print_error("--error-on-change requires --dry-run to be specified.")
+            sys.exit(1)
+        report_path = resolve_report_path(args.report_path)
+        has_changes = set_page_size(
+            report_path,
+            width=args.width,
+            height=args.height,
+            dry_run=args.dry_run,
+            summary=args.summary,
+        )
+        _check_error_on_change(args, has_changes, "set-page-size")
 
     else:
         parser.print_help()
