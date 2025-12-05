@@ -28,10 +28,12 @@ def _extract_report_name(json_file_path: str) -> str:
     Returns:
         str: The extracted report name if found, otherwise "NA".
     """
+    # Normalize path to handle both Windows and Unix separators
+    normalized_path = os.path.normpath(json_file_path)
     return next(
         (
             component[:-7]
-            for component in reversed(json_file_path.split(os.sep))
+            for component in reversed(normalized_path.split(os.sep))
             if component.endswith(".Report")
         ),
         "NA",
