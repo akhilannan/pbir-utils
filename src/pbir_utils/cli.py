@@ -2,7 +2,7 @@ import argparse
 import json
 import sys
 import textwrap
-from typing import List, Dict, Set, Optional
+from typing import Dict, Set, Optional
 from .console_utils import console
 
 from .common import resolve_report_path

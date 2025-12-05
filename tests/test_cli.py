@@ -310,21 +310,31 @@ def test_error_on_change_no_changes_succeeds(simple_report, run_cli):
     assert result.returncode == 0
 
 
-def test_error_on_change_disable_interactions(simple_report, run_cli):
-    """Test that --error-on-change works with disable-interactions command."""
+# Parameterized tests for --error-on-change flag across multiple commands
+@pytest.mark.parametrize(
+    "command,extra_args,fixture_type",
+    [
+        ("disable-interactions", [], "simple"),
+        ("remove-measures", [], "simple"),
+        ("sort-filters", [], "simple"),
+        ("remove-unused-bookmarks", [], "simple"),
+        ("remove-unused-custom-visuals", [], "simple"),
+        ("disable-show-items-with-no-data", [], "simple"),
+        ("set-first-page-as-active", [], "simple"),
+        ("remove-empty-pages", [], "simple"),
+        ("remove-hidden-visuals", [], "simple"),
+        ("cleanup-invalid-bookmarks", [], "complex"),
+    ],
+)
+def test_error_on_change_commands(
+    simple_report, complex_report, run_cli, command, extra_args, fixture_type
+):
+    """Test that --error-on-change works with various CLI commands."""
+    report = simple_report if fixture_type == "simple" else complex_report
     result = run_cli(
-        ["disable-interactions", simple_report, "--dry-run", "--error-on-change"]
+        [command, report] + extra_args + ["--dry-run", "--error-on-change"]
     )
-    # Check that the command runs (may or may not exit with error depending on report state)
-    # The main test is that it doesn't crash and respects the flag
-    assert result.returncode in [0, 1]
-
-
-def test_error_on_change_remove_measures(simple_report, run_cli):
-    """Test that --error-on-change works with remove-measures command."""
-    result = run_cli(
-        ["remove-measures", simple_report, "--dry-run", "--error-on-change"]
-    )
+    # Commands should either succeed (0) or fail due to changes detected (1)
     assert result.returncode in [0, 1]
 
 
@@ -345,41 +355,6 @@ def test_error_on_change_update_filters(simple_report, run_cli):
     filters = '[{"Table": "Tbl", "Column": "Col", "Condition": "In", "Values": ["A"]}]'
     result = run_cli(
         ["update-filters", simple_report, filters, "--dry-run", "--error-on-change"]
-    )
-    assert result.returncode in [0, 1]
-
-
-def test_error_on_change_sort_filters(simple_report, run_cli):
-    """Test that --error-on-change works with sort-filters command."""
-    result = run_cli(["sort-filters", simple_report, "--dry-run", "--error-on-change"])
-    assert result.returncode in [0, 1]
-
-
-def test_error_on_change_remove_unused_bookmarks(simple_report, run_cli):
-    """Test that --error-on-change works with remove-unused-bookmarks command."""
-    result = run_cli(
-        ["remove-unused-bookmarks", simple_report, "--dry-run", "--error-on-change"]
-    )
-    assert result.returncode in [0, 1]
-
-
-def test_error_on_change_remove_unused_custom_visuals(simple_report, run_cli):
-    """Test that --error-on-change works with remove-unused-custom-visuals command."""
-    result = run_cli(
-        [
-            "remove-unused-custom-visuals",
-            simple_report,
-            "--dry-run",
-            "--error-on-change",
-        ]
-    )
-    assert result.returncode in [0, 1]
-
-
-def test_error_on_change_cleanup_invalid_bookmarks(complex_report, run_cli):
-    """Test that --error-on-change works with cleanup-invalid-bookmarks command."""
-    result = run_cli(
-        ["cleanup-invalid-bookmarks", complex_report, "--dry-run", "--error-on-change"]
     )
     assert result.returncode in [0, 1]
 
@@ -437,4 +412,97 @@ def test_sanitize_exclude_invalid_action_warning(complex_report, run_cli):
     assert result.returncode == 0
     assert (
         "Unknown actions in --exclude will be ignored: invalid_action" in result.stdout
+    )
+
+
+# =============================================================================
+# Error Path Tests - Testing error handling and edge cases
+# =============================================================================
+
+
+def test_update_filters_invalid_json(simple_report, run_cli):
+    """Test that invalid JSON in update-filters causes an error."""
+    result = run_cli(["update-filters", simple_report, "{invalid json}", "--dry-run"])
+    assert result.returncode != 0
+    assert "Invalid JSON" in result.stderr
+
+
+def test_error_on_change_requires_dry_run(simple_report, run_cli):
+    """Test that --error-on-change without --dry-run shows an error."""
+    result = run_cli(["standardize-folder-names", simple_report, "--error-on-change"])
+    assert result.returncode != 0
+    assert "--error-on-change requires --dry-run" in result.stderr
+
+
+def test_error_on_change_requires_dry_run_disable_interactions(simple_report, run_cli):
+    """Test --error-on-change validation for disable-interactions command."""
+    result = run_cli(["disable-interactions", simple_report, "--error-on-change"])
+    assert result.returncode != 0
+    assert "--error-on-change requires --dry-run" in result.stderr
+
+
+def test_error_on_change_requires_dry_run_remove_measures(simple_report, run_cli):
+    """Test --error-on-change validation for remove-measures command."""
+    result = run_cli(["remove-measures", simple_report, "--error-on-change"])
+    assert result.returncode != 0
+    assert "--error-on-change requires --dry-run" in result.stderr
+
+
+def test_nonexistent_report_path(run_cli, tmp_path):
+    """Test that a non-existent report path causes an error."""
+    fake_path = str(tmp_path / "NonExistent.Report")
+    result = run_cli(["sanitize", fake_path, "--actions", "all", "--dry-run"])
+    # Should fail or show an error about missing files
+    # The exact behavior depends on which file is missing first
+    assert (
+        result.returncode != 0
+        or "not found" in result.stdout.lower()
+        or "error" in result.stderr.lower()
+    )
+
+
+def test_batch_update_missing_csv(simple_report, run_cli, tmp_path):
+    """Test that batch-update with missing CSV file shows error."""
+    fake_csv = str(tmp_path / "nonexistent.csv")
+    result = run_cli(["batch-update", simple_report, fake_csv, "--dry-run"])
+    # The command prints error to stderr but may still return 0
+    assert "error" in result.stderr.lower() or "no such file" in result.stderr.lower()
+
+
+def test_sort_filters_custom_order_with_list(simple_report, run_cli):
+    """Test that sort-filters with Custom order works with --custom-order."""
+    result = run_cli(
+        [
+            "sort-filters",
+            simple_report,
+            "--sort-order",
+            "Custom",
+            "--custom-order",
+            "Filter1",
+            "Filter2",
+            "--dry-run",
+        ]
+    )
+    # Should run successfully
+    assert result.returncode == 0
+
+
+def test_extract_metadata_no_args_outside_report_folder(run_cli, tmp_path, monkeypatch):
+    """Test that extract-metadata fails gracefully when not in a report folder."""
+    monkeypatch.chdir(tmp_path)
+    result = run_cli(["extract-metadata", "output.csv"])
+    # Should fail because we're not in a .Report folder
+    assert result.returncode != 0
+
+
+def test_sanitize_invalid_action_name(simple_report, run_cli):
+    """Test that an invalid action name in --actions is handled."""
+    result = run_cli(
+        ["sanitize", simple_report, "--actions", "invalid_action_name", "--dry-run"]
+    )
+    # Should fail or warn about unknown action
+    assert (
+        result.returncode != 0
+        or "unknown" in result.stdout.lower()
+        or "invalid" in result.stderr.lower()
     )

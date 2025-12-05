@@ -1,12 +1,7 @@
-import os
-import sys
-import json
 from unittest.mock import patch
 import pytest
 
-# Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
+from conftest import create_dummy_file
 from pbir_utils.pbir_processor import (
     _load_csv_mapping,
     _update_dax_expression,
@@ -14,17 +9,6 @@ from pbir_utils.pbir_processor import (
     _update_property,
     batch_update_pbir_project,
 )
-
-
-def create_dummy_file(test_dir, path, content):
-    full_path = test_dir / path
-    full_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(full_path, "w", encoding="utf-8") as f:
-        if isinstance(content, dict) or isinstance(content, list):
-            json.dump(content, f)
-        else:
-            f.write(content)
-    return str(full_path)
 
 
 def test_load_csv_mapping_invalid_columns(tmp_path):

@@ -8,6 +8,31 @@ import subprocess
 # Path to the src directory
 SRC_DIR = os.path.join(os.path.dirname(__file__), "..", "src")
 
+# Add src to sys.path for all tests
+sys.path.insert(0, os.path.abspath(SRC_DIR))
+
+
+def create_dummy_file(test_dir, path, content):
+    """
+    Create a file at test_dir/path with the given content.
+
+    Args:
+        test_dir: Base directory (typically tmp_path from pytest)
+        path: Relative path within test_dir
+        content: File content - dict/list will be JSON dumped, str written as-is
+
+    Returns:
+        str: Full path to the created file
+    """
+    full_path = test_dir / path
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(full_path, "w", encoding="utf-8") as f:
+        if isinstance(content, dict) or isinstance(content, list):
+            json.dump(content, f)
+        else:
+            f.write(content)
+    return str(full_path)
+
 
 @pytest.fixture
 def simple_report(tmp_path):

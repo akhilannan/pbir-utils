@@ -1,12 +1,8 @@
 import os
-import sys
-import json
 from unittest.mock import patch
 import pytest
 
-# Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
+from conftest import create_dummy_file
 from pbir_utils.filter_utils import (
     _format_date,
     _is_date,
@@ -20,13 +16,6 @@ from pbir_utils.filter_utils import (
     reset_filter_pane_width,
 )
 from pbir_utils.common import load_json
-
-
-def create_dummy_file(test_dir, path, content):
-    full_path = test_dir / path
-    full_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(full_path, "w", encoding="utf-8") as f:
-        json.dump(content, f)
 
 
 def test_collapse_filter_pane_already_collapsed(tmp_path):

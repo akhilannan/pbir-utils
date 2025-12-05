@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import pytest
 from pbir_utils.metadata_extractor import (
@@ -8,9 +7,6 @@ from pbir_utils.metadata_extractor import (
 )
 from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
 from pbir_utils.pbir_processor import batch_update_pbir_project
-
-# Add src to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 
 def test_metadata_extraction(complex_report):
