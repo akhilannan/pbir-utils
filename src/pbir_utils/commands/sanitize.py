@@ -1,43 +1,39 @@
 """Sanitize command for PBIR Utils CLI."""
 
 import argparse
+import sys
 import textwrap
 
 from ..command_utils import add_dry_run_arg, add_summary_arg
 from ..common import resolve_report_path
 from ..console_utils import console
-from ..pbir_report_sanitizer import (
-    sanitize_powerbi_report,
-    get_available_actions,
-    get_simple_actions,
-)
+from ..pbir_report_sanitizer import sanitize_powerbi_report
 from ..sanitize_config import load_config, get_default_config_path, _load_yaml
-import sys
 
 
 def register(subparsers):
     """Register the sanitize command."""
-    # Build description dynamically
+    # Build description dynamically from defaults/sanitize.yaml
     default_config = _load_yaml(get_default_config_path())
+
+    # Get default action names
     default_action_names = [
         a if isinstance(a, str) else a.get("name", "")
         for a in default_config.get("actions", [])
     ]
 
-    # Get simple-signature actions for display (not parameterized ones)
-    simple_actions = get_simple_actions()
+    # Get all defined actions (keys in definitions)
+    all_defined = set(default_config.get("definitions", {}).keys())
 
-    # Calculate additional actions (not in defaults, only simple signature)
-    additional_action_names = [
-        a for a in simple_actions.keys() if a not in default_action_names
-    ]
+    # Additional actions = defined but not in defaults
+    additional_action_names = sorted(all_defined - set(default_action_names))
 
     # Build dynamic description
     default_actions_list = "\n".join(
         f"          - {name}" for name in default_action_names
     )
     additional_actions_list = "\n".join(
-        f"          - {name}" for name in sorted(additional_action_names)
+        f"          - {name}" for name in additional_action_names
     )
 
     sanitize_desc = f"""
@@ -48,17 +44,18 @@ def register(subparsers):
         Default Actions (from config):
 {default_actions_list}
         
-        Additional Actions (not in defaults):
+        Additional Actions (opt-in via --include):
 {additional_actions_list}
         
         Configuration:
           Create a 'pbir-sanitize.yaml' in your project to customize defaults.
+          Or use --config to specify a custom config file path.
     """
 
     sanitize_epilog = textwrap.dedent(
         """
         Examples:
-          # Run default actions from config (--actions all is optional)
+          # Run default actions from config
           pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --dry-run
           
           # Run specific actions only
@@ -69,6 +66,9 @@ def register(subparsers):
           
           # Include additional actions beyond defaults
           pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --include standardize_pbir_folders --dry-run
+          
+          # Use a custom config file
+          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --config my-config.yaml --dry-run
     """
     )
 
@@ -88,6 +88,11 @@ def register(subparsers):
         "--actions",
         nargs="+",
         help="Actions to perform. If omitted, runs config defaults. Use 'all' explicitly if preferred.",
+    )
+    parser.add_argument(
+        "--config",
+        metavar="PATH",
+        help="Path to a custom sanitize config YAML file.",
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
@@ -115,57 +120,59 @@ def register(subparsers):
 def handle(args):
     """Handle the sanitize command."""
     report_path = resolve_report_path(args.report_path)
-    actions = args.actions if args.actions else []
 
-    # If no actions specified or "all", load from config
-    if not actions or "all" in actions:
-        config = load_config(report_path=report_path)
-        config_actions = [a.name for a in config.actions]
+    # Load config (from explicit path or auto-discover)
+    config = load_config(config_path=args.config, report_path=report_path)
 
-        if "all" in actions:
-            # "all" means all actions from config file
-            actions = config_actions
-        else:
-            # No actions specified, use config defaults
-            actions = config_actions
-
-        # Apply exclusions if specified
-        if args.exclude:
-            available = get_available_actions()
-            invalid_excludes = [e for e in args.exclude if e not in available]
-            if invalid_excludes:
+    # Determine final action list
+    if args.actions and "all" not in args.actions:
+        # Specific actions requested - filter to those
+        requested_actions = args.actions
+        final_action_names = []
+        for action_name in requested_actions:
+            if action_name in config.definitions:
+                final_action_names.append(action_name)
+            else:
                 console.print_warning(
-                    f"Unknown actions in --exclude will be ignored: {', '.join(invalid_excludes)}"
+                    f"Unknown action '{action_name}' will be skipped."
                 )
-            actions = [a for a in actions if a not in args.exclude]
-
-        # Apply inclusions if specified (add actions not in config)
-        if args.include:
-            available = get_available_actions()
-            for inc in args.include:
-                if inc not in available:
-                    console.print_warning(f"Unknown action in --include: '{inc}'")
-                elif inc not in actions:
-                    actions.append(inc)
+        actions = final_action_names
     else:
-        # Specific actions provided - validate they exist
-        available = get_available_actions()
-        for action in actions:
-            if action not in available:
-                console.print_warning(f"Unknown action '{action}' will be skipped.")
+        # Use config defaults
+        actions = config.get_action_names()
+
+    # Apply exclusions
+    if args.exclude:
+        all_defined = set(config.definitions.keys())
+        invalid_excludes = [e for e in args.exclude if e not in all_defined]
+        if invalid_excludes:
+            console.print_warning(
+                f"Unknown actions in --exclude will be ignored: {', '.join(invalid_excludes)}"
+            )
+        actions = [a for a in actions if a not in args.exclude]
+
+    # Apply inclusions
+    if args.include:
+        all_defined = set(config.definitions.keys())
+        for inc in args.include:
+            if inc not in all_defined:
+                console.print_warning(f"Unknown action in --include: '{inc}'")
+            elif inc not in actions:
+                actions.append(inc)
 
     if not actions:
         console.print_warning(
             "No actions to run. Check your config file or use --actions to specify sanitization actions."
         )
+        return
 
     # Validate --error-on-change requires --dry-run
-    error_on_change = args.error_on_change if hasattr(args, "error_on_change") else None
+    error_on_change = getattr(args, "error_on_change", None)
     if error_on_change and not args.dry_run:
         console.print_error("--error-on-change requires --dry-run to be specified.")
         sys.exit(1)
 
-    # Run sanitization and get results
+    # Run sanitization
     results = sanitize_powerbi_report(
         report_path, actions, dry_run=args.dry_run, summary=args.summary
     )

@@ -1,6 +1,56 @@
-# Default sanitization pipeline - ships with pbir-utils
-# Users can override by creating pbir-sanitize.yaml in their project
+# Sanitize Configuration
+# This file defines the default sanitization pipeline and available actions.
 
+definitions:
+  # === Standard Actions (included in default pipeline) ===
+  
+  cleanup_invalid_bookmarks: {}
+  remove_unused_bookmarks: {}
+  remove_unused_custom_visuals: {}
+  disable_show_items_with_no_data: {}
+  remove_hidden_visuals_never_shown: {}
+  set_first_page_as_active: {}
+  remove_empty_pages: {}
+  reset_filter_pane_width: {}
+
+  remove_unused_measures:
+    implementation: remove_measures
+    params:
+      check_visual_usage: true
+
+  hide_tooltip_pages:
+    implementation: hide_pages_by_type
+    params:
+      page_type: Tooltip
+
+  # === Additional Actions (opt-in via 'include') ===
+
+  hide_drillthrough_pages:
+    implementation: hide_pages_by_type
+    params:
+      page_type: Drillthrough
+
+  standardize_pbir_folders: {}
+
+  set_page_size_16_9:
+    implementation: set_page_size
+    params:
+      width: 1280
+      height: 720
+      exclude_tooltip: true
+
+  collapse_filter_pane:
+    implementation: configure_filter_pane
+    params:
+      expanded: false
+      visible: true
+
+  sort_filters_selected_top:
+    implementation: sort_report_filters
+    params:
+      sort_order: SelectedFilterTop
+
+# Default action execution order
 actions:
   - cleanup_invalid_bookmarks
   - remove_unused_bookmarks
@@ -13,6 +63,7 @@ actions:
   - disable_show_items_with_no_data
   - reset_filter_pane_width
 
+# Global options
 options:
   dry_run: false
   summary: false

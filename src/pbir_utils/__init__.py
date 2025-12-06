@@ -12,7 +12,6 @@ from .filter_utils import (
 )
 from .pbir_report_sanitizer import (
     sanitize_powerbi_report,
-    remove_unused_measures,
     get_available_actions,
 )
 from .bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks
@@ -20,6 +19,7 @@ from .page_utils import (
     hide_tooltip_pages,
     hide_drillthrough_pages,
     hide_tooltip_drillthrough_pages,
+    hide_pages_by_type,
     set_first_page_as_active,
     remove_empty_pages,
     set_page_size,
@@ -59,11 +59,11 @@ __all__ = [
     "hide_tooltip_pages",
     "hide_drillthrough_pages",
     "hide_tooltip_drillthrough_pages",
+    "hide_pages_by_type",
     "set_first_page_as_active",
     "remove_empty_pages",
     "set_page_size",
     # Visual utilities
-    "remove_unused_measures",
     "remove_unused_custom_visuals",
     "disable_show_items_with_no_data",
     "remove_hidden_visuals_never_shown",

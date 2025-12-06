@@ -11,14 +11,14 @@ from .common import load_json, write_json, process_json_files
 from .console_utils import console
 
 
-def _hide_pages_by_type(
+def hide_pages_by_type(
     report_path: str,
     page_type: str,
     dry_run: bool = False,
     summary: bool = False,
 ) -> bool:
     """
-    Internal helper to hide pages by binding type.
+    Hide pages by binding type.
 
     Args:
         report_path: The path to the report.
@@ -77,7 +77,7 @@ def hide_tooltip_pages(
         f"Action: Hiding tooltip pages{' (Dry Run)' if dry_run else ''}"
     )
 
-    result = _hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
+    result = hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
 
     if result:
         if dry_run:
@@ -108,7 +108,7 @@ def hide_drillthrough_pages(
         f"Action: Hiding drillthrough pages{' (Dry Run)' if dry_run else ''}"
     )
 
-    result = _hide_pages_by_type(report_path, "Drillthrough", dry_run, summary)
+    result = hide_pages_by_type(report_path, "Drillthrough", dry_run, summary)
 
     if result:
         if dry_run:
@@ -141,8 +141,8 @@ def hide_tooltip_drillthrough_pages(
         f"Action: Hiding tooltip/drillthrough pages{' (Dry Run)' if dry_run else ''}"
     )
 
-    tooltip_result = _hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
-    drillthrough_result = _hide_pages_by_type(
+    tooltip_result = hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
+    drillthrough_result = hide_pages_by_type(
         report_path, "Drillthrough", dry_run, summary
     )
 
@@ -359,16 +359,18 @@ def set_page_size(
     report_path: str,
     width: int = 1280,
     height: int = 720,
+    exclude_tooltip: bool = True,
     dry_run: bool = False,
     summary: bool = False,
 ) -> bool:
     """
-    Set the page size for all non-tooltip pages in the report.
+    Set the page size for pages in the report.
 
     Args:
         report_path (str): The path to the report.
         width (int): Target page width (default: 1280).
         height (int): Target page height (default: 720).
+        exclude_tooltip (bool): Skip tooltip pages (default: True).
         dry_run (bool): Perform a dry run without making changes.
         summary (bool): Show summary instead of detailed messages.
 
@@ -397,8 +399,8 @@ def set_page_size(
 
         page_data = load_json(page_json_path)
 
-        # Skip tooltip pages
-        if page_data.get("type") == "Tooltip":
+        # Skip tooltip pages if configured
+        if exclude_tooltip and page_data.get("type") == "Tooltip":
             if not summary:
                 console.print_info(
                     f"Skipping tooltip page: {page_data.get('displayName', folder_name)}"

@@ -278,7 +278,7 @@ def _validate_filters(filters: list[dict]) -> tuple[list, list]:
 
 
 def update_report_filters(
-    directory_path: str,
+    report_path: str,
     filters: list,
     reports: list = None,
     dry_run: bool = False,
@@ -288,7 +288,7 @@ def update_report_filters(
     Updates report filters based on the given filters.
 
     Parameters:
-    directory_path (str): Root folder containing reports.
+    report_path (str): Path to a .Report folder or root folder containing reports.
     filters (list): List of filters to apply.
     reports (list, optional): List of reports to update. Defaults to None.
     summary (bool, optional): Show summary instead of detailed messages. Defaults to False.
@@ -306,18 +306,18 @@ def update_report_filters(
     for filter_config, reason in ignored_filters:
         console.print_warning(f"Ignored filter: {filter_config} - Reason: {reason}")
 
-    report_paths = get_report_paths(directory_path, reports)
+    report_json_paths = get_report_paths(report_path, reports)
 
     any_changes = False
-    for report_path in report_paths:
-        data = load_json(report_path)
+    for report_json_path in report_json_paths:
+        data = load_json(report_json_path)
         if (
             not data
             or "filterConfig" not in data
             or "filters" not in data["filterConfig"]
         ):
             console.print_info(
-                f"No existing filters found in report: {os.path.basename(report_path)}"
+                f"No existing filters found in report: {os.path.basename(report_json_path)}"
             )
             continue
 
@@ -372,44 +372,44 @@ def update_report_filters(
                     updated = True
                 else:
                     console.print_warning(
-                        f"Skipping filter update for {table}.{column} in report {os.path.basename(report_path)} - filter item not found"
+                        f"Skipping filter update for {table}.{column} in report {os.path.basename(report_json_path)} - filter item not found"
                     )
             else:
                 console.print_warning(
-                    f"Skipping filter update for {table}.{column} in report {os.path.basename(report_path)} - entity or property not found"
+                    f"Skipping filter update for {table}.{column} in report {os.path.basename(report_json_path)} - entity or property not found"
                 )
 
         if updated:
             any_changes = True
             if not dry_run:
-                write_json(report_path, data)
+                write_json(report_json_path, data)
             if not summary:
                 if dry_run:
                     console.print_dry_run(
-                        f"Would update filters in report: {os.path.basename(report_path)}"
+                        f"Would update filters in report: {os.path.basename(report_json_path)}"
                     )
                 else:
                     console.print_success(
-                        f"Updated filters in report: {os.path.basename(report_path)}"
+                        f"Updated filters in report: {os.path.basename(report_json_path)}"
                     )
         elif not summary:
             console.print_info(
-                f"No filters were updated in report: {os.path.basename(report_path)}"
+                f"No filters were updated in report: {os.path.basename(report_json_path)}"
             )
 
     if summary:
         if dry_run:
-            msg = f"Would update filters in {len(report_paths)} reports"
+            msg = f"Would update filters in {len(report_json_paths)} reports"
             console.print_dry_run(msg)
         else:
-            msg = f"Updated filters in {len(report_paths)} reports"
+            msg = f"Updated filters in {len(report_json_paths)} reports"
             console.print_success(msg)
 
     return any_changes
 
 
 def sort_report_filters(
-    directory_path: str,
+    report_path: str,
     reports: list = None,
     sort_order: str = "SelectedFilterTop",
     custom_order: list = None,
@@ -417,7 +417,7 @@ def sort_report_filters(
     summary: bool = False,
 ) -> bool:
     """
-    Sorts the report filters in all specified reports in the root folder based on the given sort order:
+    Sorts the report filters in all specified reports based on the given sort order:
     - "Ascending": Sort all filters alphabetically ascending.
     - "Descending": Sort all filters alphabetically descending.
     - "SelectedFilterTop": Selected filters at the top (alphabetically ascending),
@@ -426,7 +426,7 @@ def sort_report_filters(
     - "Custom": List of filter names to be at the top, everything else alphabetically below.
 
     Parameters:
-    directory_path (str): Root folder containing reports.
+    report_path (str): Path to a .Report folder or root folder containing reports.
     reports (list, optional): List of reports to update. Defaults to None.
     sort_order (str, optional): Sorting strategy to use. Defaults to "SelectedFilterTop".
     custom_order (list, optional): List of filter names to prioritize in order (required for "Custom" sort order).
@@ -438,18 +438,18 @@ def sort_report_filters(
     console.print_heading(
         f"Action: Sorting report filters{' (Dry Run)' if dry_run else ''}"
     )
-    report_paths = get_report_paths(directory_path, reports)
+    report_json_paths = get_report_paths(report_path, reports)
     any_changes = False
 
-    for report_path in report_paths:
-        data = load_json(report_path)
+    for report_json_path in report_json_paths:
+        data = load_json(report_json_path)
         if (
             not data
             or "filterConfig" not in data
             or "filters" not in data["filterConfig"]
         ):
             console.print_info(
-                f"No existing filters found in report: {os.path.basename(report_path)}"
+                f"No existing filters found in report: {os.path.basename(report_json_path)}"
             )
             continue
 
@@ -518,23 +518,25 @@ def sort_report_filters(
         if has_changes:
             any_changes = True
             if not dry_run:
-                write_json(report_path, data)
+                write_json(report_json_path, data)
             if not summary:
                 if dry_run:
                     console.print_dry_run(
-                        f"Would sort filters in report: {report_path}"
+                        f"Would sort filters in report: {report_json_path}"
                     )
                 else:
-                    console.print_success(f"Sorted filters in report: {report_path}")
+                    console.print_success(
+                        f"Sorted filters in report: {report_json_path}"
+                    )
         elif not summary:
-            console.print_info(f"No changes needed for report: {report_path}")
+            console.print_info(f"No changes needed for report: {report_json_path}")
 
     if summary:
         if dry_run:
-            msg = f"Would sort filters in {len(report_paths)} reports"
+            msg = f"Would sort filters in {len(report_json_paths)} reports"
             console.print_dry_run(msg)
         else:
-            msg = f"Sorted filters in {len(report_paths)} reports"
+            msg = f"Sorted filters in {len(report_json_paths)} reports"
             console.print_success(msg)
 
     return any_changes

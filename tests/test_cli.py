@@ -130,31 +130,59 @@ def test_measure_dependencies_no_path_in_report_dir(simple_report, run_cli):
     assert result.returncode == 0
 
 
-# Tests from test_cli_sanitization.py
+# Tests from test_cli_sanitization.py (now using sanitize command)
 
 
 def test_remove_unused_bookmarks_dry_run(simple_report, run_cli):
-    result = run_cli(["remove-unused-bookmarks", simple_report, "--dry-run"])
+    result = run_cli(
+        ["sanitize", simple_report, "--actions", "remove_unused_bookmarks", "--dry-run"]
+    )
     assert result.returncode == 0
 
 
 def test_remove_unused_custom_visuals_dry_run(simple_report, run_cli):
-    result = run_cli(["remove-unused-custom-visuals", simple_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "remove_unused_custom_visuals",
+            "--dry-run",
+        ]
+    )
     assert result.returncode == 0
 
 
 def test_disable_show_items_with_no_data_dry_run(simple_report, run_cli):
-    result = run_cli(["disable-show-items-with-no-data", simple_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "disable_show_items_with_no_data",
+            "--dry-run",
+        ]
+    )
     assert result.returncode == 0
 
 
-def test_hide_tooltip_drillthrough_pages_dry_run(simple_report, run_cli):
-    result = run_cli(["hide-tooltip-drillthrough-pages", simple_report, "--dry-run"])
+def test_hide_tooltip_pages_dry_run(simple_report, run_cli):
+    result = run_cli(
+        ["sanitize", simple_report, "--actions", "hide_tooltip_pages", "--dry-run"]
+    )
     assert result.returncode == 0
 
 
 def test_set_first_page_as_active_dry_run(complex_report, run_cli):
-    result = run_cli(["set-first-page-as-active", complex_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "set_first_page_as_active",
+            "--dry-run",
+        ]
+    )
     if result.returncode != 0:
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
@@ -162,7 +190,9 @@ def test_set_first_page_as_active_dry_run(complex_report, run_cli):
 
 
 def test_remove_empty_pages_dry_run(complex_report, run_cli):
-    result = run_cli(["remove-empty-pages", complex_report, "--dry-run"])
+    result = run_cli(
+        ["sanitize", complex_report, "--actions", "remove_empty_pages", "--dry-run"]
+    )
     if result.returncode != 0:
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
@@ -170,12 +200,28 @@ def test_remove_empty_pages_dry_run(complex_report, run_cli):
 
 
 def test_remove_hidden_visuals_dry_run(simple_report, run_cli):
-    result = run_cli(["remove-hidden-visuals", simple_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "remove_hidden_visuals_never_shown",
+            "--dry-run",
+        ]
+    )
     assert result.returncode == 0
 
 
 def test_cleanup_invalid_bookmarks_dry_run(complex_report, run_cli):
-    result = run_cli(["cleanup-invalid-bookmarks", complex_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "cleanup_invalid_bookmarks",
+            "--dry-run",
+        ]
+    )
     if result.returncode != 0:
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
@@ -183,16 +229,34 @@ def test_cleanup_invalid_bookmarks_dry_run(complex_report, run_cli):
 
 
 def test_standardize_pbir_folders_dry_run(simple_report, run_cli):
-    result = run_cli(["standardize-folder-names", simple_report, "--dry-run"])
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "standardize_pbir_folders",
+            "--dry-run",
+        ]
+    )
     assert result.returncode == 0
 
 
 # Tests for --summary flag
 
 
+
 def test_remove_empty_pages_with_summary(complex_report, run_cli):
-    """Test that --summary flag works with remove-empty-pages command."""
-    result = run_cli(["remove-empty-pages", complex_report, "--dry-run", "--summary"])
+    """Test that --summary flag works with sanitize remove_empty_pages action."""
+    result = run_cli(
+        [
+            "sanitize",
+            complex_report,
+            "--actions",
+            "remove_empty_pages",
+            "--dry-run",
+            "--summary",
+        ]
+    )
     assert result.returncode == 0
     # Summary output should contain count-based message
     assert "Would remove" in result.stdout or "No empty" in result.stdout
@@ -228,9 +292,16 @@ def test_remove_measures_with_summary(simple_report, run_cli):
 
 
 def test_standardize_pbir_folders_with_summary(simple_report, run_cli):
-    """Test that --summary flag works with standardize-folder-names command."""
+    """Test that --summary flag works with standardize_pbir_folders action."""
     result = run_cli(
-        ["standardize-folder-names", simple_report, "--dry-run", "--summary"]
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "standardize_pbir_folders",
+            "--dry-run",
+            "--summary",
+        ]
     )
     assert result.returncode == 0
     # Summary should contain count of renamed folders (dry run uses "Would rename")
@@ -242,7 +313,16 @@ def test_standardize_pbir_folders_with_summary(simple_report, run_cli):
 
 def test_error_on_change_requires_dry_run(simple_report, run_cli):
     """Test that --error-on-change without --dry-run returns an error."""
-    result = run_cli(["standardize-folder-names", simple_report, "--error-on-change"])
+    result = run_cli(
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "standardize_pbir_folders",
+            "--error-on-change",
+            "standardize_pbir_folders",
+        ]
+    )
     assert result.returncode != 0
     assert "--error-on-change requires --dry-run" in result.stderr
 
@@ -267,9 +347,17 @@ def test_error_on_change_exits_with_code_1_when_changes_detected(
     simple_report, run_cli
 ):
     """Test that --error-on-change exits with code 1 when changes would be made."""
-    # standardize-folder-names on simple_report should detect changes since folders use default names
+    # standardize_pbir_folders on simple_report should detect changes since folders use default names
     result = run_cli(
-        ["standardize-folder-names", simple_report, "--dry-run", "--error-on-change"]
+        [
+            "sanitize",
+            simple_report,
+            "--actions",
+            "standardize_pbir_folders",
+            "--dry-run",
+            "--error-on-change",
+            "standardize_pbir_folders",
+        ]
     )
     # The simple_report should trigger changes because folder names aren't standardized
     assert result.returncode == 1
@@ -296,13 +384,16 @@ def test_error_on_change_sanitize_specific_actions(simple_report, run_cli):
 
 def test_error_on_change_no_changes_succeeds(simple_report, run_cli):
     """Test that --error-on-change succeeds (exit 0) when no changes would be made."""
-    # hide-tooltip-drillthrough-pages on simple_report should not detect any tooltip/drillthrough pages
+    # hide_tooltip_pages on simple_report should not detect any tooltip pages
     result = run_cli(
         [
-            "hide-tooltip-drillthrough-pages",
+            "sanitize",
             simple_report,
+            "--actions",
+            "hide_tooltip_pages",
             "--dry-run",
             "--error-on-change",
+            "hide_tooltip_pages",
         ]
     )
     # If no changes detected, should succeed
@@ -316,13 +407,6 @@ def test_error_on_change_no_changes_succeeds(simple_report, run_cli):
         ("disable-interactions", [], "simple"),
         ("remove-measures", [], "simple"),
         ("sort-filters", [], "simple"),
-        ("remove-unused-bookmarks", [], "simple"),
-        ("remove-unused-custom-visuals", [], "simple"),
-        ("disable-show-items-with-no-data", [], "simple"),
-        ("set-first-page-as-active", [], "simple"),
-        ("remove-empty-pages", [], "simple"),
-        ("remove-hidden-visuals", [], "simple"),
-        ("cleanup-invalid-bookmarks", [], "complex"),
     ],
 )
 def test_error_on_change_commands(

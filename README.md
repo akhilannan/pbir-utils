@@ -59,20 +59,30 @@ Create a `pbir-sanitize.yaml` file to customize defaults. You only need to speci
 ```yaml
 # pbir-sanitize.yaml - extends package defaults
 
-# Add new actions or override params for existing ones
-actions:
-  - name: set_page_size          # Add action with custom params
+# Define or override action implementations and parameters
+definitions:
+  set_page_size_hd:         # Custom action name
+    implementation: set_page_size
     params:
       width: 1920
       height: 1080
+      exclude_tooltip: true
 
-# Exclude specific actions from defaults
+# Override default action list (replaces, does not merge)
+actions:
+  - cleanup_invalid_bookmarks
+  - remove_unused_measures
+  - set_page_size_hd          # Use our custom definition
+
+# Or use include/exclude to modify defaults
+include:
+  - standardize_pbir_folders  # Add to defaults
+
 exclude:
-  - set_first_page_as_active
-  - standardize_pbir_folders
+  - set_first_page_as_active  # Remove from defaults
 
 options:
-  summary: true                  # Override default options
+  summary: true               # Override default options
 ```
 
 **Config Resolution Priority** (highest to lowest):
@@ -132,43 +142,7 @@ pbir-utils sort-filters "C:\Reports" --sort-order Ascending --dry-run
 pbir-utils sort-filters "C:\Reports" --sort-order Custom --custom-order "Region" "Date"
 ```
 
-### 10. Standardize Folder Names
-Standardize page and visual folder names to be descriptive.
-```bash
-pbir-utils standardize-folder-names "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 11. Remove Unused Bookmarks
-Remove bookmarks which are not activated in report using bookmark navigator or actions.
-```bash
-pbir-utils remove-unused-bookmarks "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 12. Remove Unused Custom Visuals
-Remove unused custom visuals from the report.
-```bash
-pbir-utils remove-unused-custom-visuals "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 13. Disable Show Items With No Data
-Disable the 'Show items with no data' option for visuals.
-```bash
-pbir-utils disable-show-items-with-no-data "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 14. Hide Tooltip/Drillthrough Pages
-Hide tooltip and drillthrough pages in the report.
-```bash
-pbir-utils hide-tooltip-drillthrough-pages "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 15. Set First Page As Active
-Set the first page of the report as active.
-```bash
-pbir-utils set-first-page-as-active "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 16. Configure Filter Pane
+### 10. Configure Filter Pane
 Configure filter pane visibility and expanded state.
 ```bash
 pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --dry-run
@@ -176,24 +150,13 @@ pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --visible false --
 pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --expanded true --dry-run
 ```
 
-### 17. Hide Tooltip Pages
-Hide only tooltip pages (not drillthrough).
-```bash
-pbir-utils hide-tooltip-pages "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 18. Hide Drillthrough Pages
-Hide only drillthrough pages (not tooltip).
-```bash
-pbir-utils hide-drillthrough-pages "C:\Reports\MyReport.Report" --dry-run
-```
-
-### 19. Set Page Size
-Set page dimensions for all non-tooltip pages.
-```bash
-pbir-utils set-page-size "C:\Reports\MyReport.Report" --dry-run
-pbir-utils set-page-size "C:\Reports\MyReport.Report" --width 1920 --height 1080 --dry-run
-```
+> **Note:** Many individual commands have been consolidated into the `sanitize` command.
+> Use `pbir-utils sanitize --actions <action_name>` for actions like:
+> - `remove_unused_bookmarks`, `cleanup_invalid_bookmarks`
+> - `remove_unused_custom_visuals`, `disable_show_items_with_no_data`
+> - `hide_tooltip_pages`, `hide_drillthrough_pages`
+> - `set_first_page_as_active`, `remove_empty_pages`
+> - `standardize_pbir_folders`, `reset_filter_pane_width`
 
 ## CI/CD Integration
 
@@ -201,11 +164,11 @@ The `--error-on-change` flag enables automated validation in CI/CD pipelines. Wh
 
 ### Usage
 ```bash
-# Fail if standardize-folder-names would make changes
-pbir-utils standardize-folder-names "MyReport.Report" --dry-run --error-on-change
+# Fail if standardize_pbir_folders would make changes
+pbir-utils sanitize "MyReport.Report" --actions standardize_pbir_folders --dry-run --error-on-change standardize_pbir_folders
 
 # For sanitize: specify which actions should trigger failure
-pbir-utils sanitize "MyReport.Report" --actions all --dry-run --error-on-change set_first_page_as_active remove_empty_pages
+pbir-utils sanitize "MyReport.Report" --dry-run --error-on-change set_first_page_as_active remove_empty_pages
 ```
 
 ## Python API Usage

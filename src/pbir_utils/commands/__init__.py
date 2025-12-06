@@ -8,10 +8,6 @@ from . import (
     interactions,
     measures,
     filters,
-    pages,
-    visuals,
-    bookmarks,
-    folders,
 )
 
 # All command modules for registration
@@ -23,10 +19,6 @@ ALL_COMMANDS = [
     interactions,
     measures,
     filters,
-    pages,
-    visuals,
-    bookmarks,
-    folders,
 ]
 
 

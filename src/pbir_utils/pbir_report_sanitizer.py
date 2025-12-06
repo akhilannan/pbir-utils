@@ -7,6 +7,7 @@ Individual actions are in:
 - visual_utils.py
 - filter_utils.py
 - folder_standardizer.py
+- pbir_measure_utils.py
 """
 
 import inspect
@@ -16,35 +17,6 @@ from typing import Callable, Any
 
 from .console_utils import console
 from .sanitize_config import load_config, SanitizeConfig, ActionSpec
-
-# Re-export all action functions for backward compatibility
-from .pbir_measure_utils import remove_measures
-
-
-def remove_unused_measures(
-    report_path: str, dry_run: bool = False, summary: bool = False
-) -> bool:
-    """
-    Remove unused measures from the report.
-
-    Args:
-        report_path (str): The path to the report.
-        dry_run (bool): Whether to perform a dry run.
-        summary (bool): Whether to show summary instead of detailed messages.
-
-    Returns:
-        bool: True if changes were made (or would be made in dry run), False otherwise.
-    """
-    console.print_heading(
-        f"Action: Removing unused measures{' (Dry Run)' if dry_run else ''}"
-    )
-    return remove_measures(
-        report_path,
-        check_visual_usage=True,
-        dry_run=dry_run,
-        print_heading=False,
-        summary=summary,
-    )
 
 
 @lru_cache(maxsize=1)
@@ -102,21 +74,6 @@ def get_available_actions() -> dict[str, Callable]:
     return actions
 
 
-def get_simple_actions() -> dict[str, Callable]:
-    """
-    Get actions with simple signature for CLI display.
-
-    Only includes functions with exact signature: (report_path, dry_run, summary)
-    """
-    ALLOWED_PARAMS = {"report_path", "path", "directory_path", "dry_run", "summary"}
-
-    return {
-        name: func
-        for name, func in get_available_actions().items()
-        if set(inspect.signature(func).parameters.keys()).issubset(ALLOWED_PARAMS)
-    }
-
-
 def sanitize_powerbi_report(
     report_path: str,
     actions: list[str] | None = None,
@@ -141,15 +98,40 @@ def sanitize_powerbi_report(
     # Handle backward compatibility
     if actions is not None and config is None:
         # Old-style call: sanitize_powerbi_report(path, ["action1", "action2"])
+        # Load config to get definitions, then filter to requested actions
+        full_cfg = load_config(report_path=report_path)
+        filtered_actions = []
+        for action_name in actions:
+            if action_name in full_cfg.definitions:
+                filtered_actions.append(full_cfg.definitions[action_name])
+            else:
+                # Not in definitions - create implicit spec
+                filtered_actions.append(
+                    ActionSpec(name=action_name, implementation=action_name)
+                )
         cfg = SanitizeConfig(
-            actions=[ActionSpec(name=a) for a in actions],
+            actions=filtered_actions,
+            definitions=full_cfg.definitions,
             options={"dry_run": dry_run, "summary": summary},
         )
     elif isinstance(config, SanitizeConfig):
         cfg = config
     elif isinstance(config, dict):
+        # Direct dict config (rare case)
+        from .sanitize_config import _parse_definitions
+
+        definitions = _parse_definitions(config.get("definitions", {}))
+        action_specs = []
+        for a in config.get("actions", []):
+            if isinstance(a, str) and a in definitions:
+                action_specs.append(definitions[a])
+            elif isinstance(a, str):
+                action_specs.append(ActionSpec(name=a, implementation=a))
+            else:
+                action_specs.append(ActionSpec.from_definition(a.get("name", ""), a))
         cfg = SanitizeConfig(
-            actions=[ActionSpec.from_config(a) for a in config.get("actions", [])],
+            actions=action_specs,
+            definitions=definitions,
             exclude=config.get("exclude", []),
             options=config.get("options", {}),
         )
@@ -169,13 +151,15 @@ def sanitize_powerbi_report(
     # Execute pipeline
     results = {}
     for action_spec in cfg.actions:
-        if action_spec.name not in available:
+        # Use func_name to resolve the actual Python function
+        func_name = action_spec.func_name
+        if func_name not in available:
             console.print_warning(
-                f"Warning: Unknown action '{action_spec.name}' skipped."
+                f"Warning: Unknown action '{action_spec.name}' (func: {func_name}) skipped."
             )
             continue
 
-        func = available[action_spec.name]
+        func = available[func_name]
 
         # Build kwargs
         kwargs: dict[str, Any] = {

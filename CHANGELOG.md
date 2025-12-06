@@ -1,25 +1,41 @@
 ### Added
-- **Sanitize Rearchitecture**
-  - Added YAML configuration support with `defaults/sanitize.yaml` - define default actions and parameters
-  - Added auto-discovery for action functions - any exported function with `(report_path, dry_run, summary)` signature is usable
-  - Added `configure_filter_pane` action with `--visible` and `--expanded` parameters
-  - Added `hide_tooltip_pages` action (hides only tooltip pages)
-  - Added `hide_drillthrough_pages` action (hides only drillthrough pages)
-  - Added `set_page_size` action with configurable `--width` and `--height`
+- **YAML-Driven Action Definitions**
+  - New `definitions` section in `sanitize.yaml` for mapping action names to implementations
+  - Implicit definitions: `action_name: {}` when function name matches
+  - Explicit definitions: `action_name: { implementation: func_name, params: {...} }`
+  - `set_page_size_16_9` preset action for 16:9 (1280x720) page sizing
+  - `exclude_tooltip` parameter for `set_page_size` function
 
-- **New CLI Commands**
-  - `configure-filter-pane` - Configure filter pane visibility and expanded state
-  - `hide-tooltip-pages` - Hide tooltip pages only
-  - `hide-drillthrough-pages` - Hide drillthrough pages only
-
-- **Code Reorganization**
-  - Split `pbir_report_sanitizer.py` into focused modules:
-    - `bookmark_utils.py` - Bookmark-related actions
-    - `page_utils.py` - Page-related actions
-    - `visual_utils.py` - Visual-related actions
-    - `sanitize_config.py` - Configuration loading/merging
+- **CLI Enhancements**
+  - `--config PATH` flag to specify custom YAML config file
+  - Help text dynamically generated from YAML definitions
 
 ### Changed
-- `sanitize` command now loads default actions from YAML config when no `--actions` flag specified
-- `--actions all` now runs only actions defined in config file (not all available actions)
-- Replaced static `AVAILABLE_ACTIONS` dict with `get_available_actions()` auto-discovery
+- `sanitize` command now uses `definitions` section to resolve action implementations
+- Action parameters (like `check_visual_usage`, `page_type`) now configurable via YAML
+
+### Removed (Breaking Changes)
+The following standalone CLI commands have been consolidated into the `sanitize` command.
+Use `pbir-utils sanitize --actions <action_name>` instead:
+
+| Removed Command | Replacement |
+|-----------------|-------------|
+| `remove-unused-bookmarks` | `sanitize --actions remove_unused_bookmarks` |
+| `cleanup-invalid-bookmarks` | `sanitize --actions cleanup_invalid_bookmarks` |
+| `remove-unused-custom-visuals` | `sanitize --actions remove_unused_custom_visuals` |
+| `disable-show-items-with-no-data` | `sanitize --actions disable_show_items_with_no_data` |
+| `hide-tooltip-pages` | `sanitize --actions hide_tooltip_pages` |
+| `hide-drillthrough-pages` | `sanitize --actions hide_drillthrough_pages` |
+| `hide-tooltip-drillthrough-pages` | `sanitize --actions hide_tooltip_pages hide_drillthrough_pages` |
+| `set-first-page-as-active` | `sanitize --actions set_first_page_as_active` |
+| `remove-empty-pages` | `sanitize --actions remove_empty_pages` |
+| `remove-hidden-visuals` | `sanitize --actions remove_hidden_visuals_never_shown` |
+| `standardize-folder-names` | `sanitize --actions standardize_pbir_folders` |
+| `set-page-size` | `sanitize --actions set_page_size_16_9` |
+| `collapse-filter-pane` | `sanitize --actions collapse_filter_pane` |
+| `reset-filter-pane-width` | `sanitize --actions reset_filter_pane_width` |
+
+### Code Reorganization
+- Deleted `commands/bookmarks.py`, `commands/visuals.py`, `commands/pages.py`, `commands/folders.py`
+- Removed `collapse-filter-pane` and `reset-filter-pane-width` from `commands/filters.py`
+- Updated `commands/__init__.py` to reflect module removals

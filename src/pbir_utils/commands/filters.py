@@ -18,9 +18,7 @@ from ..console_utils import console
 from ..filter_utils import (
     update_report_filters,
     sort_report_filters,
-    collapse_filter_pane,
     configure_filter_pane,
-    reset_filter_pane_width,
 )
 
 
@@ -28,9 +26,7 @@ def register(subparsers):
     """Register filter-related commands."""
     _register_update_filters(subparsers)
     _register_sort_filters(subparsers)
-    _register_collapse_filter_pane(subparsers)
     _register_configure_filter_pane(subparsers)
-    _register_reset_filter_pane_width(subparsers)
 
 
 def _register_update_filters(subparsers):
@@ -73,7 +69,10 @@ def _register_update_filters(subparsers):
         epilog=update_filters_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("directory_path", help="Root directory containing reports")
+    parser.add_argument(
+        "report_path",
+        help="Path to .Report folder or root directory containing reports",
+    )
     parser.add_argument(
         "filters", help="JSON string representing list of filter configurations"
     )
@@ -114,7 +113,10 @@ def _register_sort_filters(subparsers):
         epilog=sort_filters_epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("directory_path", help="Root directory containing reports")
+    parser.add_argument(
+        "report_path",
+        help="Path to .Report folder or root directory containing reports",
+    )
     parser.add_argument(
         "--reports", nargs="+", help="List of specific reports to update"
     )
@@ -133,25 +135,6 @@ def _register_sort_filters(subparsers):
     add_summary_arg(parser)
     add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_sort_filters)
-
-
-def _register_collapse_filter_pane(subparsers):
-    """Register the collapse-filter-pane command."""
-    collapse_filter_pane_epilog = textwrap.dedent(
-        """
-        Examples:
-          pbir-utils collapse-filter-pane "C:\\\\\\\\Reports\\\\\\\\MyReport.Report" --dry-run
-    """
-    )
-    parser = subparsers.add_parser(
-        "collapse-filter-pane",
-        help="Collapse the filter pane",
-        description="Collapse the filter pane in the report by setting outspacePane expanded to false.",
-        epilog=collapse_filter_pane_epilog,
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    add_common_args(parser)
-    parser.set_defaults(func=handle_collapse_filter_pane)
 
 
 def _register_configure_filter_pane(subparsers):
@@ -201,25 +184,6 @@ def _register_configure_filter_pane(subparsers):
     parser.set_defaults(func=handle_configure_filter_pane)
 
 
-def _register_reset_filter_pane_width(subparsers):
-    """Register the reset-filter-pane-width command."""
-    reset_filter_pane_width_epilog = textwrap.dedent(
-        """
-        Examples:
-          pbir-utils reset-filter-pane-width "C:\\\\\\\\Reports\\\\\\\\MyReport.Report" --dry-run
-    """
-    )
-    parser = subparsers.add_parser(
-        "reset-filter-pane-width",
-        help="Reset the filter pane width",
-        description="Reset the filter pane width by removing the width property from outspacePane in all page.json files.",
-        epilog=reset_filter_pane_width_epilog,
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    add_common_args(parser)
-    parser.set_defaults(func=handle_reset_filter_pane_width)
-
-
 # Handlers
 
 
@@ -232,7 +196,7 @@ def handle_update_filters(args):
         sys.exit(1)
 
     has_changes = update_report_filters(
-        args.directory_path,
+        args.report_path,
         filters=filters_list,
         reports=args.reports,
         dry_run=args.dry_run,
@@ -245,7 +209,7 @@ def handle_sort_filters(args):
     """Handle the sort-filters command."""
     validate_error_on_change(args)
     has_changes = sort_report_filters(
-        args.directory_path,
+        args.report_path,
         reports=args.reports,
         sort_order=args.sort_order,
         custom_order=args.custom_order,
@@ -253,16 +217,6 @@ def handle_sort_filters(args):
         summary=args.summary,
     )
     check_error_on_change(args, has_changes, "sort-filters")
-
-
-def handle_collapse_filter_pane(args):
-    """Handle the collapse-filter-pane command."""
-    validate_error_on_change(args)
-    report_path = resolve_report_path(args.report_path)
-    has_changes = collapse_filter_pane(
-        report_path, dry_run=args.dry_run, summary=args.summary
-    )
-    check_error_on_change(args, has_changes, "collapse-filter-pane")
 
 
 def handle_configure_filter_pane(args):
@@ -277,13 +231,3 @@ def handle_configure_filter_pane(args):
         summary=args.summary,
     )
     check_error_on_change(args, has_changes, "configure-filter-pane")
-
-
-def handle_reset_filter_pane_width(args):
-    """Handle the reset-filter-pane-width command."""
-    validate_error_on_change(args)
-    report_path = resolve_report_path(args.report_path)
-    has_changes = reset_filter_pane_width(
-        report_path, dry_run=args.dry_run, summary=args.summary
-    )
-    check_error_on_change(args, has_changes, "reset-filter-pane-width")

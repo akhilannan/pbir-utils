@@ -15,14 +15,25 @@ class ActionSpec:
     """Represents an action with optional parameters."""
 
     name: str
+    implementation: str | None = None  # Python function name (if different from name)
     params: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_config(cls, item: str | dict) -> "ActionSpec":
-        """Create ActionSpec from config item (string or dict)."""
-        if isinstance(item, str):
-            return cls(name=item)
-        return cls(name=item["name"], params=item.get("params", {}))
+    def from_definition(cls, name: str, definition: dict | None) -> "ActionSpec":
+        """Create ActionSpec from a definitions entry."""
+        if definition is None or definition == {}:
+            # Implicit: function name matches action name
+            return cls(name=name, implementation=name)
+        return cls(
+            name=name,
+            implementation=definition.get("implementation", name),
+            params=definition.get("params", {}),
+        )
+
+    @property
+    def func_name(self) -> str:
+        """Get the Python function name to call."""
+        return self.implementation or self.name
 
 
 @dataclass
@@ -30,6 +41,7 @@ class SanitizeConfig:
     """Complete sanitize configuration."""
 
     actions: list[ActionSpec]
+    definitions: dict[str, ActionSpec] = field(default_factory=dict)
     exclude: list[str] = field(default_factory=list)
     options: dict[str, Any] = field(default_factory=dict)
 
@@ -44,6 +56,15 @@ class SanitizeConfig:
     @property
     def error_on_change(self) -> list[str]:
         return self.options.get("error_on_change", [])
+
+    def get_action_names(self) -> list[str]:
+        """Get list of action names in execution order."""
+        return [a.name for a in self.actions]
+
+    def get_additional_actions(self) -> list[str]:
+        """Get actions defined but not in default list."""
+        default_names = set(self.get_action_names())
+        return [name for name in self.definitions.keys() if name not in default_names]
 
 
 def get_default_config_path() -> Path:
@@ -74,42 +95,68 @@ def _load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _parse_definitions(raw_definitions: dict) -> dict[str, ActionSpec]:
+    """Parse definitions section into ActionSpec objects."""
+    definitions = {}
+    for name, definition in raw_definitions.items():
+        definitions[name] = ActionSpec.from_definition(name, definition)
+    return definitions
+
+
 def _merge_configs(default: dict, user: dict) -> SanitizeConfig:
     """
     Merge user config with default.
 
     Rules:
-    - User 'actions' entries override matching default entries (by name)
-    - User 'exclude' removes actions from final list
-    - User 'options' merge with default options
+    1. Definitions: MERGE (user overrides default)
+    2. Actions:
+       - Start with default actions
+       - If user 'actions' exists: REPLACE with user list
+       - If user 'include' exists: APPEND to list
+       - If user 'exclude' exists: REMOVE from list
+    3. Options: MERGE (user overrides default)
     """
-    # Start with default actions
-    actions_by_name = {}
-    for item in default.get("actions", []):
-        spec = ActionSpec.from_config(item)
-        actions_by_name[spec.name] = spec
+    # 1. Merge definitions
+    default_defs = _parse_definitions(default.get("definitions", {}))
+    user_defs = _parse_definitions(user.get("definitions", {}))
 
-    # Apply user overrides/additions
-    for item in user.get("actions", []):
-        spec = ActionSpec.from_config(item)
-        if spec.name in actions_by_name:
-            # Merge params (user overrides default)
-            existing = actions_by_name[spec.name]
-            merged_params = {**existing.params, **spec.params}
-            actions_by_name[spec.name] = ActionSpec(spec.name, merged_params)
+    # User definitions override default definitions
+    merged_definitions = {**default_defs, **user_defs}
+
+    # 2. Build action list
+    if "actions" in user:
+        # User explicitly defines actions -> REPLACE
+        action_names = user["actions"]
+    else:
+        # Use default actions
+        action_names = list(default.get("actions", []))
+
+    # Apply 'include' (append)
+    include_names = user.get("include", [])
+    for name in include_names:
+        if name not in action_names:
+            action_names.append(name)
+
+    # Apply 'exclude' (remove)
+    exclude_names = set(user.get("exclude", []))
+    action_names = [name for name in action_names if name not in exclude_names]
+
+    # Resolve action names to ActionSpec objects
+    actions = []
+    for name in action_names:
+        if name in merged_definitions:
+            actions.append(merged_definitions[name])
         else:
-            actions_by_name[spec.name] = spec
+            # Action not in definitions - create implicit spec
+            actions.append(ActionSpec(name=name, implementation=name))
 
-    # Remove excluded actions
-    exclude = set(user.get("exclude", []))
-    final_actions = [a for a in actions_by_name.values() if a.name not in exclude]
-
-    # Merge options
+    # 3. Merge options
     options = {**default.get("options", {}), **user.get("options", {})}
 
     return SanitizeConfig(
-        actions=final_actions,
-        exclude=list(exclude),
+        actions=actions,
+        definitions=merged_definitions,
+        exclude=list(exclude_names),
         options=options,
     )
 
