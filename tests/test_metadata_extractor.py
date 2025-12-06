@@ -1,13 +1,11 @@
 """Tests for metadata_extractor module."""
 
 import os
-import pytest
 
 from conftest import create_dummy_file
 from pbir_utils.metadata_extractor import (
     _extract_report_name,
     _extract_active_section,
-    _extract_page_info,
     _get_page_order,
     _apply_filters,
     _extract_metadata_from_file,

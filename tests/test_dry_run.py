@@ -1,5 +1,4 @@
 import os
-import pytest
 from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
 from pbir_utils.pbir_processor import batch_update_pbir_project
 from pbir_utils.pbir_measure_utils import remove_measures

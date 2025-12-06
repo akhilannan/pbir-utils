@@ -2,7 +2,6 @@ import pytest
 import os
 import sys
 import json
-import shutil
 import subprocess
 
 # Path to the src directory

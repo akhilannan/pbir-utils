@@ -1,5 +1,4 @@
 import os
-import shutil
 import pytest
 from pbir_utils.folder_standardizer import standardize_pbir_folders, _sanitize_name
 from pbir_utils.common import write_json

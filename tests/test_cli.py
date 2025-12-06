@@ -1,4 +1,3 @@
-import os
 import pytest
 
 
@@ -425,13 +424,6 @@ def test_update_filters_invalid_json(simple_report, run_cli):
     result = run_cli(["update-filters", simple_report, "{invalid json}", "--dry-run"])
     assert result.returncode != 0
     assert "Invalid JSON" in result.stderr
-
-
-def test_error_on_change_requires_dry_run(simple_report, run_cli):
-    """Test that --error-on-change without --dry-run shows an error."""
-    result = run_cli(["standardize-folder-names", simple_report, "--error-on-change"])
-    assert result.returncode != 0
-    assert "--error-on-change requires --dry-run" in result.stderr
 
 
 def test_error_on_change_requires_dry_run_disable_interactions(simple_report, run_cli):

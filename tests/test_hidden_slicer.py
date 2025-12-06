@@ -1,9 +1,8 @@
 import os
 import json
-import shutil
 import pytest
 
-from pbir_utils.pbir_report_sanitizer import remove_hidden_visuals_never_shown
+from pbir_utils.visual_utils import remove_hidden_visuals_never_shown
 
 
 @pytest.fixture

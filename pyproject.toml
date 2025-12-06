@@ -10,7 +10,7 @@ license = {text = "MIT License"}
 authors = [
     {name = "Akhil Ashok"}
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Education",

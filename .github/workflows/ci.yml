@@ -11,15 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
 
     - name: Install dependencies
       run: |
@@ -28,16 +29,21 @@ jobs:
 
     - name: Lint with ruff
       run: |
-        ruff check src
+        ruff check src tests
 
     - name: Format check with black
       run: |
-        black --check src
+        black --check src tests
 
     - name: Security check with bandit
       run: |
         bandit -r src
 
+    - name: Check dependencies for vulnerabilities
+      run: |
+        pip install pip-audit
+        pip-audit
+
     - name: Run tests with pytest
       run: |
-        pytest --cov=src
+        pytest --cov=src --cov-fail-under=60

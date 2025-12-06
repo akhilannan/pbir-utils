@@ -1,9 +1,6 @@
 """Tests for console_utils module."""
 
-import sys
-from io import StringIO
 from unittest.mock import patch
-import pytest
 
 from pbir_utils.console_utils import ConsoleUtils
 

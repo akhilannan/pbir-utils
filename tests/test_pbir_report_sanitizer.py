@@ -1,16 +1,19 @@
 import os
 from unittest.mock import patch
-import pytest
 
 from conftest import create_dummy_file
-from pbir_utils.pbir_report_sanitizer import (
+from pbir_utils.bookmark_utils import (
     remove_unused_bookmarks,
+    cleanup_invalid_bookmarks,
+)
+from pbir_utils.visual_utils import (
     remove_unused_custom_visuals,
     disable_show_items_with_no_data,
+    remove_hidden_visuals_never_shown,
+)
+from pbir_utils.page_utils import (
     hide_tooltip_drillthrough_pages,
     remove_empty_pages,
-    remove_hidden_visuals_never_shown,
-    cleanup_invalid_bookmarks,
     set_first_page_as_active,
 )
 from pbir_utils.common import load_json
@@ -416,7 +419,7 @@ def test_remove_empty_pages_renamed_folders(tmp_path):
         os.path.join(report_path, "definition/pages/RogueFolder"), exist_ok=True
     )
 
-    with patch("builtins.print") as mock_print:
+    with patch("builtins.print") as _mock_print:
         remove_empty_pages(report_path)
 
         # Check pages.json

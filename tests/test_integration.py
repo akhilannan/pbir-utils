@@ -1,6 +1,5 @@
 import os
 import json
-import pytest
 from pbir_utils.metadata_extractor import (
     _consolidate_metadata_from_directory,
     export_pbir_metadata_to_csv,

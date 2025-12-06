@@ -18,27 +18,7 @@ from .console_utils import console
 from .sanitize_config import load_config, SanitizeConfig, ActionSpec
 
 # Re-export all action functions for backward compatibility
-from .bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks
-from .page_utils import (
-    hide_tooltip_pages,
-    hide_drillthrough_pages,
-    hide_tooltip_drillthrough_pages,
-    set_first_page_as_active,
-    remove_empty_pages,
-    set_page_size,
-)
-from .visual_utils import (
-    remove_unused_custom_visuals,
-    disable_show_items_with_no_data,
-    remove_hidden_visuals_never_shown,
-)
 from .pbir_measure_utils import remove_measures
-from .filter_utils import (
-    collapse_filter_pane,
-    configure_filter_pane,
-    reset_filter_pane_width,
-)
-from .folder_standardizer import standardize_pbir_folders
 
 
 def remove_unused_measures(

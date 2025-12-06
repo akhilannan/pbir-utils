@@ -3,7 +3,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
 
 from conftest import create_dummy_file
 from pbir_utils.bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks

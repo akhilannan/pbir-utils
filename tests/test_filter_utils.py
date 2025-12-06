@@ -1,6 +1,5 @@
 import os
 from unittest.mock import patch
-import pytest
 
 from conftest import create_dummy_file
 from pbir_utils.filter_utils import (
