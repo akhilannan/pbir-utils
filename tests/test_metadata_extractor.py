@@ -20,12 +20,24 @@ class TestExtractReportName:
 
     def test_extract_from_standard_path(self):
         """Test extracting report name from a standard PBIR path."""
-        path = r"C:\Reports\MyReport.Report\definition\report.json"
+        path = os.path.join(
+            "C:", "Reports", "MyReport.Report", "definition", "report.json"
+        )
         assert _extract_report_name(path) == "MyReport"
 
     def test_extract_from_nested_path(self):
         """Test extracting report name from a deeply nested path."""
-        path = r"C:\Projects\PBI\Reports\SalesReport.Report\definition\pages\Page1\page.json"
+        path = os.path.join(
+            "C:",
+            "Projects",
+            "PBI",
+            "Reports",
+            "SalesReport.Report",
+            "definition",
+            "pages",
+            "Page1",
+            "page.json",
+        )
         assert _extract_report_name(path) == "SalesReport"
 
     def test_no_report_in_path(self):
