@@ -3,6 +3,8 @@ import os
 import sys
 from typing import Callable, Generator, Any
 
+from .console_utils import console
+
 
 def load_json(file_path: str) -> dict:
     """
@@ -22,9 +24,9 @@ def load_json(file_path: str) -> dict:
         with open(file_path, "r", encoding="utf-8") as file:
             return json.load(file)
     except json.JSONDecodeError:
-        print(f"Error: Unable to parse JSON in file: {file_path}")
+        console.print_error(f"Unable to parse JSON in file: {file_path}")
     except IOError as e:
-        print(f"Error: Unable to read or write file: {file_path}. {str(e)}")
+        console.print_error(f"Unable to read or write file: {file_path}. {str(e)}")
     return {}
 
 
@@ -58,9 +60,8 @@ def resolve_report_path(path_arg: str | None) -> str:
     if cwd.lower().endswith(".report"):
         return cwd
 
-    print(
-        "Error: report_path not provided and current directory is not a .Report folder.",
-        file=sys.stderr,
+    console.print_error(
+        "report_path not provided and current directory is not a .Report folder."
     )
     sys.exit(1)
 
@@ -92,7 +93,7 @@ def get_report_paths(directory_path: str, reports: list = None) -> list:
         if os.path.exists(report_path):
             report_paths.append(report_path)
         else:
-            print(f"Report file not found: {report_path}")
+            console.print_warning(f"Report file not found: {report_path}")
 
     return report_paths
 
