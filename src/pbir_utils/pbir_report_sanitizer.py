@@ -161,6 +161,10 @@ def sanitize_powerbi_report(
 
         func = available[func_name]
 
+        # Print action heading from config description if available
+        if action_spec.description:
+            console.print_action_heading(action_spec.description, cfg.dry_run)
+
         # Build kwargs
         kwargs: dict[str, Any] = {
             "dry_run": cfg.dry_run,

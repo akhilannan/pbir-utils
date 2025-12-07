@@ -62,6 +62,7 @@ Create a `pbir-sanitize.yaml` file to customize defaults. You only need to speci
 # Define or override action implementations and parameters
 definitions:
   set_page_size_hd:         # Custom action name
+    description: Set page size to HD (1920x1080)  # Human-readable description for CLI output
     implementation: set_page_size
     params:
       width: 1920

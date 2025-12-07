@@ -17,6 +17,7 @@ class ActionSpec:
     name: str
     implementation: str | None = None  # Python function name (if different from name)
     params: dict[str, Any] = field(default_factory=dict)
+    description: str | None = None  # Human-readable description for CLI output
 
     @classmethod
     def from_definition(cls, name: str, definition: dict | None) -> "ActionSpec":
@@ -28,6 +29,7 @@ class ActionSpec:
             name=name,
             implementation=definition.get("implementation", name),
             params=definition.get("params", {}),
+            description=definition.get("description"),
         )
 
     @property

@@ -2,33 +2,53 @@
 # This file defines the default sanitization pipeline and available actions.
 
 definitions:
-  cleanup_invalid_bookmarks: {}
-  remove_unused_bookmarks: {}
-  remove_unused_custom_visuals: {}
-  disable_show_items_with_no_data: {}
-  remove_hidden_visuals_never_shown: {}
-  set_first_page_as_active: {}
-  remove_empty_pages: {}
-  reset_filter_pane_width: {}
+  cleanup_invalid_bookmarks:
+    description: Clean up invalid bookmarks
+
+  remove_unused_bookmarks:
+    description: Remove unused bookmarks
+
+  remove_unused_custom_visuals:
+    description: Remove unused custom visuals
+
+  disable_show_items_with_no_data:
+    description: Disable 'Show items with no data'
+
+  remove_hidden_visuals_never_shown:
+    description: Remove hidden visuals that are never shown
+
+  set_first_page_as_active:
+    description: Set the first non-hidden page as active
+
+  remove_empty_pages:
+    description: Remove empty pages and clean up rogue folders
+
+  reset_filter_pane_width:
+    description: Reset filter pane width
 
   remove_unused_measures:
+    description: Remove unused measures
     implementation: remove_measures
     params:
       check_visual_usage: true
 
   hide_tooltip_pages:
+    description: Hide tooltip pages
     implementation: hide_pages_by_type
     params:
       page_type: Tooltip
 
   hide_drillthrough_pages:
+    description: Hide drillthrough pages
     implementation: hide_pages_by_type
     params:
       page_type: Drillthrough
 
-  standardize_pbir_folders: {}
+  standardize_pbir_folders:
+    description: Standardize PBIR folder names
 
   set_page_size_16_9:
+    description: Set page size to 16:9 (1280x720)
     implementation: set_page_size
     params:
       width: 1280
@@ -36,31 +56,37 @@ definitions:
       exclude_tooltip: true
 
   expand_filter_pane:
+    description: Expand filter pane
     implementation: configure_filter_pane
     params:
       expanded: true
       visible: true
 
   hide_filter_pane:
+    description: Hide filter pane
     implementation: configure_filter_pane
     params:
       visible: false
 
   collapse_filter_pane:
+    description: Collapse filter pane
     implementation: configure_filter_pane
     params:
       expanded: false
       visible: true
 
   sort_filters_selected_top:
+    description: Sort filters with selected on top
     implementation: sort_report_filters
     params:
       sort_order: SelectedFilterTop
 
   sort_filters_ascending:
+    description: Sort filters in ascending order
     implementation: sort_report_filters
     params:
       sort_order: Ascending
+
 
 # Default action execution order
 actions:

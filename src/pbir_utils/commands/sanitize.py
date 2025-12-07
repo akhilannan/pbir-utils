@@ -172,10 +172,27 @@ def handle(args):
         console.print_error("--error-on-change requires --dry-run to be specified.")
         sys.exit(1)
 
-    # Run sanitization
-    results = sanitize_powerbi_report(
-        report_path, actions, dry_run=args.dry_run, summary=args.summary
+    # Build a proper config with resolved action specs
+    from ..sanitize_config import SanitizeConfig, ActionSpec
+
+    action_specs = []
+    for action_name in actions:
+        if action_name in config.definitions:
+            action_specs.append(config.definitions[action_name])
+        else:
+            # Action not in definitions - create implicit spec
+            action_specs.append(
+                ActionSpec(name=action_name, implementation=action_name)
+            )
+
+    run_config = SanitizeConfig(
+        actions=action_specs,
+        definitions=config.definitions,
+        options={"dry_run": args.dry_run, "summary": args.summary},
     )
+
+    # Run sanitization with the full config
+    results = sanitize_powerbi_report(report_path, config=run_config)
 
     # Check if any error_on_change actions would make changes
     if error_on_change:
