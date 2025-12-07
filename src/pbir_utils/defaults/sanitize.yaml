@@ -2,8 +2,6 @@
 # This file defines the default sanitization pipeline and available actions.
 
 definitions:
-  # === Standard Actions (included in default pipeline) ===
-  
   cleanup_invalid_bookmarks: {}
   remove_unused_bookmarks: {}
   remove_unused_custom_visuals: {}
@@ -23,8 +21,6 @@ definitions:
     params:
       page_type: Tooltip
 
-  # === Additional Actions (opt-in via 'include') ===
-
   hide_drillthrough_pages:
     implementation: hide_pages_by_type
     params:
@@ -39,6 +35,17 @@ definitions:
       height: 720
       exclude_tooltip: true
 
+  expand_filter_pane:
+    implementation: configure_filter_pane
+    params:
+      expanded: true
+      visible: true
+
+  hide_filter_pane:
+    implementation: configure_filter_pane
+    params:
+      visible: false
+
   collapse_filter_pane:
     implementation: configure_filter_pane
     params:
@@ -49,6 +56,11 @@ definitions:
     implementation: sort_report_filters
     params:
       sort_order: SelectedFilterTop
+
+  sort_filters_ascending:
+    implementation: sort_report_filters
+    params:
+      sort_order: Ascending
 
 # Default action execution order
 actions:
