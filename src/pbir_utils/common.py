@@ -1,9 +1,25 @@
 import json
 import os
+import re
 import sys
 from typing import Callable, Generator, Any
 
 from .console_utils import console
+
+# Magic prefix for preserving float precision during JSON round-trips.
+# Floats are loaded as strings with this prefix, then the prefix (and quotes)
+# are removed during write_json to restore the original numeric representation.
+_FLOAT_PRESERVE_PREFIX = "@@__PRESERVE_FLOAT__@@"
+_FLOAT_RESTORE_PATTERN = re.compile(
+    r'"'
+    + re.escape(_FLOAT_PRESERVE_PREFIX)
+    + r'(-?[0-9]+\.?[0-9]*(?:[eE][+-]?[0-9]+)?)"'
+)
+
+
+def _preserve_float(s: str) -> str:
+    """Hook for json.load to preserve float precision as a prefixed string."""
+    return _FLOAT_PRESERVE_PREFIX + s
 
 
 def load_json(file_path: str) -> dict:
@@ -22,7 +38,7 @@ def load_json(file_path: str) -> dict:
     """
     try:
         with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
+            return json.load(file, parse_float=_preserve_float)
     except json.JSONDecodeError:
         console.print_error(f"Unable to parse JSON in file: {file_path}")
     except IOError as e:
@@ -41,8 +57,11 @@ def write_json(file_path: str, data: dict) -> None:
     Returns:
         None
     """
+    json_str = json.dumps(data, indent=2)
+    # Restore preserved floats: remove quotes and magic prefix
+    json_str = _FLOAT_RESTORE_PATTERN.sub(r"\1", json_str)
     with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+        file.write(json_str)
 
 
 def resolve_report_path(path_arg: str | None) -> str:

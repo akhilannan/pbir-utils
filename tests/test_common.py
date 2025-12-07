@@ -49,6 +49,31 @@ def test_write_json(tmp_path):
     assert data == {"key": "value", "nested": {"a": 1}}
 
 
+def test_float_precision_preserved(tmp_path):
+    """Test that high-precision floats are preserved during round-trip."""
+    # Original JSON with high-precision floats (as they appear in PBIR files)
+    original_json = '{"x": 20, "y": 268.57142857142861, "height": 352.85714285714289}'
+    json_path = tmp_path / "precision_test.json"
+
+    # Write original content directly
+    json_path.write_text(original_json, encoding="utf-8")
+
+    # Load and save using our functions
+    data = load_json(str(json_path))
+    write_json(str(json_path), data)
+
+    # Read back raw content
+    result = json_path.read_text(encoding="utf-8")
+
+    # Normalize for comparison (ignore formatting differences)
+    original_normalized = original_json.replace(" ", "")
+    result_normalized = result.replace(" ", "").replace("\n", "")
+
+    assert (
+        original_normalized == result_normalized
+    ), f"Float precision lost!\nOriginal: {original_json}\nResult: {result}"
+
+
 def test_get_report_paths(tmp_path):
     # Create dummy report structure
     report1_dir = tmp_path / "Report1.Report" / "definition"

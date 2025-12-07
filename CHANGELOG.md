@@ -1,3 +1,3 @@
 ### Fixed
-- **Unknown Action Warning for Parameterized Actions**
-  - Relaxed `get_available_actions` to allow functions with required parameters
+- **Float Precision Loss During Sanitization**
+  - JSON round-trips now preserve high-precision floats (e.g., `268.57142857142861`) to prevent spurious git diffs
