@@ -1,4 +1,3 @@
 ### Fixed
-- **Double Message Logging**
-  - Fixed issue where action headings were printed twice when a description was configured in YAML
-  - Added `suppress_heading` context manager to `ConsoleUtils` to control heading output
+- **Unknown Action Warning for Parameterized Actions**
+  - Relaxed `get_available_actions` to allow functions with required parameters

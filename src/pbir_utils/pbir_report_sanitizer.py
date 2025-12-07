@@ -27,7 +27,6 @@ def get_available_actions() -> dict[str, Callable]:
     A function is compatible if it:
     - Takes report_path (or path, directory_path) as first argument
     - Has dry_run parameter
-    - All non-report_path params have default values
 
     Results are cached for performance.
     """
@@ -52,20 +51,6 @@ def get_available_actions() -> dict[str, Callable]:
             # Must have dry_run parameter
             param_names = {p.name for p in params}
             if "dry_run" not in param_names:
-                continue
-
-            # All non-first params must have default values
-            has_only_optional_params = all(
-                p.default != inspect.Parameter.empty
-                or p.kind
-                in (
-                    inspect.Parameter.VAR_POSITIONAL,
-                    inspect.Parameter.VAR_KEYWORD,
-                )
-                for p in params[1:]
-            )
-
-            if not has_only_optional_params:
                 continue
 
             actions[name] = func
