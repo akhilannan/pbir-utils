@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import contextmanager
 
 
 class ConsoleUtils:
@@ -23,6 +24,7 @@ class ConsoleUtils:
 
     def __init__(self):
         self.use_colors = self._should_use_colors()
+        self._suppress_heading_output = False
 
     def _should_use_colors(self) -> bool:
         """
@@ -53,8 +55,19 @@ class ConsoleUtils:
 
     def print_heading(self, message: str):
         """Prints a bold, colored heading."""
+        if self._suppress_heading_output:
+            return
         print(f"\n{self._format(message, self.CYAN, self.BOLD)}")
         print(self._format("-" * len(message), self.CYAN, self.DIM))
+
+    @contextmanager
+    def suppress_heading(self):
+        """Context manager to temporarily suppress heading output."""
+        self._suppress_heading_output = True
+        try:
+            yield
+        finally:
+            self._suppress_heading_output = False
 
     def print_action_heading(self, action_name: str, dry_run: bool = False):
         """

@@ -1,5 +1,4 @@
-### Added
-- **Action Descriptions**
-  - New `description` field in action definitions for human-readable CLI output
-  - Custom actions can now define their own descriptions in YAML
-  - All built-in actions now have descriptions in `defaults/sanitize.yaml`
+### Fixed
+- **Double Message Logging**
+  - Fixed issue where action headings were printed twice when a description was configured in YAML
+  - Added `suppress_heading` context manager to `ConsoleUtils` to control heading output

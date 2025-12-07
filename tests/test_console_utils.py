@@ -141,3 +141,24 @@ class TestConsoleUtils:
             captured = capsys.readouterr()
             assert "Action:" in captured.out
             assert "Doing something" in captured.out
+
+    def test_suppress_heading_context_manager(self, capsys):
+        """Test that suppress_heading context manager suppresses headings."""
+        with patch.dict("os.environ", {"NO_COLOR": "1"}, clear=False):
+            console = ConsoleUtils()
+
+            # Heading should print normally outside the context
+            console.print_heading("Before Suppression")
+            captured = capsys.readouterr()
+            assert "Before Suppression" in captured.out
+
+            # Heading should be suppressed inside the context
+            with console.suppress_heading():
+                console.print_heading("Suppressed Heading")
+                captured = capsys.readouterr()
+                assert "Suppressed Heading" not in captured.out
+
+            # Heading should print normally after the context exits
+            console.print_heading("After Suppression")
+            captured = capsys.readouterr()
+            assert "After Suppression" in captured.out

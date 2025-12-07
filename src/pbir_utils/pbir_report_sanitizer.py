@@ -162,17 +162,26 @@ def sanitize_powerbi_report(
         func = available[func_name]
 
         # Print action heading from config description if available
+        # and suppress the function's default heading
         if action_spec.description:
             console.print_action_heading(action_spec.description, cfg.dry_run)
-
-        # Build kwargs
-        kwargs: dict[str, Any] = {
-            "dry_run": cfg.dry_run,
-            "summary": cfg.summary,
-            **action_spec.params,
-        }
-
-        results[action_spec.name] = func(report_path, **kwargs)
+            # Suppress the action function's default heading
+            with console.suppress_heading():
+                # Build kwargs
+                kwargs: dict[str, Any] = {
+                    "dry_run": cfg.dry_run,
+                    "summary": cfg.summary,
+                    **action_spec.params,
+                }
+                results[action_spec.name] = func(report_path, **kwargs)
+        else:
+            # No custom description - let function print its default heading
+            kwargs: dict[str, Any] = {
+                "dry_run": cfg.dry_run,
+                "summary": cfg.summary,
+                **action_spec.params,
+            }
+            results[action_spec.name] = func(report_path, **kwargs)
 
     console.print_success("Power BI report sanitization completed.")
     return results
