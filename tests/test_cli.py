@@ -244,7 +244,6 @@ def test_standardize_pbir_folders_dry_run(simple_report, run_cli):
 # Tests for --summary flag
 
 
-
 def test_remove_empty_pages_with_summary(complex_report, run_cli):
     """Test that --summary flag works with sanitize remove_empty_pages action."""
     result = run_cli(

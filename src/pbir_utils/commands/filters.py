@@ -5,7 +5,6 @@ import sys
 import textwrap
 
 from ..command_utils import (
-    add_common_args,
     add_dry_run_arg,
     add_summary_arg,
     add_error_on_change_arg,
