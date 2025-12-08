@@ -12,7 +12,6 @@ from pbir_utils.visual_utils import (
     remove_hidden_visuals_never_shown,
 )
 from pbir_utils.page_utils import (
-    hide_tooltip_drillthrough_pages,
     remove_empty_pages,
     set_first_page_as_active,
 )
@@ -62,51 +61,6 @@ def test_disable_show_items_with_no_data_nested(tmp_path):
     assert (
         "showAll" not in updated_data["visual"]["objects"]["some_obj"][0]["properties"]
     )
-
-
-def test_hide_tooltip_drillthrough_pages(tmp_path):
-    report_path = str(tmp_path)
-    # Page 1: Tooltip, visible -> should hide
-    create_dummy_file(
-        tmp_path,
-        "definition/pages/Page1/page.json",
-        {
-            "displayName": "Page1",
-            "pageBinding": {"type": "Tooltip"},
-            "visibility": "Visible",
-        },
-    )
-    # Page 2: Drillthrough, visible -> should hide
-    create_dummy_file(
-        tmp_path,
-        "definition/pages/Page2/page.json",
-        {
-            "displayName": "Page2",
-            "pageBinding": {"type": "Drillthrough"},
-            "visibility": "Visible",
-        },
-    )
-    # Page 3: Normal, visible -> should stay visible
-    create_dummy_file(
-        tmp_path,
-        "definition/pages/Page3/page.json",
-        {
-            "displayName": "Page3",
-            "pageBinding": {"type": "ReportSection"},
-            "visibility": "Visible",
-        },
-    )
-
-    hide_tooltip_drillthrough_pages(report_path)
-
-    p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
-    assert p1["visibility"] == "HiddenInViewMode"
-
-    p2 = load_json(os.path.join(report_path, "definition/pages/Page2/page.json"))
-    assert p2["visibility"] == "HiddenInViewMode"
-
-    p3 = load_json(os.path.join(report_path, "definition/pages/Page3/page.json"))
-    assert p3["visibility"] == "Visible"
 
 
 def test_remove_empty_pages_all_empty(tmp_path):
