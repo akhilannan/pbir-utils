@@ -16,9 +16,6 @@ from .pbir_report_sanitizer import (
 )
 from .bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks
 from .page_utils import (
-    hide_tooltip_pages,
-    hide_drillthrough_pages,
-    hide_tooltip_drillthrough_pages,
     hide_pages_by_type,
     set_first_page_as_active,
     remove_empty_pages,
@@ -56,9 +53,6 @@ __all__ = [
     "remove_unused_bookmarks",
     "cleanup_invalid_bookmarks",
     # Page utilities
-    "hide_tooltip_pages",
-    "hide_drillthrough_pages",
-    "hide_tooltip_drillthrough_pages",
     "hide_pages_by_type",
     "set_first_page_as_active",
     "remove_empty_pages",

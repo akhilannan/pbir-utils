@@ -45,6 +45,10 @@ def hide_pages_by_type(
         os.path.join(report_path, "definition", "pages"), "page.json", _check_page
     )
 
+    if not results:
+        console.print_info(f"No {page_type} pages found that needed hiding.")
+        return False
+
     for file_path, page_name in results:
         page_data = load_json(file_path)
         page_data["visibility"] = "HiddenInViewMode"
@@ -56,107 +60,13 @@ def hide_pages_by_type(
             else:
                 console.print_success(f"Hidden page: {page_name}")
 
-    return len(results) > 0
-
-
-def hide_tooltip_pages(
-    report_path: str, dry_run: bool = False, summary: bool = False
-) -> bool:
-    """
-    Hide tooltip pages in the report.
-
-    Args:
-        report_path (str): The path to the report.
-        dry_run (bool): Whether to perform a dry run.
-        summary (bool): Whether to show summary instead of detailed messages.
-
-    Returns:
-        bool: True if changes were made (or would be made in dry run), False otherwise.
-    """
-    console.print_heading(
-        f"Action: Hiding tooltip pages{' (Dry Run)' if dry_run else ''}"
-    )
-
-    result = hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
-
-    if result:
+    if summary:
         if dry_run:
-            console.print_dry_run("Would hide tooltip page(s).")
+            console.print_dry_run(f"Would hide {len(results)} {page_type} page(s).")
         else:
-            console.print_success("Hidden tooltip page(s).")
-    else:
-        console.print_info("No tooltip pages found that needed hiding.")
+            console.print_success(f"Hidden {len(results)} {page_type} page(s).")
 
-    return result
-
-
-def hide_drillthrough_pages(
-    report_path: str, dry_run: bool = False, summary: bool = False
-) -> bool:
-    """
-    Hide drillthrough pages in the report.
-
-    Args:
-        report_path (str): The path to the report.
-        dry_run (bool): Whether to perform a dry run.
-        summary (bool): Whether to show summary instead of detailed messages.
-
-    Returns:
-        bool: True if changes were made (or would be made in dry run), False otherwise.
-    """
-    console.print_heading(
-        f"Action: Hiding drillthrough pages{' (Dry Run)' if dry_run else ''}"
-    )
-
-    result = hide_pages_by_type(report_path, "Drillthrough", dry_run, summary)
-
-    if result:
-        if dry_run:
-            console.print_dry_run("Would hide drillthrough page(s).")
-        else:
-            console.print_success("Hidden drillthrough page(s).")
-    else:
-        console.print_info("No drillthrough pages found that needed hiding.")
-
-    return result
-
-
-def hide_tooltip_drillthrough_pages(
-    report_path: str, dry_run: bool = False, summary: bool = False
-) -> bool:
-    """
-    Hide tooltip and drillthrough pages in the report.
-
-    This is a wrapper function for backward compatibility.
-
-    Args:
-        report_path (str): The path to the report.
-        dry_run (bool): Whether to perform a dry run.
-        summary (bool): Whether to show summary instead of detailed messages.
-
-    Returns:
-        bool: True if changes were made (or would be made in dry run), False otherwise.
-    """
-    console.print_heading(
-        f"Action: Hiding tooltip/drillthrough pages{' (Dry Run)' if dry_run else ''}"
-    )
-
-    tooltip_result = hide_pages_by_type(report_path, "Tooltip", dry_run, summary)
-    drillthrough_result = hide_pages_by_type(
-        report_path, "Drillthrough", dry_run, summary
-    )
-
-    result = tooltip_result or drillthrough_result
-
-    if result:
-        if dry_run:
-            console.print_dry_run("Would hide tooltip/drillthrough page(s).")
-        else:
-            console.print_success("Hidden tooltip/drillthrough page(s).")
-    else:
-        console.print_info("No tooltip/drillthrough pages found that needed hiding.")
-
-    return result
+    return True
 
 
 def set_first_page_as_active(

@@ -6,9 +6,7 @@ from unittest.mock import patch
 
 from conftest import create_dummy_file
 from pbir_utils.page_utils import (
-    hide_tooltip_pages,
-    hide_drillthrough_pages,
-    hide_tooltip_drillthrough_pages,
+    hide_pages_by_type,
     set_first_page_as_active,
     remove_empty_pages,
     set_page_size,
@@ -16,8 +14,8 @@ from pbir_utils.page_utils import (
 from pbir_utils.common import load_json
 
 
-class TestHidePages:
-    """Tests for hide_tooltip_pages and hide_drillthrough_pages."""
+class TestHidePagesByType:
+    """Tests for hide_pages_by_type."""
 
     def test_hide_tooltip_pages(self, tmp_path):
         """Test hiding only tooltip pages."""
@@ -54,7 +52,7 @@ class TestHidePages:
             },
         )
 
-        result = hide_tooltip_pages(report_path)
+        result = hide_pages_by_type(report_path, page_type="Tooltip")
 
         assert result is True
         p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
@@ -91,7 +89,7 @@ class TestHidePages:
             },
         )
 
-        result = hide_drillthrough_pages(report_path)
+        result = hide_pages_by_type(report_path, page_type="Drillthrough")
 
         assert result is True
         p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
@@ -100,48 +98,23 @@ class TestHidePages:
         p2 = load_json(os.path.join(report_path, "definition/pages/Page2/page.json"))
         assert p2["visibility"] == "HiddenInViewMode"
 
-    def test_hide_tooltip_drillthrough_pages(self, tmp_path):
-        """Test hiding both tooltip and drillthrough pages (backward compat)."""
+    def test_no_pages_to_hide(self, tmp_path):
+        """Test when no pages of the specified type need hiding."""
         report_path = str(tmp_path)
 
+        # Normal page only - no tooltip pages
         create_dummy_file(
             tmp_path,
             "definition/pages/Page1/page.json",
             {
                 "displayName": "Page1",
-                "pageBinding": {"type": "Tooltip"},
-                "visibility": "Visible",
-            },
-        )
-        create_dummy_file(
-            tmp_path,
-            "definition/pages/Page2/page.json",
-            {
-                "displayName": "Page2",
-                "pageBinding": {"type": "Drillthrough"},
-                "visibility": "Visible",
-            },
-        )
-        create_dummy_file(
-            tmp_path,
-            "definition/pages/Page3/page.json",
-            {
-                "displayName": "Page3",
                 "pageBinding": {"type": "ReportSection"},
                 "visibility": "Visible",
             },
         )
 
-        hide_tooltip_drillthrough_pages(report_path)
-
-        p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
-        assert p1["visibility"] == "HiddenInViewMode"
-
-        p2 = load_json(os.path.join(report_path, "definition/pages/Page2/page.json"))
-        assert p2["visibility"] == "HiddenInViewMode"
-
-        p3 = load_json(os.path.join(report_path, "definition/pages/Page3/page.json"))
-        assert p3["visibility"] == "Visible"
+        result = hide_pages_by_type(report_path, page_type="Tooltip")
+        assert result is False
 
 
 class TestSetFirstPageAsActive:
