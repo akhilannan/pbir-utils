@@ -172,8 +172,8 @@ def test_sanitization_disable_show_items_with_no_data(complex_report):
     assert "showAll" not in props
 
 
-def test_sanitization_hide_tooltip_drillthrough_pages(complex_report):
-    print("\nTesting Sanitization: Hide Tooltip Drillthrough Pages...")
+def test_sanitization_hide_tooltip_pages(complex_report):
+    print("\nTesting Sanitization: Hide Tooltip Pages...")
     # complex_report Page2 is Tooltip but already HiddenInViewMode.
     # Let's set it to Visible to test the sanitizer.
     page2_path = os.path.join(
@@ -186,7 +186,7 @@ def test_sanitization_hide_tooltip_drillthrough_pages(complex_report):
         json.dump(data, f)
         f.truncate()
 
-    sanitize_powerbi_report(complex_report, ["hide_tooltip_drillthrough_pages"])
+    sanitize_powerbi_report(complex_report, ["hide_tooltip_pages"])
 
     with open(page2_path, "r") as f:
         data = json.load(f)
