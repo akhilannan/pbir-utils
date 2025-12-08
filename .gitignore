@@ -65,3 +65,4 @@ ENV/
 # Project-specific
 *.csv
 *.json
+site/
