@@ -36,6 +36,16 @@ def _extract_page_info(page_folder: str) -> tuple:
     )
 
 
+def _parse_coordinate(value) -> float:
+    """
+    Parse a coordinate value, handling potential string prefixes.
+    """
+    if isinstance(value, str):
+        if value.startswith("@@__PRESERVE_FLOAT__@@"):
+            value = value.replace("@@__PRESERVE_FLOAT__@@", "")
+    return float(value)
+
+
 def _extract_visual_info(visuals_folder: str) -> dict:
     """
     Extract visual information from `visual.json` files in a visuals folder.
@@ -66,10 +76,10 @@ def _extract_visual_info(visuals_folder: str) -> dict:
         position = visual_data["position"]
 
         visuals[visual_id] = (
-            position["x"],
-            position["y"],
-            position["width"],
-            position["height"],
+            _parse_coordinate(position["x"]),
+            _parse_coordinate(position["y"]),
+            _parse_coordinate(position["width"]),
+            _parse_coordinate(position["height"]),
             visual_data.get("visual", {}).get("visualType", "Group"),
             visual_data.get("parentGroupName"),
             visual_data.get("isHidden", False),

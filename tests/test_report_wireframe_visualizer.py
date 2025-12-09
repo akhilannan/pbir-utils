@@ -120,6 +120,49 @@ def test_extract_visual_info_renamed_folders(
     assert "Folder_Visual1" not in visuals  # Key should NOT be the folder name
 
 
+@patch("pbir_utils.report_wireframe_visualizer.load_json")
+@patch("os.path.exists")
+@patch("os.listdir")
+def test_extract_visual_info_string_and_prefixed_coordinates(
+    mock_listdir, mock_exists, mock_load_json
+):
+    """Test that string coordinates and @@__PRESERVE_FLOAT__@@ prefixes are parsed correctly."""
+    mock_listdir.return_value = ["visual1", "visual2"]
+    mock_exists.return_value = True
+
+    def side_effect(path):
+        if "visual1" in path:
+            # String coordinates
+            return {
+                "name": "visual1",
+                "position": {"x": "100", "y": "200", "width": "50", "height": "60"},
+                "visual": {"visualType": "chart"},
+            }
+        # Preserve float prefix coordinates
+        return {
+            "name": "visual2",
+            "position": {
+                "x": "@@__PRESERVE_FLOAT__@@123.456",
+                "y": "@@__PRESERVE_FLOAT__@@78.9",
+                "width": 100,
+                "height": 100,
+            },
+            "visual": {"visualType": "card"},
+        }
+
+    mock_load_json.side_effect = side_effect
+
+    visuals = _extract_visual_info("dummy/visuals")
+
+    assert len(visuals) == 2
+    # String coordinates should be parsed to floats
+    assert visuals["visual1"][0] == 100.0
+    assert visuals["visual1"][1] == 200.0
+    # Preserved float prefix should be stripped and parsed
+    assert visuals["visual2"][0] == pytest.approx(123.456)
+    assert visuals["visual2"][1] == pytest.approx(78.9)
+
+
 def test_adjust_visual_positions():
     visuals = {
         "group1": (10, 10, 200, 200, "Group", None, False),
