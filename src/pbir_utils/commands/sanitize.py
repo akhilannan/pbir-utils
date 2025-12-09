@@ -5,10 +5,8 @@ import sys
 import textwrap
 
 from ..command_utils import add_dry_run_arg, add_summary_arg
-from ..common import resolve_report_path
 from ..console_utils import console
-from ..pbir_report_sanitizer import sanitize_powerbi_report
-from ..sanitize_config import load_config, get_default_config_path, _load_yaml
+from ..sanitize_config import get_default_config_path, _load_yaml
 
 
 def register(subparsers):
@@ -119,6 +117,11 @@ def register(subparsers):
 
 def handle(args):
     """Handle the sanitize command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..pbir_report_sanitizer import sanitize_powerbi_report
+    from ..sanitize_config import load_config
+
     report_path = resolve_report_path(args.report_path)
 
     # Load config (from explicit path or auto-discover)

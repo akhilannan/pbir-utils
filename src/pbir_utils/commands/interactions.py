@@ -10,8 +10,6 @@ from ..command_utils import (
     check_error_on_change,
     validate_error_on_change,
 )
-from ..common import resolve_report_path
-from ..visual_interactions_utils import disable_visual_interactions
 
 
 def register(subparsers):
@@ -79,6 +77,10 @@ def register(subparsers):
 
 def handle(args):
     """Handle the disable-interactions command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..visual_interactions_utils import disable_visual_interactions
+
     validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
     has_changes = disable_visual_interactions(

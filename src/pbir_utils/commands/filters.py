@@ -12,13 +12,7 @@ from ..command_utils import (
     validate_error_on_change,
     parse_json_arg,
 )
-from ..common import resolve_report_path
 from ..console_utils import console
-from ..filter_utils import (
-    update_report_filters,
-    sort_report_filters,
-    configure_filter_pane,
-)
 
 
 def register(subparsers):
@@ -188,6 +182,9 @@ def _register_configure_filter_pane(subparsers):
 
 def handle_update_filters(args):
     """Handle the update-filters command."""
+    # Lazy import to speed up CLI startup
+    from ..filter_utils import update_report_filters
+
     validate_error_on_change(args)
     filters_list = parse_json_arg(args.filters, "filters")
     if not isinstance(filters_list, list):
@@ -206,6 +203,9 @@ def handle_update_filters(args):
 
 def handle_sort_filters(args):
     """Handle the sort-filters command."""
+    # Lazy import to speed up CLI startup
+    from ..filter_utils import sort_report_filters
+
     validate_error_on_change(args)
     has_changes = sort_report_filters(
         args.report_path,
@@ -220,6 +220,10 @@ def handle_sort_filters(args):
 
 def handle_configure_filter_pane(args):
     """Handle the configure-filter-pane command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..filter_utils import configure_filter_pane
+
     validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
     has_changes = configure_filter_pane(

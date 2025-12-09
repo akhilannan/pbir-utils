@@ -229,7 +229,7 @@ def test_apply_filters():
     assert "v2" in filtered[0][4]
 
 
-@patch("pbir_utils.report_wireframe_visualizer.dash.Dash")
+@patch("dash.Dash")
 @patch("pbir_utils.report_wireframe_visualizer._get_page_order")
 @patch("pbir_utils.report_wireframe_visualizer._extract_visual_info")
 @patch("pbir_utils.report_wireframe_visualizer._extract_page_info")

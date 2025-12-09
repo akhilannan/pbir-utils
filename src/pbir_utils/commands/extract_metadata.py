@@ -5,9 +5,7 @@ import sys
 import textwrap
 
 from ..command_utils import parse_filters
-from ..common import resolve_report_path
 from ..console_utils import console
-from ..metadata_extractor import export_pbir_metadata_to_csv
 
 
 def register(subparsers):
@@ -47,6 +45,10 @@ def register(subparsers):
 
 def handle(args):
     """Handle the extract-metadata command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..metadata_extractor import export_pbir_metadata_to_csv
+
     cmd_args = args.args
     report_path = None
     output_path = None

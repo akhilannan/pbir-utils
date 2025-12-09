@@ -9,7 +9,6 @@ from ..command_utils import (
     check_error_on_change,
     validate_error_on_change,
 )
-from ..pbir_processor import batch_update_pbir_project
 
 
 def register(subparsers):
@@ -53,6 +52,9 @@ def register(subparsers):
 
 def handle(args):
     """Handle the batch-update command."""
+    # Lazy import to speed up CLI startup
+    from ..pbir_processor import batch_update_pbir_project
+
     validate_error_on_change(args)
     has_changes = batch_update_pbir_project(
         args.directory_path, args.csv_path, dry_run=args.dry_run

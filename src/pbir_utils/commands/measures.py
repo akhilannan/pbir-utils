@@ -10,8 +10,6 @@ from ..command_utils import (
     check_error_on_change,
     validate_error_on_change,
 )
-from ..common import resolve_report_path
-from ..pbir_measure_utils import remove_measures, generate_measure_dependencies_report
 
 
 def register(subparsers):
@@ -114,6 +112,10 @@ def _register_measure_dependencies(subparsers):
 
 def handle_remove_measures(args):
     """Handle the remove-measures command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..pbir_measure_utils import remove_measures
+
     validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
     has_changes = remove_measures(
@@ -128,6 +130,10 @@ def handle_remove_measures(args):
 
 def handle_measure_dependencies(args):
     """Handle the measure-dependencies command."""
+    # Lazy imports to speed up CLI startup
+    from ..common import resolve_report_path
+    from ..pbir_measure_utils import generate_measure_dependencies_report
+
     report_path = resolve_report_path(args.report_path)
     report = generate_measure_dependencies_report(
         report_path,

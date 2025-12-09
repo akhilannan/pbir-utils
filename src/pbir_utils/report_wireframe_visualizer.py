@@ -1,7 +1,4 @@
 import os
-import dash
-from dash import dcc, html, Input, Output
-import plotly.graph_objects as go
 
 from .common import load_json
 from .metadata_extractor import _get_page_order
@@ -114,7 +111,7 @@ def _adjust_visual_positions(visuals: dict) -> dict:
 
 def _create_wireframe_figure(
     page_width: int, page_height: int, visuals_info: dict, show_hidden: bool = True
-) -> go.Figure:
+):
     """
     Create a Plotly figure for the wireframe of a page.
 
@@ -127,6 +124,8 @@ def _create_wireframe_figure(
     Returns:
         go.Figure: Plotly figure object for the wireframe.
     """
+    import plotly.graph_objects as go
+
     fig = go.Figure()
 
     adjusted_visuals = _adjust_visual_positions(visuals_info)
@@ -272,6 +271,10 @@ def display_report_wireframes(
     sorted_pages_info = sorted(
         filtered_pages_info, key=lambda x: page_order.index(x[0])
     )
+
+    # Lazy import heavy dependencies
+    import dash
+    from dash import dcc, html, Input, Output
 
     app = dash.Dash(__name__)
     app.layout = html.Div(
