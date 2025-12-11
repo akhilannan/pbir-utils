@@ -114,6 +114,10 @@ class ConsoleUtils:
         """Prints a separator line."""
         print(self._format("-" * 60, self.WHITE, self.DIM))
 
+    def print_cleared(self, message: str):
+        """Prints a cleared message."""
+        print(f"{self._format('[Cleared]', self.GREEN, self.BOLD)} {message}")
+
 
 # Global instance
 console = ConsoleUtils()

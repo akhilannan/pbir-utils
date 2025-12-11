@@ -1,5 +1,7 @@
-### Performance
-- **CLI Startup Optimization**: Reduced `--help` command time from ~10 seconds to under 1 second (~15x faster) by implementing lazy imports for heavy dependencies and deferring module loading until commands are executed.
-
-### Fixed
-- **Wireframe Visualizer Coordinate Parsing**: Fixed `TypeError` and `ValueError` in `display_report_wireframes` caused by coordinates being stored as strings or with `@@__PRESERVE_FLOAT__@@` prefixes.
+### Added
+- **Clear Filters Command**: New `clear-filters` CLI command and `clear_filters()` Python API to inspect and clear filter conditions from Power BI reports.
+  - Supports report, page, and visual level filters (including slicers)
+  - Filter targeting with `--page`, `--visual` options
+  - Field filtering with `--table`, `--column`, `--field` (supports wildcards like `Date*`, `*Amount`)
+  - Dry-run mode (`--dry-run`) for inspecting filters without modifying files
+  - Configurable via `pbir-sanitizer.yaml` for use in sanitization pipelines

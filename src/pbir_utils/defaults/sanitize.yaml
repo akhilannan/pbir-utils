@@ -87,6 +87,12 @@ definitions:
     params:
       sort_order: Ascending
 
+  clear_all_report_filters:
+    description: Clear all report-level filter conditions
+    implementation: clear_filters
+    params:
+      clear_all: true
+
 
 # Default action execution order
 actions:

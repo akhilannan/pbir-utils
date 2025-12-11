@@ -6,9 +6,9 @@ from .pbir_measure_utils import remove_measures, generate_measure_dependencies_r
 from .filter_utils import (
     update_report_filters,
     sort_report_filters,
-    collapse_filter_pane,
     configure_filter_pane,
     reset_filter_pane_width,
+    clear_filters,
 )
 from .pbir_report_sanitizer import (
     sanitize_powerbi_report,
@@ -40,9 +40,9 @@ __all__ = [
     # Filter utilities
     "update_report_filters",
     "sort_report_filters",
-    "collapse_filter_pane",
     "configure_filter_pane",
     "reset_filter_pane_width",
+    "clear_filters",
     # Sanitization pipeline
     "sanitize_powerbi_report",
     "get_available_actions",

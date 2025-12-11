@@ -20,6 +20,7 @@ def register(subparsers):
     _register_update_filters(subparsers)
     _register_sort_filters(subparsers)
     _register_configure_filter_pane(subparsers)
+    _register_clear_filters(subparsers)
 
 
 def _register_update_filters(subparsers):
@@ -177,6 +178,75 @@ def _register_configure_filter_pane(subparsers):
     parser.set_defaults(func=handle_configure_filter_pane)
 
 
+def _register_clear_filters(subparsers):
+    """Register the clear-filters command."""
+    clear_filters_desc = textwrap.dedent(
+        """
+        Clear (reset) Power BI report, page, and visual level filter values.
+        
+        With --dry-run: Shows which filters would be cleared (inspection mode).
+        Without --dry-run: Actually clears the filter conditions.
+        
+        Clearing a filter removes the condition but keeps the field in the filter pane.
+        """
+    )
+    clear_filters_epilog = textwrap.dedent(
+        """
+        Examples:
+          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --dry-run
+          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --table "Date*" --dry-run
+          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --page "Page 1" --column "Year"
+          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --all
+    """
+    )
+    parser = subparsers.add_parser(
+        "clear-filters",
+        help="Clear report filter values",
+        description=clear_filters_desc,
+        epilog=clear_filters_epilog,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "report_path",
+        help="Path to .Report folder or root directory containing reports",
+    )
+    parser.add_argument(
+        "--page",
+        nargs="?",
+        const=True,
+        help="Target specific page by displayName or name/ID. If no value, includes all pages.",
+    )
+    parser.add_argument(
+        "--visual",
+        nargs="?",
+        const=True,
+        help="Target specific visual by name/ID. If no value, includes all visuals.",
+    )
+    parser.add_argument(
+        "--table",
+        nargs="+",
+        help="Filter by table name(s), supports wildcards (e.g., 'Sales' 'Dim*')",
+    )
+    parser.add_argument(
+        "--column",
+        nargs="+",
+        help="Filter by column name(s), supports wildcards (e.g., 'Year' '*Date')",
+    )
+    parser.add_argument(
+        "--field",
+        nargs="+",
+        help="Filter by full field reference(s), supports wildcards (e.g., \"'Sales'[Amount]\")",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="clear_all",
+        help="(Implicit) Clears all filters. Now the default behavior when not using --dry-run.",
+    )
+    add_dry_run_arg(parser)
+    parser.set_defaults(func=handle_clear_filters)
+
+
 # Handlers
 
 
@@ -234,3 +304,43 @@ def handle_configure_filter_pane(args):
         summary=args.summary,
     )
     check_error_on_change(args, has_changes, "configure-filter-pane")
+
+
+def handle_clear_filters(args):
+    """Handle the clear-filters command."""
+    # Lazy import
+    from ..filter_utils import clear_filters
+    from ..common import resolve_report_path
+
+    try:
+        report_path = resolve_report_path(args.report_path)
+    except Exception:
+        report_path = args.report_path
+
+    # Map polymorphic args
+    show_page_filters = False
+    target_page = None
+    if args.page is True:
+        show_page_filters = True
+    elif args.page:
+        target_page = args.page
+
+    show_visual_filters = False
+    target_visual = None
+    if args.visual is True:
+        show_visual_filters = True
+    elif args.visual:
+        target_visual = args.visual
+
+    clear_filters(
+        report_path,
+        show_page_filters=show_page_filters,
+        show_visual_filters=show_visual_filters,
+        target_page=target_page,
+        target_visual=target_visual,
+        include_tables=args.table,
+        include_columns=args.column,
+        include_fields=args.field,
+        clear_all=args.clear_all,
+        dry_run=args.dry_run,
+    )

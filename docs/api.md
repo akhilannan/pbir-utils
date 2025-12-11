@@ -276,6 +276,61 @@ pbir.sort_report_filters(
 
 ---
 
+## Clear Filters
+
+Clears filter conditions from report, page, and visual levels. By default operates in dry-run mode (inspection only).
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `show_page_filters` | bool | Include all page-level filters. Default: `False` |
+| `show_visual_filters` | bool | Include all visual-level filters. Default: `False` |
+| `target_page` | str | Target specific page by displayName or ID (optional) |
+| `target_visual` | str | Target specific visual by name or type (optional) |
+| `include_tables` | list | Table name patterns to match (supports wildcards) |
+| `include_columns` | list | Column name patterns to match (supports wildcards) |
+| `include_fields` | list | Full field references to match (e.g., `'Sales'[Amount]`) |
+| `clear_all` | bool | Explicitly clear all matching filters. Default: `False` |
+| `dry_run` | bool | Preview without modifying files. Default: `True` |
+
+### Example
+
+```python
+# Inspect report-level filters (dry run)
+pbir.clear_filters(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=True
+)
+
+# Clear filters on Date tables
+pbir.clear_filters(
+    report_path=r"C:\DEV\MyReport.Report",
+    include_tables=["Date*"],
+    clear_all=True,
+    dry_run=False
+)
+
+# Clear page-level filters on a specific page
+pbir.clear_filters(
+    report_path=r"C:\DEV\MyReport.Report",
+    target_page="Overview",
+    clear_all=True,
+    dry_run=False
+)
+
+# Clear all visual filters including slicers
+pbir.clear_filters(
+    report_path=r"C:\DEV\MyReport.Report",
+    show_visual_filters=True,
+    clear_all=True,
+    dry_run=False
+)
+```
+
+---
+
 ## Sanitize Power BI Report
 
 A powerful utility to clean up and optimize Power BI reports.

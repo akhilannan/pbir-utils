@@ -1,5 +1,7 @@
 import os
+import re
 from datetime import datetime
+from fnmatch import fnmatch
 
 from .common import load_json, write_json, get_report_paths, process_json_files
 from .console_utils import console
@@ -623,27 +625,6 @@ def configure_filter_pane(
     return True
 
 
-def collapse_filter_pane(
-    report_path: str, dry_run: bool = False, summary: bool = False
-) -> bool:
-    """
-    Collapse the filter pane in the report.
-
-    This is a convenience wrapper for configure_filter_pane(visible=True, expanded=False).
-
-    Args:
-        report_path (str): The path to the report.
-        dry_run (bool): Whether to perform a dry run.
-        summary (bool): Whether to show summary instead of detailed messages.
-
-    Returns:
-        bool: True if changes were made (or would be made in dry run), False otherwise.
-    """
-    return configure_filter_pane(
-        report_path, visible=True, expanded=False, dry_run=dry_run, summary=summary
-    )
-
-
 def reset_filter_pane_width(
     report_path: str, dry_run: bool = False, summary: bool = False
 ) -> bool:
@@ -712,3 +693,778 @@ def reset_filter_pane_width(
     else:
         console.print_info("No pages found with filter pane width set.")
         return False
+
+
+def _get_target_from_field(field_data: dict) -> str:
+    """
+    Extracts the target (Table[Column/Measure/Level]) from the field definition.
+    """
+    if not field_data:
+        return "Unknown"
+
+    if "Column" in field_data:
+        col = field_data["Column"]
+        entity = col.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
+        prop = col.get("Property", "Unknown")
+        return f"'{entity}'[{prop}]"
+
+    if "Measure" in field_data:
+        meas = field_data["Measure"]
+        entity = (
+            meas.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
+        )
+        prop = meas.get("Property", "Unknown")
+        return f"'{entity}'[{prop}]"
+
+    if "HierarchyLevel" in field_data:
+        hl = field_data["HierarchyLevel"]
+
+        # Try to drill down to find Entity
+        expr = hl.get("Expression", {})
+        hierarchy = expr.get("Hierarchy", {})
+
+        # This path can vary, trying a common traversal
+        entity = "Unknown"
+        if "Expression" in hierarchy:
+            var_source = hierarchy["Expression"].get("PropertyVariationSource", {})
+            entity = (
+                var_source.get("Expression", {})
+                .get("SourceRef", {})
+                .get("Entity", "Unknown")
+            )
+
+        level = hl.get("Level", "Unknown")
+        return f"'{entity}'[{level}]"
+
+    return "Unknown"
+
+
+def _parse_target_components(target: str) -> tuple[str, str]:
+    """
+    Parses target string like "'TableName'[ColumnName]".
+    Returns (table_name, column_name).
+    """
+    table_name = ""
+    column_name = ""
+    if target.startswith("'"):
+        try:
+            table_name = target.split("'")[1]
+            column_name = target.split("[")[1].rstrip("]")
+        except IndexError:
+            pass
+    elif target.startswith("["):
+        column_name = target.lstrip("[").rstrip("]")
+    return table_name, column_name
+
+
+def _filter_matches_criteria(
+    target: str,
+    table_name: str,
+    column_name: str,
+    include_tables: list[str] = None,
+    include_columns: list[str] = None,
+    include_fields: list[str] = None,
+) -> bool:
+    """
+    Checks if a filter target matches the given criteria patterns.
+    Returns True if no criteria specified (match all) or if criteria matches.
+    """
+    has_criteria = include_tables or include_columns or include_fields
+    if not has_criteria:
+        return True
+
+    # Check --field patterns first
+    if include_fields:
+        for pattern in include_fields:
+            escaped_pattern = re.sub(r"\[(?!\[\])", "[[]", pattern)
+            escaped_pattern = re.sub(r"(?<!\[)\]", "[]]", escaped_pattern)
+            if fnmatch(target, escaped_pattern):
+                return True
+
+    # Check --table / --column (intersection logic)
+    if include_tables or include_columns:
+        table_match = not include_tables or any(
+            fnmatch(table_name, p) for p in include_tables
+        )
+        column_match = not include_columns or any(
+            fnmatch(column_name, p) for p in include_columns
+        )
+        if table_match and column_match:
+            return True
+
+    return False
+
+
+def _get_slicer_filter_data(vis_data: dict) -> tuple[dict, dict, str] | None:
+    """
+    Extracts slicer filter information from a visual.
+
+    Returns (filter_dict, field_def, target_str) or None if not a valid slicer with filter.
+    - filter_dict: The filter Where clause from objects.general[0].properties.filter.filter
+    - field_def: The field definition from query projections
+    - target_str: The formatted target string like 'Table'[Column]
+    """
+    try:
+        general_objs = vis_data.get("visual", {}).get("objects", {}).get("general", [])
+        if not general_objs or len(general_objs) == 0:
+            return None
+
+        props = general_objs[0].get("properties", {})
+        if "filter" not in props or "filter" not in props["filter"]:
+            return None
+
+        # Get field from query projections
+        query_state = vis_data.get("visual", {}).get("query", {}).get("queryState", {})
+        vals = query_state.get("Values", {})
+        projections = vals.get("projections", [])
+
+        if not projections:
+            return None
+
+        field_def = projections[0].get("field")
+        filter_dict = props["filter"]["filter"]
+        target = _get_target_from_field(field_def)
+
+        return filter_dict, field_def, target
+    except (IndexError, KeyError, AttributeError):
+        return None
+
+
+def _get_literal_display_value(expr: dict) -> str:
+    """
+    Extracts value from a Literal expression for display.
+    """
+    if not isinstance(expr, dict):
+        return str(expr)
+
+    if "Literal" in expr:
+        val = str(expr["Literal"].get("Value", "null"))
+        # Remove L suffix from numeric literals (which are not quoted)
+        if val and not val.startswith("'") and val.endswith("L"):
+            return val[:-1]
+        return val
+
+    # Handle DateSpan (Advanced filtering)
+    if "DateSpan" in expr:
+        return _get_literal_display_value(expr["DateSpan"].get("Expression", {}))
+
+    # Handle generic expressions if needed, or fallback
+    return "Expression"
+
+
+def _parse_condition(condition: dict) -> str:
+    """
+    Recursively parses the filter condition into a readable string.
+    """
+    if not condition:
+        return ""
+
+    if "Not" in condition:
+        return f"NOT ({_parse_condition(condition['Not']['Expression'])})"
+
+    if "In" in condition:
+        in_cond = condition["In"]
+        values = []
+        if "Values" in in_cond:
+            for val_list in in_cond["Values"]:
+                val_strs = [_get_literal_display_value(v) for v in val_list]
+                values.append("(" + ", ".join(val_strs) + ")")
+
+        return f"IN [{', '.join(values)}]"
+
+    if "Comparison" in condition:
+        comp = condition["Comparison"]
+        kind = comp.get("ComparisonKind", 0)
+        # Mapping based on typical Power BI behavior (needs verification if exact mapping is critical)
+        kinds = {0: "=", 1: ">", 2: ">=", 3: "<", 4: "<="}
+        op = kinds.get(kind, f"Op({kind})")
+
+        right = _get_literal_display_value(comp.get("Right", {}))
+        return f"{op} {right}"
+
+    if "And" in condition:
+        left = _parse_condition(condition["And"]["Left"])
+        right = _parse_condition(condition["And"]["Right"])
+        return f"({left} AND {right})"
+
+    if "Or" in condition:
+        left = _parse_condition(condition["Or"]["Left"])
+        right = _parse_condition(condition["Or"]["Right"])
+        return f"({left} OR {right})"
+
+    # Fallback for unknown conditions
+    return f"ComplexCondition()"
+
+
+def _get_filter_strings(
+    filter_config: dict,
+    include_tables: list[str] = None,
+    include_columns: list[str] = None,
+    include_fields: list[str] = None,
+) -> list[str]:
+    """
+    Extracts filters as formatted strings from a filterConfig dictionary.
+
+    Args:
+        filter_config: The filterConfig dictionary from report/page/visual JSON.
+        include_tables: Optional list of table name patterns to match (supports wildcards).
+        include_columns: Optional list of column name patterns to match (supports wildcards).
+        include_fields: Optional list of full field patterns like "'Table'[Column]" (supports wildcards).
+
+    Returns:
+        List of formatted filter strings matching the criteria.
+    """
+    results = []
+    if not filter_config or "filters" not in filter_config:
+        return results
+
+    for f in filter_config["filters"]:
+        if "filter" not in f:
+            continue
+
+        target = _get_target_from_field(f.get("field"))
+        table_name, column_name = _parse_target_components(target)
+
+        # Check if filter matches the criteria
+        if not _filter_matches_criteria(
+            target,
+            table_name,
+            column_name,
+            include_tables,
+            include_columns,
+            include_fields,
+        ):
+            continue
+
+        conditions = []
+        where_clauses = f["filter"].get("Where", [])
+        for w in where_clauses:
+            if "Condition" in w:
+                cond_str = _parse_condition(w["Condition"])
+                # Filter out empty IN [] which denotes no selection usually
+                if cond_str == "IN []":
+                    continue
+                conditions.append(cond_str)
+
+        if not conditions:
+            continue
+
+        condition_str = " AND ".join(conditions)
+        results.append(f"{target} : {condition_str}")
+    return results
+
+
+def _clear_matching_filters(
+    filter_config: dict,
+    include_tables: list[str] = None,
+    include_columns: list[str] = None,
+    include_fields: list[str] = None,
+    clear_all: bool = False,
+) -> tuple[list[str], bool]:
+    """
+    Clears filter conditions from matching filters in a filterConfig.
+
+    Args:
+        filter_config: The filterConfig dictionary.
+        include_tables, include_columns, include_fields: Matching criteria.
+        clear_all: If True, clear all filters regardless of criteria.
+
+    Returns:
+        Tuple of (list of cleared filter descriptions, whether any changes were made).
+    """
+    cleared = []
+    changed = False
+
+    if not filter_config or "filters" not in filter_config:
+        return cleared, changed
+
+    for f in filter_config["filters"]:
+        if "filter" not in f:
+            continue  # No condition to clear
+
+        target = _get_target_from_field(f.get("field"))
+        table_name, column_name = _parse_target_components(target)
+
+        # Check if this filter matches criteria
+        # If no criteria specified, clear all (implicit --all behavior)
+        # If criteria specified, only clear matching filters
+        has_criteria = include_tables or include_columns or include_fields
+        should_clear = (
+            clear_all
+            or not has_criteria
+            or _filter_matches_criteria(
+                target,
+                table_name,
+                column_name,
+                include_tables,
+                include_columns,
+                include_fields,
+            )
+        )
+
+        if should_clear:
+            # Get description before clearing
+            conditions = []
+            where_clauses = f["filter"].get("Where", [])
+            for w in where_clauses:
+                if "Condition" in w:
+                    cond_str = _parse_condition(w["Condition"])
+                    if cond_str != "IN []":
+                        conditions.append(cond_str)
+
+            if conditions:
+                condition_str = " AND ".join(conditions)
+                cleared.append(f"{target} : {condition_str}")
+
+                # Clear the filter
+                del f["filter"]
+                changed = True
+
+    return cleared, changed
+
+
+def clear_filters(
+    report_path: str,
+    show_page_filters: bool = False,
+    show_visual_filters: bool = False,
+    target_page: str = None,
+    target_visual: str = None,
+    include_tables: list[str] = None,
+    include_columns: list[str] = None,
+    include_fields: list[str] = None,
+    clear_all: bool = False,
+    dry_run: bool = True,
+) -> bool:
+    """
+    Clears filter conditions from report, pages, and visuals.
+
+    With dry_run=True: Shows which filters would be cleared (inspection mode).
+    With dry_run=False: Actually clears the filter conditions.
+
+    Returns:
+        True if any filters were found/cleared, False otherwise.
+    """
+    if dry_run:
+        console.print_heading(f"[DRY RUN] Inspecting filters in: {report_path}")
+    else:
+        console.print_heading(f"Clearing filters in: {report_path}")
+
+    found_any_filters = False
+
+    # 1. Report Level Filters
+    report_json_path = os.path.join(report_path, "definition", "report.json")
+    report_changed = False
+    if os.path.exists(report_json_path):
+        data = load_json(report_json_path)
+
+        # Get matching filters for display
+        report_filters = _get_filter_strings(
+            data.get("filterConfig"),
+            include_tables=include_tables,
+            include_columns=include_columns,
+            include_fields=include_fields,
+        )
+
+        if report_filters:
+            found_any_filters = True
+            # Determine if we will clear these filters to avoid double printing
+            # Without --dry-run, we always clear (implicitly all, or filtered by criteria)
+            will_clear = not dry_run
+
+            console.print_info("[Report] Report Filters:")
+            for f in report_filters:
+                if dry_run:
+                    console.print_dry_run(f"  {f}")
+                elif not will_clear:
+                    console.print_info(f"  {f}")
+
+            # Clear filters if not dry run
+            if not dry_run:
+                cleared, report_changed = _clear_matching_filters(
+                    data.get("filterConfig"),
+                    include_tables=include_tables,
+                    include_columns=include_columns,
+                    include_fields=include_fields,
+                    clear_all=clear_all,
+                )
+                if report_changed:
+                    write_json(report_json_path, data)
+                    for c in cleared:
+                        console.print_cleared(f"  {c}")
+    else:
+        if not os.path.basename(report_path).endswith(".Report"):
+            console.print_warning(f"report.json not found at {report_json_path}")
+
+    if (
+        not show_page_filters
+        and not show_visual_filters
+        and not target_page
+        and not target_visual
+    ):
+        return
+
+    # 2. Page & Visual Level
+    pages_dir = os.path.join(report_path, "definition", "pages")
+    if not os.path.exists(pages_dir):
+        return
+
+    for page_id in os.listdir(pages_dir):
+        page_path = os.path.join(pages_dir, page_id)
+        if not os.path.isdir(page_path):
+            continue
+
+        page_json_path = os.path.join(page_path, "page.json")
+        if not os.path.exists(page_json_path):
+            continue
+
+        page_data = load_json(page_json_path)
+        page_name = page_data.get("displayName", page_id)
+
+        # Filter by page if requested
+        is_target_page = False
+        if target_page:
+            if target_page.lower() in [page_id.lower(), page_name.lower()]:
+                is_target_page = True
+            else:
+                continue
+
+        page_filters = []
+        if show_page_filters or is_target_page:
+            page_filters = _get_filter_strings(
+                page_data.get("filterConfig"),
+                include_tables=include_tables,
+                include_columns=include_columns,
+                include_fields=include_fields,
+            )
+
+        visual_outputs = []
+        slicer_outputs = []
+        # We scan visuals if explicit visual filtering is requested, OR if we are processing this page
+        # because we want to capture Slicer visuals which act as page filters.
+        should_scan_visuals = (
+            show_visual_filters or target_visual or show_page_filters or is_target_page
+        )
+
+        if should_scan_visuals:
+            visuals_dir = os.path.join(page_path, "visuals")
+            if os.path.exists(visuals_dir):
+                for visual_id in os.listdir(visuals_dir):
+                    visual_folder = os.path.join(visuals_dir, visual_id)
+                    visual_json = os.path.join(visual_folder, "visual.json")
+
+                    if not os.path.exists(visual_json):
+                        continue
+
+                    vis_data = load_json(visual_json)
+                    vis_type = vis_data.get("visual", {}).get("visualType", "unknown")
+                    vis_name = vis_data.get("name", visual_id)
+
+                    # Filter by visual if requested
+                    is_target_visual = False
+                    if target_visual:
+                        if target_visual.lower() in [
+                            visual_id.lower(),
+                            vis_type.lower(),
+                        ]:
+                            is_target_visual = True
+                        else:
+                            continue
+
+                    vis_filters = _get_filter_strings(
+                        vis_data.get("filterConfig"),
+                        include_tables=include_tables,
+                        include_columns=include_columns,
+                        include_fields=include_fields,
+                    )
+
+                    # Slicer specific extraction
+                    slicer_filters_found = []
+                    if vis_type == "slicer":
+                        slicer_data = _get_slicer_filter_data(vis_data)
+                        if slicer_data:
+                            filter_dict, field_def, target = slicer_data
+                            # Construct a temporary structure compatible with _get_filter_strings
+                            slicer_filter_wrapper = {
+                                "filters": [{"field": field_def, "filter": filter_dict}]
+                            }
+                            slicer_filters = _get_filter_strings(
+                                slicer_filter_wrapper,
+                                include_tables=include_tables,
+                                include_columns=include_columns,
+                                include_fields=include_fields,
+                            )
+                            slicer_filters_found.extend(slicer_filters)
+                            vis_filters.extend(slicer_filters)
+
+                    # Logic for inclusion:
+                    # 1. If explicit visual target or show_visual_filters -> Include
+                    # 2. If it is a Slicer AND we have filters -> Include as context (or maybe just track for page level?)
+                    #    - Current logic above adds to vis_filters.
+
+                    # Correction: If we are ONLY showing page filters, we don't want to show ALL visual blocks.
+                    # Slicers go to distinct list if they have filters or if explicitly targeted.
+
+                    if vis_type == "slicer":
+                        if slicer_filters_found or is_target_visual:
+                            # For slicers, we prefer the special extraction if available, otherwise fallback (which is likely empty)
+                            filters_to_show = (
+                                slicer_filters_found
+                                if slicer_filters_found
+                                else vis_filters
+                            )
+
+                            if filters_to_show or is_target_visual:
+                                # Determine behavior:
+                                # If showing page filters -> show slicers (context)
+                                # If targeting visual -> show slicer
+
+                                if (
+                                    show_page_filters
+                                    or is_target_page
+                                    or is_target_visual
+                                    or show_visual_filters
+                                ):
+                                    slicer_outputs.append((vis_name, filters_to_show))
+                    else:
+                        # Standard Visuals
+                        if show_visual_filters or is_target_visual:
+                            if (
+                                vis_filters or is_target_visual
+                            ):  # Only add if filters exist or specifically targeted
+                                visual_outputs.append((vis_type, vis_name, vis_filters))
+
+        # Store effective filtered lists for display purposes
+        effective_slicer_outputs = [s for s in slicer_outputs if s[1]]
+        effective_visual_outputs = [v for v in visual_outputs if v[2]]
+
+        # Context: User wants to see page filters if a visual is found (even if empty filters), even if not explicitly asked for page info
+        if (visual_outputs or slicer_outputs) and not page_filters:
+            page_filters = _get_filter_strings(
+                page_data.get("filterConfig"),
+                include_tables=include_tables,
+                include_columns=include_columns,
+                include_fields=include_fields,
+            )
+
+        # Print Page Block if relevant
+        if (
+            page_filters
+            or effective_visual_outputs
+            or effective_slicer_outputs
+            or is_target_page
+        ):
+            slicer_outputs = effective_slicer_outputs
+            visual_outputs = effective_visual_outputs
+
+            if page_filters or slicer_outputs or visual_outputs:
+                found_any_filters = True
+            console.print_info(f"\n[Page] {page_name} ({page_id})")
+
+            # Show page filters if they exist OR if explicitly requested (showing "None" in that case)
+            # But don't show "None" if filtering by criteria (table/column/field) since that's just noise
+            # Check clearing intent for this scope
+            # Without --dry-run, we always clear (implicitly all, or filtered by criteria)
+            has_criteria = include_tables or include_columns or include_fields
+            will_clear = not dry_run
+
+            if page_filters:
+                console.print_info("  Page Filters:")
+                if not dry_run and will_clear:
+                    cleared, page_changed = _clear_matching_filters(
+                        page_data.get("filterConfig"),
+                        include_tables=include_tables,
+                        include_columns=include_columns,
+                        include_fields=include_fields,
+                        clear_all=clear_all,
+                    )
+                    if page_changed:
+                        write_json(page_json_path, page_data)
+                        for c in cleared:
+                            console.print_cleared(f"    {c}")
+                else:
+                    for f in page_filters:
+                        if dry_run:
+                            console.print_dry_run(f"    {f}")
+                        else:
+                            console.print_info(f"    {f}")
+            elif (show_page_filters or is_target_page) and not has_criteria:
+                console.print_info("  Page Filters: None")
+
+            if slicer_outputs:
+                console.print_info("  Slicer Filters:")
+                if not dry_run and will_clear:
+                    # Clear slicer filters (special path: objects.general[0].properties.filter)
+                    visuals_dir = os.path.join(page_path, "visuals")
+                    if os.path.exists(visuals_dir):
+                        for visual_id in os.listdir(visuals_dir):
+                            visual_folder = os.path.join(visuals_dir, visual_id)
+                            visual_json = os.path.join(visual_folder, "visual.json")
+                            if not os.path.exists(visual_json):
+                                continue
+
+                            vis_data = load_json(visual_json)
+                            vis_type = vis_data.get("visual", {}).get(
+                                "visualType", "unknown"
+                            )
+
+                            if vis_type != "slicer":
+                                continue
+
+                            # Apply same target logic
+                            if target_visual:
+                                if (
+                                    target_visual.lower()
+                                    not in [visual_id.lower(), vis_type.lower()]
+                                    and not show_visual_filters
+                                ):
+                                    continue
+
+                            # Check if slicer has filter to clear using helper
+                            slicer_data = _get_slicer_filter_data(vis_data)
+                            if slicer_data:
+                                filter_dict, field_def, target = slicer_data
+                                table_name, column_name = _parse_target_components(
+                                    target
+                                )
+
+                                # Check if matches criteria (implicit all if no criteria)
+                                has_criteria = (
+                                    include_tables or include_columns or include_fields
+                                )
+                                should_clear = (
+                                    clear_all
+                                    or not has_criteria
+                                    or _filter_matches_criteria(
+                                        target,
+                                        table_name,
+                                        column_name,
+                                        include_tables,
+                                        include_columns,
+                                        include_fields,
+                                    )
+                                )
+
+                                if should_clear:
+                                    # Get condition string before clearing
+                                    slicer_filter_wrapper = {
+                                        "filters": [
+                                            {"field": field_def, "filter": filter_dict}
+                                        ]
+                                    }
+                                    filter_strs = _get_filter_strings(
+                                        slicer_filter_wrapper
+                                    )
+
+                                    # Clear the slicer filter - need to access props directly
+                                    general_objs = vis_data["visual"]["objects"][
+                                        "general"
+                                    ]
+                                    del general_objs[0]["properties"]["filter"]
+                                    write_json(visual_json, vis_data)
+
+                                    console.print_info(f"    [Slicer] {visual_id}")
+                                    for fs in filter_strs:
+                                        console.print_cleared(f"      {fs}")
+
+                else:
+                    for s_name, s_filters in slicer_outputs:
+                        console.print_info(f"    [Slicer] {s_name}")
+                        if s_filters:
+                            for f in s_filters:
+                                if dry_run:
+                                    console.print_dry_run(f"      {f}")
+                                else:
+                                    console.print_info(f"      {f}")
+                        else:
+                            console.print_info("      No filters")
+
+            if visual_outputs:
+                console.print_info("  Visual Filters:")
+                # For visuals, we only clear if explicitly requested OR clear_all is set
+                # But visual_outputs is filtered by criteria too.
+                # If we are clearing, we only do so if show_visual_filters or target_visual is set (logic below).
+                # So here we should check THAT condition too for suppression.
+
+                # Logic below for clearing:
+                # if show_visual_filters or target_visual: ...
+
+                visual_will_clear = will_clear and (
+                    show_visual_filters or target_visual
+                )
+
+                for v_type, v_name, v_filters in visual_outputs:
+                    console.print_info(f"    [Visual] {v_type} ({v_name})")
+                    if v_filters:
+                        for f in v_filters:
+                            if dry_run:
+                                console.print_dry_run(f"      {f}")
+                            elif not visual_will_clear:
+                                console.print_info(f"      {f}")
+                    else:
+                        console.print_info("      No filters")
+
+            # Clear filters if not dry run
+            if not dry_run:
+                # Clear page filters
+                if page_filters:
+                    cleared, page_changed = _clear_matching_filters(
+                        page_data.get("filterConfig"),
+                        include_tables=include_tables,
+                        include_columns=include_columns,
+                        include_fields=include_fields,
+                        clear_all=clear_all,
+                    )
+                    if page_changed:
+                        write_json(page_json_path, page_data)
+                        for c in cleared:
+                            console.print_cleared(f"    {c}")
+
+                # Only clear visual filters if explicitly requested
+                if show_visual_filters or target_visual:
+                    if visual_outputs:
+                        visuals_dir = os.path.join(page_path, "visuals")
+                        if os.path.exists(visuals_dir):
+                            for visual_id in os.listdir(visuals_dir):
+                                visual_folder = os.path.join(visuals_dir, visual_id)
+                                visual_json = os.path.join(visual_folder, "visual.json")
+                                if not os.path.exists(visual_json):
+                                    continue
+
+                                vis_data = load_json(visual_json)
+                                vis_type = vis_data.get("visual", {}).get(
+                                    "visualType", "unknown"
+                                )
+
+                                # Filter by visual if requested (apply same logic as above)
+                                is_target_visual = False
+                                if target_visual:
+                                    if target_visual.lower() in [
+                                        visual_id.lower(),
+                                        vis_type.lower(),
+                                    ]:
+                                        is_target_visual = True
+                                    else:
+                                        # But wait, we iterate all visuals here if show_visual_filters is True.
+                                        # The outer check `if show_visual_filters or target_visual` allows entry.
+                                        # If target_visual is set, we ONLY match that.
+                                        # If show_visual_filters is set, we match all.
+                                        # So if target_visual is set and DOES NOT match, we should skip IF show_visual_filters is False.
+                                        # If show_visual_filters is True, we proceed.
+                                        if not show_visual_filters:
+                                            continue
+
+                                # Skip slicers here - handle separately
+                                if vis_type == "slicer":
+                                    continue
+
+                                cleared, vis_changed = _clear_matching_filters(
+                                    vis_data.get("filterConfig"),
+                                    include_tables=include_tables,
+                                    include_columns=include_columns,
+                                    include_fields=include_fields,
+                                    clear_all=clear_all,
+                                )
+                                if vis_changed:
+                                    write_json(visual_json, vis_data)
+                                    for c in cleared:
+                                        console.print_cleared(f"      {c}")

@@ -166,6 +166,82 @@ pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --expanded true --
 
 ---
 
+## Clear Filters
+
+Inspect and clear filter conditions from Power BI reports at report, page, or visual level.
+
+```bash
+# Inspect all report-level filters (dry-run by default)
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --dry-run
+
+# Clear all report-level filters (remove --dry-run to apply)
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report"
+
+# Inspect page-level filters (all pages)
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page --dry-run
+
+# Target a specific page by name or ID
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page "Overview" --dry-run
+
+# Inspect visual-level filters including slicers
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --visual --dry-run
+
+# Filter by table name (supports wildcards)
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --table "Date*" "Sales" --dry-run
+
+# Filter by column name (supports wildcards)
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --column "Year" "*Date" --dry-run
+
+# Filter by full field reference
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --field "'Sales'[Amount]" --dry-run
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--page [NAME]` | Target pages. If no value, includes all pages. If value given, targets specific page by displayName or ID. |
+| `--visual [NAME]` | Target visuals. If no value, includes all visuals. If value given, targets specific visual by name or type. |
+| `--table` | Filter by table name(s), supports wildcards (e.g., `Date*`) |
+| `--column` | Filter by column name(s), supports wildcards (e.g., `*Amount`) |
+| `--field` | Filter by full field reference(s), supports wildcards (e.g., `'Sales'[*]`) |
+| `--all` | Explicitly clear all matching filters |
+| `--dry-run` | Preview which filters would be cleared without modifying files |
+
+### YAML Configuration
+
+Use `clear_filters` in your `pbir-sanitizer.yaml` to include it in sanitization pipelines:
+
+```yaml
+definitions:
+  clear_all_report_filters:
+    description: Clear all report-level filter conditions
+    implementation: clear_filters
+    params:
+      clear_all: true
+      dry_run: false
+
+  clear_date_filters:
+    description: Clear filters on Date tables
+    implementation: clear_filters
+    params:
+      include_tables:
+        - "Date*"
+      clear_all: true
+
+  clear_page_filters:
+    description: Clear all page-level filters
+    implementation: clear_filters
+    params:
+      show_page_filters: true
+      clear_all: true
+
+actions:
+  - clear_all_report_filters  # Add to your action list
+```
+
+---
+
 ## Consolidated Actions
 
 !!! note "Sanitize Command"
