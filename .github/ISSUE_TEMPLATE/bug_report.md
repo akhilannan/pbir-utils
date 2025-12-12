@@ -34,6 +34,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Environment (please complete the following information):**
  - OS: [e.g. Windows]
+ - Python Version: [run `python --version`]
  - `pbir-utils` Version: [run `pbir-utils --version`]
  - Power BI Desktop Version (if relevant):
 
