@@ -196,7 +196,6 @@ def _register_clear_filters(subparsers):
           pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --dry-run
           pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --table "Date*" --dry-run
           pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --page "Page 1" --column "Year"
-          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --all
     """
     )
     parser = subparsers.add_parser(
@@ -237,12 +236,7 @@ def _register_clear_filters(subparsers):
         nargs="+",
         help="Filter by full field reference(s), supports wildcards (e.g., \"'Sales'[Amount]\")",
     )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        dest="clear_all",
-        help="(Implicit) Clears all filters. Now the default behavior when not using --dry-run.",
-    )
+
     add_dry_run_arg(parser)
     parser.set_defaults(func=handle_clear_filters)
 
@@ -341,6 +335,5 @@ def handle_clear_filters(args):
         include_tables=args.table,
         include_columns=args.column,
         include_fields=args.field,
-        clear_all=args.clear_all,
         dry_run=args.dry_run,
     )
