@@ -839,8 +839,8 @@ def _get_literal_display_value(expr: dict) -> str:
 
     if "Literal" in expr:
         val = str(expr["Literal"].get("Value", "null"))
-        # Remove L suffix from numeric literals (which are not quoted)
-        if val and not val.startswith("'") and val.endswith("L"):
+        # Remove L (Long) and D (Decimal) suffixes from numeric literals (which are not quoted)
+        if val and not val.startswith("'") and (val.endswith("L") or val.endswith("D")):
             return val[:-1]
         return val
 
