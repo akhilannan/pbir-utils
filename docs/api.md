@@ -294,6 +294,10 @@ Clears filter conditions from report, page, and visual levels. By default operat
 | `include_fields` | list | Full field references to match (e.g., `'Sales'[Amount]`) |
 | `clear_all` | bool | Explicitly clear all matching filters. Default: `False` |
 | `dry_run` | bool | Preview without modifying files. Default: `True` |
+| `summary` | bool | Show concise count-based summary instead of detailed messages. Default: `False` |
+
+!!! note "Slicer Support"
+    The function automatically detects all slicer types including standard slicers (`slicer`), chiclet slicers (`chicletSlicer`), timeline slicers (`timelineSlicer`), and any custom slicer visuals containing "slicer" in the type name.
 
 ### Example
 
@@ -320,14 +324,16 @@ pbir.clear_filters(
     dry_run=False
 )
 
-# Clear all visual filters including slicers
+# Clear all visual filters including slicers with summary output
 pbir.clear_filters(
     report_path=r"C:\DEV\MyReport.Report",
     show_visual_filters=True,
     clear_all=True,
-    dry_run=False
+    dry_run=False,
+    summary=True
 )
 ```
+
 
 ---
 

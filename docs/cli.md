@@ -194,6 +194,9 @@ pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --column "Year" "*Date" 
 
 # Filter by full field reference
 pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --field "'Sales'[Amount]" --dry-run
+
+# Get concise summary output
+pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page --visual --dry-run --summary
 ```
 
 ### CLI Options
@@ -207,6 +210,23 @@ pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --field "'Sales'[Amount]
 | `--field` | Filter by full field reference(s), supports wildcards (e.g., `'Sales'[*]`) |
 | `--all` | Explicitly clear all matching filters |
 | `--dry-run` | Preview which filters would be cleared without modifying files |
+| `--summary` | Show concise count-based summary instead of detailed filter list |
+
+### Summary Output
+
+When using `--summary`, the output shows counts instead of individual filters:
+
+```
+[DRY RUN] Would clear: 2 report filter(s), 1 page filter(s) across 1 page(s), 2 slicer filter(s) across 2 slicer(s), 10 visual filter(s) across 9 visual(s)
+```
+
+### Slicer Support
+
+The command automatically detects all slicer types including:
+- Standard slicers (`slicer`)
+- Chiclet slicers (`chicletSlicer`)
+- Timeline slicers (`timelineSlicer`)
+- Any custom slicer visuals containing "slicer" in the type name
 
 ### YAML Configuration
 
