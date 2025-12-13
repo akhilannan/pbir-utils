@@ -10,7 +10,6 @@ from ..command_utils import (
     check_error_on_change,
     validate_error_on_change,
 )
-from ..console_utils import console
 
 
 def register(subparsers):

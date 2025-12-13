@@ -893,7 +893,7 @@ def _parse_condition(condition: dict) -> str:
         return f"({left} OR {right})"
 
     # Fallback for unknown conditions
-    return f"ComplexCondition()"
+    return "ComplexCondition()"
 
 
 def _get_filter_strings(
@@ -1101,12 +1101,12 @@ def clear_filters(
         and not target_page
         and not target_visual
     ):
-        return
+        return found_any_filters
 
     # 2. Page & Visual Level
     pages_dir = os.path.join(report_path, "definition", "pages")
     if not os.path.exists(pages_dir):
-        return
+        return found_any_filters
 
     for page_id in os.listdir(pages_dir):
         page_path = os.path.join(pages_dir, page_id)
@@ -1468,3 +1468,5 @@ def clear_filters(
                                     write_json(visual_json, vis_data)
                                     for c in cleared:
                                         console.print_cleared(f"      {c}")
+
+    return found_any_filters
