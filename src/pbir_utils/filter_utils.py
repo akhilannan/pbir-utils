@@ -1034,6 +1034,7 @@ def clear_filters(
     include_fields: list[str] = None,
     clear_all: bool = False,
     dry_run: bool = True,
+    summary: bool = False,
 ) -> bool:
     """
     Clears filter conditions from report, pages, and visuals.
@@ -1041,15 +1042,27 @@ def clear_filters(
     With dry_run=True: Shows which filters would be cleared (inspection mode).
     With dry_run=False: Actually clears the filter conditions.
 
+    Args:
+        summary: If True, shows a count summary instead of detailed messages.
+
     Returns:
         True if any filters were found/cleared, False otherwise.
     """
-    if dry_run:
-        console.print_heading(f"[DRY RUN] Inspecting filters in: {report_path}")
-    else:
-        console.print_heading(f"Clearing filters in: {report_path}")
+    if not summary:
+        if dry_run:
+            console.print_heading(f"[DRY RUN] Inspecting filters in: {report_path}")
+        else:
+            console.print_heading(f"Clearing filters in: {report_path}")
 
     found_any_filters = False
+    # Counters for summary mode
+    report_filter_count = 0
+    page_filter_count = 0
+    pages_affected = set()
+    visual_filter_count = 0
+    visuals_affected = set()
+    slicer_filter_count = 0
+    slicers_affected = set()
 
     # 1. Report Level Filters
     report_json_path = os.path.join(report_path, "definition", "report.json")
@@ -1067,16 +1080,18 @@ def clear_filters(
 
         if report_filters:
             found_any_filters = True
+            report_filter_count = len(report_filters)
             # Determine if we will clear these filters to avoid double printing
             # Without --dry-run, we always clear (implicitly all, or filtered by criteria)
             will_clear = not dry_run
 
-            console.print_info("[Report] Report Filters:")
-            for f in report_filters:
-                if dry_run:
-                    console.print_dry_run(f"  {f}")
-                elif not will_clear:
-                    console.print_info(f"  {f}")
+            if not summary:
+                console.print_info("[Report] Report Filters:")
+                for f in report_filters:
+                    if dry_run:
+                        console.print_dry_run(f"  {f}")
+                    elif not will_clear:
+                        console.print_info(f"  {f}")
 
             # Clear filters if not dry run
             if not dry_run:
@@ -1089,8 +1104,9 @@ def clear_filters(
                 )
                 if report_changed:
                     write_json(report_json_path, data)
-                    for c in cleared:
-                        console.print_cleared(f"  {c}")
+                    if not summary:
+                        for c in cleared:
+                            console.print_cleared(f"  {c}")
     else:
         if not os.path.basename(report_path).endswith(".Report"):
             console.print_warning(f"report.json not found at {report_json_path}")
@@ -1177,9 +1193,9 @@ def clear_filters(
                         include_fields=include_fields,
                     )
 
-                    # Slicer specific extraction
+                    # Slicer specific extraction (matches slicer, chicletSlicer, timelineSlicer, etc.)
                     slicer_filters_found = []
-                    if vis_type == "slicer":
+                    if "slicer" in vis_type.lower():
                         slicer_data = _get_slicer_filter_data(vis_data)
                         if slicer_data:
                             filter_dict, field_def, target = slicer_data
@@ -1204,7 +1220,7 @@ def clear_filters(
                     # Correction: If we are ONLY showing page filters, we don't want to show ALL visual blocks.
                     # Slicers go to distinct list if they have filters or if explicitly targeted.
 
-                    if vis_type == "slicer":
+                    if "slicer" in vis_type.lower():
                         if slicer_filters_found or is_target_visual:
                             # For slicers, we prefer the special extraction if available, otherwise fallback (which is likely empty)
                             filters_to_show = (
@@ -1258,7 +1274,8 @@ def clear_filters(
 
             if page_filters or slicer_outputs or visual_outputs:
                 found_any_filters = True
-            console.print_info(f"\n[Page] {page_name} ({page_id})")
+            if not summary:
+                console.print_info(f"\n[Page] {page_name} ({page_id})")
 
             # Show page filters if they exist OR if explicitly requested (showing "None" in that case)
             # But don't show "None" if filtering by criteria (table/column/field) since that's just noise
@@ -1268,7 +1285,12 @@ def clear_filters(
             will_clear = not dry_run
 
             if page_filters:
-                console.print_info("  Page Filters:")
+                # Track counts for summary
+                page_filter_count += len(page_filters)
+                pages_affected.add(page_name)
+
+                if not summary:
+                    console.print_info("  Page Filters:")
                 if not dry_run and will_clear:
                     cleared, page_changed = _clear_matching_filters(
                         page_data.get("filterConfig"),
@@ -1279,19 +1301,32 @@ def clear_filters(
                     )
                     if page_changed:
                         write_json(page_json_path, page_data)
-                        for c in cleared:
-                            console.print_cleared(f"    {c}")
+                        if not summary:
+                            for c in cleared:
+                                console.print_cleared(f"    {c}")
                 else:
-                    for f in page_filters:
-                        if dry_run:
-                            console.print_dry_run(f"    {f}")
-                        else:
-                            console.print_info(f"    {f}")
-            elif (show_page_filters or is_target_page) and not has_criteria:
+                    if not summary:
+                        for f in page_filters:
+                            if dry_run:
+                                console.print_dry_run(f"    {f}")
+                            else:
+                                console.print_info(f"    {f}")
+            elif (
+                (show_page_filters or is_target_page)
+                and not has_criteria
+                and not summary
+            ):
                 console.print_info("  Page Filters: None")
 
             if slicer_outputs:
-                console.print_info("  Slicer Filters:")
+                # Track counts for summary
+                for s_name, s_filters in slicer_outputs:
+                    if s_filters:
+                        slicer_filter_count += len(s_filters)
+                        slicers_affected.add(s_name)
+
+                if not summary:
+                    console.print_info("  Slicer Filters:")
                 if not dry_run and will_clear:
                     # Clear slicer filters (special path: objects.general[0].properties.filter)
                     visuals_dir = os.path.join(page_path, "visuals")
@@ -1307,7 +1342,7 @@ def clear_filters(
                                 "visualType", "unknown"
                             )
 
-                            if vis_type != "slicer":
+                            if "slicer" not in vis_type.lower():
                                 continue
 
                             # Apply same target logic
@@ -1362,24 +1397,33 @@ def clear_filters(
                                     del general_objs[0]["properties"]["filter"]
                                     write_json(visual_json, vis_data)
 
-                                    console.print_info(f"    [Slicer] {visual_id}")
-                                    for fs in filter_strs:
-                                        console.print_cleared(f"      {fs}")
+                                    if not summary:
+                                        console.print_info(f"    [Slicer] {visual_id}")
+                                        for fs in filter_strs:
+                                            console.print_cleared(f"      {fs}")
 
                 else:
-                    for s_name, s_filters in slicer_outputs:
-                        console.print_info(f"    [Slicer] {s_name}")
-                        if s_filters:
-                            for f in s_filters:
-                                if dry_run:
-                                    console.print_dry_run(f"      {f}")
-                                else:
-                                    console.print_info(f"      {f}")
-                        else:
-                            console.print_info("      No filters")
+                    if not summary:
+                        for s_name, s_filters in slicer_outputs:
+                            console.print_info(f"    [Slicer] {s_name}")
+                            if s_filters:
+                                for f in s_filters:
+                                    if dry_run:
+                                        console.print_dry_run(f"      {f}")
+                                    else:
+                                        console.print_info(f"      {f}")
+                            else:
+                                console.print_info("      No filters")
 
             if visual_outputs:
-                console.print_info("  Visual Filters:")
+                # Track counts for summary
+                for v_type, v_name, v_filters in visual_outputs:
+                    if v_filters:
+                        visual_filter_count += len(v_filters)
+                        visuals_affected.add(v_name)
+
+                if not summary:
+                    console.print_info("  Visual Filters:")
                 # For visuals, we only clear if explicitly requested OR clear_all is set
                 # But visual_outputs is filtered by criteria too.
                 # If we are clearing, we only do so if show_visual_filters or target_visual is set (logic below).
@@ -1392,16 +1436,17 @@ def clear_filters(
                     show_visual_filters or target_visual
                 )
 
-                for v_type, v_name, v_filters in visual_outputs:
-                    console.print_info(f"    [Visual] {v_type} ({v_name})")
-                    if v_filters:
-                        for f in v_filters:
-                            if dry_run:
-                                console.print_dry_run(f"      {f}")
-                            elif not visual_will_clear:
-                                console.print_info(f"      {f}")
-                    else:
-                        console.print_info("      No filters")
+                if not summary:
+                    for v_type, v_name, v_filters in visual_outputs:
+                        console.print_info(f"    [Visual] {v_type} ({v_name})")
+                        if v_filters:
+                            for f in v_filters:
+                                if dry_run:
+                                    console.print_dry_run(f"      {f}")
+                                elif not visual_will_clear:
+                                    console.print_info(f"      {f}")
+                        else:
+                            console.print_info("      No filters")
 
             # Clear filters if not dry run
             if not dry_run:
@@ -1416,8 +1461,9 @@ def clear_filters(
                     )
                     if page_changed:
                         write_json(page_json_path, page_data)
-                        for c in cleared:
-                            console.print_cleared(f"    {c}")
+                        if not summary:
+                            for c in cleared:
+                                console.print_cleared(f"    {c}")
 
                 # Only clear visual filters if explicitly requested
                 if show_visual_filters or target_visual:
@@ -1454,7 +1500,7 @@ def clear_filters(
                                             continue
 
                                 # Skip slicers here - handle separately
-                                if vis_type == "slicer":
+                                if "slicer" in vis_type.lower():
                                     continue
 
                                 cleared, vis_changed = _clear_matching_filters(
@@ -1466,7 +1512,42 @@ def clear_filters(
                                 )
                                 if vis_changed:
                                     write_json(visual_json, vis_data)
-                                    for c in cleared:
-                                        console.print_cleared(f"      {c}")
+                                    if not summary:
+                                        for c in cleared:
+                                            console.print_cleared(f"      {c}")
+
+    # Print summary if requested
+    if summary:
+        total_filters = (
+            report_filter_count
+            + page_filter_count
+            + slicer_filter_count
+            + visual_filter_count
+        )
+        if total_filters > 0:
+            # Build summary parts
+            parts = []
+            if report_filter_count > 0:
+                parts.append(f"{report_filter_count} report filter(s)")
+            if page_filter_count > 0:
+                parts.append(
+                    f"{page_filter_count} page filter(s) across {len(pages_affected)} page(s)"
+                )
+            if slicer_filter_count > 0:
+                parts.append(
+                    f"{slicer_filter_count} slicer filter(s) across {len(slicers_affected)} slicer(s)"
+                )
+            if visual_filter_count > 0:
+                parts.append(
+                    f"{visual_filter_count} visual filter(s) across {len(visuals_affected)} visual(s)"
+                )
+
+            action_word = "Would clear" if dry_run else "Cleared"
+            if dry_run:
+                console.print_dry_run(f"{action_word}: {', '.join(parts)}")
+            else:
+                console.print_success(f"{action_word}: {', '.join(parts)}")
+        else:
+            console.print_info("No filters found matching the criteria.")
 
     return found_any_filters

@@ -238,6 +238,7 @@ def _register_clear_filters(subparsers):
     )
 
     add_dry_run_arg(parser)
+    add_summary_arg(parser)
     parser.set_defaults(func=handle_clear_filters)
 
 
@@ -336,4 +337,5 @@ def handle_clear_filters(args):
         include_columns=args.column,
         include_fields=args.field,
         dry_run=args.dry_run,
+        summary=args.summary,
     )
