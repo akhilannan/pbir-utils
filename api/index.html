@@ -2065,8 +2065,17 @@
 <td>bool</td>
 <td>Preview without modifying files. Default: <code>True</code></td>
 </tr>
+<tr>
+<td><code>summary</code></td>
+<td>bool</td>
+<td>Show concise count-based summary instead of detailed messages. Default: <code>False</code></td>
+</tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Slicer Support</p>
+<p>The function automatically detects all slicer types including standard slicers (<code>slicer</code>), chiclet slicers (<code>chicletSlicer</code>), timeline slicers (<code>timelineSlicer</code>), and any custom slicer visuals containing "slicer" in the type name.</p>
+</div>
 <h3 id="example_8">Example</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Inspect report-level filters (dry run)</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">pbir</span><span class="o">.</span><span class="n">clear_filters</span><span class="p">(</span>
@@ -2090,13 +2099,14 @@
 </span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span>
 </span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="p">)</span>
 </span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>
-</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="c1"># Clear all visual filters including slicers</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="c1"># Clear all visual filters including slicers with summary output</span>
 </span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="n">pbir</span><span class="o">.</span><span class="n">clear_filters</span><span class="p">(</span>
 </span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>    <span class="n">report_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\MyReport.Report&quot;</span><span class="p">,</span>
 </span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>    <span class="n">show_visual_filters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>    <span class="n">clear_all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span>
-</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a><span class="p">)</span>
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="n">summary</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="set-page-display-option">Set Page Display Option</h2>
