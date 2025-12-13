@@ -553,6 +553,95 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#clear-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Clear Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-display-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Display Option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Set Display Option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#display-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#consolidated-actions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -791,6 +880,95 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#clear-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Clear Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-display-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Display Option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Set Display Option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#display-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#consolidated-actions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -961,6 +1139,194 @@
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>pbir-utils<span class="w"> </span>configure-filter-pane<span class="w"> </span><span class="s2">&quot;C:\Reports\MyReport.Report&quot;</span><span class="w"> </span>--expanded<span class="w"> </span><span class="nb">true</span><span class="w"> </span>--dry-run
 </span></code></pre></div>
 <hr />
+<h2 id="clear-filters">Clear Filters</h2>
+<p>Inspect and clear filter conditions from Power BI reports at report, page, or visual level.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Inspect all report-level filters (dry-run by default)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--dry-run
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Clear all report-level filters (remove --dry-run to apply)</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Inspect page-level filters (all pages)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--page<span class="w"> </span>--dry-run
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Target a specific page by name or ID</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--page<span class="w"> </span><span class="s2">&quot;Overview&quot;</span><span class="w"> </span>--dry-run
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="c1"># Inspect visual-level filters including slicers</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--visual<span class="w"> </span>--dry-run
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="c1"># Filter by table name (supports wildcards)</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--table<span class="w"> </span><span class="s2">&quot;Date*&quot;</span><span class="w"> </span><span class="s2">&quot;Sales&quot;</span><span class="w"> </span>--dry-run
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="c1"># Filter by column name (supports wildcards)</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--column<span class="w"> </span><span class="s2">&quot;Year&quot;</span><span class="w"> </span><span class="s2">&quot;*Date&quot;</span><span class="w"> </span>--dry-run
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="c1"># Filter by full field reference</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>pbir-utils<span class="w"> </span>clear-filters<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--field<span class="w"> </span><span class="s2">&quot;&#39;Sales&#39;[Amount]&quot;</span><span class="w"> </span>--dry-run
+</span></code></pre></div>
+<h3 id="cli-options">CLI Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--page [NAME]</code></td>
+<td>Target pages. If no value, includes all pages. If value given, targets specific page by displayName or ID.</td>
+</tr>
+<tr>
+<td><code>--visual [NAME]</code></td>
+<td>Target visuals. If no value, includes all visuals. If value given, targets specific visual by name or type.</td>
+</tr>
+<tr>
+<td><code>--table</code></td>
+<td>Filter by table name(s), supports wildcards (e.g., <code>Date*</code>)</td>
+</tr>
+<tr>
+<td><code>--column</code></td>
+<td>Filter by column name(s), supports wildcards (e.g., <code>*Amount</code>)</td>
+</tr>
+<tr>
+<td><code>--field</code></td>
+<td>Filter by full field reference(s), supports wildcards (e.g., <code>'Sales'[*]</code>)</td>
+</tr>
+<tr>
+<td><code>--all</code></td>
+<td>Explicitly clear all matching filters</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Preview which filters would be cleared without modifying files</td>
+</tr>
+</tbody>
+</table>
+<h3 id="yaml-configuration_1">YAML Configuration</h3>
+<p>Use <code>clear_filters</code> in your <code>pbir-sanitizer.yaml</code> to include it in sanitization pipelines:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">definitions</span><span class="p">:</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">clear_all_report_filters</span><span class="p">:</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Clear all report-level filter conditions</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clear_filters</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="nt">clear_all</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">      </span><span class="nt">dry_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">  </span><span class="nt">clear_date_filters</span><span class="p">:</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Clear filters on Date tables</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clear_filters</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">      </span><span class="nt">include_tables</span><span class="p">:</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Date*&quot;</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">      </span><span class="nt">clear_all</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="w">  </span><span class="nt">clear_page_filters</span><span class="p">:</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Clear all page-level filters</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clear_filters</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="w">      </span><span class="nt">show_page_filters</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="w">      </span><span class="nt">clear_all</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="nt">actions</span><span class="p">:</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clear_all_report_filters</span><span class="w">  </span><span class="c1"># Add to your action list</span>
+</span></code></pre></div>
+<hr />
+<h2 id="set-display-option">Set Display Option</h2>
+<p>Set the display option for pages in a Power BI report. Controls how pages are rendered in the viewer.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Set all pages to FitToWidth (dry run)</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>pbir-utils<span class="w"> </span>set-display-option<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--option<span class="w"> </span>FitToWidth<span class="w"> </span>--dry-run
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Set a specific page by display name</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>pbir-utils<span class="w"> </span>set-display-option<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--page<span class="w"> </span><span class="s2">&quot;Trends&quot;</span><span class="w"> </span>--option<span class="w"> </span>ActualSize
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Set a specific page by internal name/ID</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>pbir-utils<span class="w"> </span>set-display-option<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--page<span class="w"> </span><span class="s2">&quot;bb40336091625ae0070a&quot;</span><span class="w"> </span>--option<span class="w"> </span>FitToPage
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="c1"># Apply to all pages with summary output</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>pbir-utils<span class="w"> </span>set-display-option<span class="w"> </span><span class="s2">&quot;C:\\Reports\\MyReport.Report&quot;</span><span class="w"> </span>--option<span class="w"> </span>FitToPage<span class="w"> </span>--summary
+</span></code></pre></div>
+<h3 id="display-options">Display Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ActualSize</code></td>
+<td>Pages display at their actual pixel dimensions</td>
+</tr>
+<tr>
+<td><code>FitToPage</code></td>
+<td>Pages scale to fit the entire page in the viewport</td>
+</tr>
+<tr>
+<td><code>FitToWidth</code></td>
+<td>Pages scale to fit the width of the viewport</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cli-options_1">CLI Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--page NAME</code></td>
+<td>Target specific page by displayName or internal name. If omitted, applies to all pages.</td>
+</tr>
+<tr>
+<td><code>--option</code></td>
+<td><strong>Required.</strong> Display option to set (<code>ActualSize</code>, <code>FitToPage</code>, <code>FitToWidth</code>).</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Preview changes without modifying files.</td>
+</tr>
+<tr>
+<td><code>--summary</code></td>
+<td>Show count-based summary instead of detailed messages.</td>
+</tr>
+<tr>
+<td><code>--error-on-change</code></td>
+<td>Exit with error code 1 if changes would be made (CI/CD mode).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="yaml-configuration_2">YAML Configuration</h3>
+<p>Use display option actions in your <code>pbir-sanitize.yaml</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">definitions</span><span class="p">:</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="c1"># These are already defined in package defaults</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">set_display_option_fit_to_page</span><span class="p">:</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set all pages to FitToPage display</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">set_page_display_option</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="nt">display_option</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FitToPage</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">  </span><span class="nt">set_display_option_fit_to_width</span><span class="p">:</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set all pages to FitToWidth display</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">set_page_display_option</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">      </span><span class="nt">display_option</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FitToWidth</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="w">  </span><span class="nt">set_display_option_actual_size</span><span class="p">:</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set all pages to ActualSize display</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="w">    </span><span class="nt">implementation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">set_page_display_option</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="w">      </span><span class="nt">display_option</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ActualSize</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="nt">actions</span><span class="p">:</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">set_display_option_fit_to_page</span><span class="w">  </span><span class="c1"># Add to your sanitization pipeline</span>
+</span></code></pre></div>
+<hr />
 <h2 id="consolidated-actions">Consolidated Actions</h2>
 <div class="admonition note">
 <p class="admonition-title">Sanitize Command</p>
@@ -978,11 +1344,11 @@ Use <code>pbir-utils sanitize --actions &lt;action_name&gt;</code> for actions l
 <h2 id="cicd-integration">CI/CD Integration</h2>
 <p>The <code>--error-on-change</code> flag enables automated validation in CI/CD pipelines. When used with <code>--dry-run</code>, the CLI exits with code 1 if any changes would be made, allowing builds to fail automatically when reports don't meet standards.</p>
 <h3 id="usage">Usage</h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Fail if standardize_pbir_folders would make changes</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>pbir-utils<span class="w"> </span>sanitize<span class="w"> </span><span class="s2">&quot;MyReport.Report&quot;</span><span class="w"> </span>--actions<span class="w"> </span>standardize_pbir_folders<span class="w"> </span>--dry-run<span class="w"> </span>--error-on-change<span class="w"> </span>standardize_pbir_folders
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># For sanitize: specify which actions should trigger failure</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>pbir-utils<span class="w"> </span>sanitize<span class="w"> </span><span class="s2">&quot;MyReport.Report&quot;</span><span class="w"> </span>--dry-run<span class="w"> </span>--error-on-change<span class="w"> </span>set_first_page_as_active<span class="w"> </span>remove_empty_pages
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Fail if standardize_pbir_folders would make changes</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>pbir-utils<span class="w"> </span>sanitize<span class="w"> </span><span class="s2">&quot;MyReport.Report&quot;</span><span class="w"> </span>--actions<span class="w"> </span>standardize_pbir_folders<span class="w"> </span>--dry-run<span class="w"> </span>--error-on-change<span class="w"> </span>standardize_pbir_folders
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># For sanitize: specify which actions should trigger failure</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>pbir-utils<span class="w"> </span>sanitize<span class="w"> </span><span class="s2">&quot;MyReport.Report&quot;</span><span class="w"> </span>--dry-run<span class="w"> </span>--error-on-change<span class="w"> </span>set_first_page_as_active<span class="w"> </span>remove_empty_pages
 </span></code></pre></div>
 
 
