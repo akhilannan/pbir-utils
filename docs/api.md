@@ -331,6 +331,56 @@ pbir.clear_filters(
 
 ---
 
+## Set Page Display Option
+
+Sets the display option for pages, controlling how pages are rendered in the Power BI viewer.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `display_option` | str | Display option to set (`ActualSize`, `FitToPage`, `FitToWidth`) |
+| `page` | str | Page name or displayName to filter (optional, None = all pages) |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Display Options
+
+| Option | Description |
+|--------|-------------|
+| `ActualSize` | Pages display at their actual pixel dimensions |
+| `FitToPage` | Pages scale to fit the entire page in the viewport |
+| `FitToWidth` | Pages scale to fit the width of the viewport |
+
+### Example
+
+```python
+# Set all pages to FitToPage
+pbir.set_page_display_option(
+    report_path=r"C:\DEV\MyReport.Report",
+    display_option="FitToPage",
+    dry_run=True
+)
+
+# Set a specific page by displayName
+pbir.set_page_display_option(
+    report_path=r"C:\DEV\MyReport.Report",
+    display_option="ActualSize",
+    page="Trends",
+    dry_run=False
+)
+
+# Set a specific page by internal name/ID
+pbir.set_page_display_option(
+    report_path=r"C:\DEV\MyReport.Report",
+    display_option="FitToWidth",
+    page="bb40336091625ae0070a"
+)
+```
+
+---
+
 ## Sanitize Power BI Report
 
 A powerful utility to clean up and optimize Power BI reports.
@@ -403,6 +453,9 @@ pbir.cleanup_invalid_bookmarks(report_path, dry_run=True)
 
 # Standardize folder names
 pbir.standardize_pbir_folders(report_path, dry_run=True)
+
+# Set page display option
+pbir.set_page_display_option(report_path, display_option="FitToPage", dry_run=True)
 ```
 
 !!! warning "Backup Your Reports"

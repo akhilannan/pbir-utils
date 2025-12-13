@@ -10,6 +10,7 @@ from pbir_utils.page_utils import (
     set_first_page_as_active,
     remove_empty_pages,
     set_page_size,
+    set_page_display_option,
 )
 from pbir_utils.common import load_json
 
@@ -354,3 +355,122 @@ class TestSetPageSize:
 
         result = set_page_size(report_path, width=1280, height=720)
         assert result is False
+
+
+class TestSetPageDisplayOption:
+    """Tests for set_page_display_option."""
+
+    def test_set_display_option_by_display_name(self, tmp_path):
+        """Test setting display option on a page matched by displayName."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {
+                "name": "abc123",
+                "displayName": "Trends",
+                "displayOption": "FitToWidth",
+            },
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {
+                "name": "def456",
+                "displayName": "Overview",
+                "displayOption": "FitToWidth",
+            },
+        )
+
+        result = set_page_display_option(
+            report_path, display_option="ActualSize", page="Trends"
+        )
+
+        assert result is True
+        p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
+        assert p1["displayOption"] == "ActualSize"
+
+        # Other page should be unchanged
+        p2 = load_json(os.path.join(report_path, "definition/pages/Page2/page.json"))
+        assert p2["displayOption"] == "FitToWidth"
+
+    def test_set_display_option_by_name(self, tmp_path):
+        """Test setting display option on a page matched by internal name."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {
+                "name": "abc123",
+                "displayName": "Trends",
+                "displayOption": "FitToWidth",
+            },
+        )
+
+        result = set_page_display_option(
+            report_path, display_option="FitToPage", page="abc123"
+        )
+
+        assert result is True
+        p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
+        assert p1["displayOption"] == "FitToPage"
+
+    def test_set_display_option_all_pages(self, tmp_path):
+        """Test setting display option on all pages when no filter provided."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"name": "abc123", "displayName": "Trends", "displayOption": "FitToWidth"},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {
+                "name": "def456",
+                "displayName": "Overview",
+                "displayOption": "ActualSize",
+            },
+        )
+
+        result = set_page_display_option(report_path, display_option="FitToPage")
+
+        assert result is True
+        p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
+        assert p1["displayOption"] == "FitToPage"
+        p2 = load_json(os.path.join(report_path, "definition/pages/Page2/page.json"))
+        assert p2["displayOption"] == "FitToPage"
+
+    def test_no_changes_needed(self, tmp_path):
+        """Test when pages already have target display option."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"displayName": "Page1", "displayOption": "FitToWidth"},
+        )
+
+        result = set_page_display_option(report_path, display_option="FitToWidth")
+        assert result is False
+
+    def test_dry_run_mode(self, tmp_path):
+        """Test that dry run does not modify files."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"displayName": "Page1", "displayOption": "FitToWidth"},
+        )
+
+        result = set_page_display_option(
+            report_path, display_option="ActualSize", dry_run=True
+        )
+
+        assert result is True
+        p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
+        assert p1["displayOption"] == "FitToWidth"  # Unchanged due to dry run

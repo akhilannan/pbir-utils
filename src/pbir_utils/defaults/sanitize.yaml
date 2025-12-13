@@ -93,6 +93,24 @@ definitions:
     params:
       clear_all: true
 
+  set_display_option_fit_to_page:
+    description: Set all pages to FitToPage display
+    implementation: set_page_display_option
+    params:
+      display_option: FitToPage
+
+  set_display_option_fit_to_width:
+    description: Set all pages to FitToWidth display
+    implementation: set_page_display_option
+    params:
+      display_option: FitToWidth
+
+  set_display_option_actual_size:
+    description: Set all pages to ActualSize display
+    implementation: set_page_display_option
+    params:
+      display_option: ActualSize
+
 
 # Default action execution order
 actions:

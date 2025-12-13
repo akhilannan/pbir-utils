@@ -242,6 +242,73 @@ actions:
 
 ---
 
+## Set Display Option
+
+Set the display option for pages in a Power BI report. Controls how pages are rendered in the viewer.
+
+```bash
+# Set all pages to FitToWidth (dry run)
+pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --option FitToWidth --dry-run
+
+# Set a specific page by display name
+pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --page "Trends" --option ActualSize
+
+# Set a specific page by internal name/ID
+pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --page "bb40336091625ae0070a" --option FitToPage
+
+# Apply to all pages with summary output
+pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --option FitToPage --summary
+```
+
+### Display Options
+
+| Option | Description |
+|--------|-------------|
+| `ActualSize` | Pages display at their actual pixel dimensions |
+| `FitToPage` | Pages scale to fit the entire page in the viewport |
+| `FitToWidth` | Pages scale to fit the width of the viewport |
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--page NAME` | Target specific page by displayName or internal name. If omitted, applies to all pages. |
+| `--option` | **Required.** Display option to set (`ActualSize`, `FitToPage`, `FitToWidth`). |
+| `--dry-run` | Preview changes without modifying files. |
+| `--summary` | Show count-based summary instead of detailed messages. |
+| `--error-on-change` | Exit with error code 1 if changes would be made (CI/CD mode). |
+
+### YAML Configuration
+
+Use display option actions in your `pbir-sanitize.yaml`:
+
+```yaml
+definitions:
+  # These are already defined in package defaults
+  set_display_option_fit_to_page:
+    description: Set all pages to FitToPage display
+    implementation: set_page_display_option
+    params:
+      display_option: FitToPage
+
+  set_display_option_fit_to_width:
+    description: Set all pages to FitToWidth display
+    implementation: set_page_display_option
+    params:
+      display_option: FitToWidth
+
+  set_display_option_actual_size:
+    description: Set all pages to ActualSize display
+    implementation: set_page_display_option
+    params:
+      display_option: ActualSize
+
+actions:
+  - set_display_option_fit_to_page  # Add to your sanitization pipeline
+```
+
+---
+
 ## Consolidated Actions
 
 !!! note "Sanitize Command"

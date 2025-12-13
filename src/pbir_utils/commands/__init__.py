@@ -8,6 +8,7 @@ from . import (
     interactions,
     measures,
     filters,
+    pages,
 )
 
 # All command modules for registration
@@ -19,6 +20,7 @@ ALL_COMMANDS = [
     interactions,
     measures,
     filters,
+    pages,
 ]
 
 

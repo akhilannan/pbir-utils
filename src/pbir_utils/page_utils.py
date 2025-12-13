@@ -355,3 +355,113 @@ def set_page_size(
             f"All pages already have the target size ({width}x{height})."
         )
         return False
+
+
+# Valid display options for pages
+VALID_DISPLAY_OPTIONS = {"ActualSize", "FitToPage", "FitToWidth"}
+
+
+def set_page_display_option(
+    report_path: str,
+    display_option: str,
+    page: str = None,
+    dry_run: bool = False,
+    summary: bool = False,
+) -> bool:
+    """
+    Set the display option for pages in the report.
+
+    Args:
+        report_path (str): The path to the report.
+        display_option (str): Display option to set ("ActualSize", "FitToPage", "FitToWidth").
+        page (str): Page name or displayName to filter. None applies to all pages.
+        dry_run (bool): Perform a dry run without making changes.
+        summary (bool): Show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
+    """
+    # Validate display option
+    if display_option not in VALID_DISPLAY_OPTIONS:
+        console.print_error(
+            f"Invalid display option '{display_option}'. "
+            f"Must be one of: {', '.join(sorted(VALID_DISPLAY_OPTIONS))}"
+        )
+        return False
+
+    page_filter_msg = f" for page '{page}'" if page else " for all pages"
+    console.print_heading(
+        f"Action: Setting display option to {display_option}{page_filter_msg}"
+        f"{' (Dry Run)' if dry_run else ''}"
+    )
+
+    pages_dir = os.path.join(report_path, "definition", "pages")
+    modified_count = 0
+
+    if not os.path.exists(pages_dir):
+        console.print_warning("No pages directory found.")
+        return False
+
+    for folder_name in os.listdir(pages_dir):
+        folder_path = os.path.join(pages_dir, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+
+        page_json_path = os.path.join(folder_path, "page.json")
+        if not os.path.exists(page_json_path):
+            continue
+
+        page_data = load_json(page_json_path)
+
+        # Check if this page matches the filter (by name or displayName)
+        if page is not None:
+            page_name = page_data.get("name", "")
+            page_display_name = page_data.get("displayName", "")
+            if page != page_name and page != page_display_name:
+                continue
+
+        current_option = page_data.get("displayOption")
+
+        # Check if modification is needed
+        if current_option != display_option:
+            page_data["displayOption"] = display_option
+
+            if not dry_run:
+                write_json(page_json_path, page_data)
+
+            modified_count += 1
+            if not summary:
+                page_display_name = page_data.get("displayName", folder_name)
+                old_option = current_option if current_option else "(default)"
+                if dry_run:
+                    console.print_dry_run(
+                        f"Would set page '{page_display_name}' display option "
+                        f"from {old_option} to {display_option}"
+                    )
+                else:
+                    console.print_success(
+                        f"Set page '{page_display_name}' display option "
+                        f"from {old_option} to {display_option}"
+                    )
+
+    if modified_count > 0:
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would modify {modified_count} page(s) to {display_option}."
+                )
+            else:
+                console.print_success(
+                    f"Modified {modified_count} page(s) to {display_option}."
+                )
+        return True
+    else:
+        if page:
+            console.print_info(
+                f"No matching page found or page already has display option '{display_option}'."
+            )
+        else:
+            console.print_info(
+                f"All pages already have the display option '{display_option}'."
+            )
+        return False
