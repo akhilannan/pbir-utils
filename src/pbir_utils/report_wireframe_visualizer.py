@@ -1,36 +1,8 @@
 import os
 
-from .common import load_json
+from .common import load_json, iter_pages
 from .metadata_extractor import _get_page_order
 from .console_utils import console
-
-
-def _extract_page_info(page_folder: str) -> tuple:
-    """
-    Extract page information from the `page.json` file in a page folder.
-
-    Args:
-        page_folder (str): Path to the page folder containing the `page.json` file.
-
-    Returns:
-        tuple: A tuple containing the page ID, display name, width, and height.
-
-    Raises:
-        FileNotFoundError: If the `page.json` file does not exist in the specified folder.
-    """
-    page_json_path = os.path.join(page_folder, "page.json")
-
-    if not os.path.exists(page_json_path):
-        raise FileNotFoundError(f"{page_json_path} does not exist")
-
-    page_data = load_json(page_json_path)
-
-    return (
-        page_data["name"],
-        page_data["displayName"],
-        page_data["width"],
-        page_data["height"],
-    )
 
 
 def _parse_coordinate(value) -> float:
@@ -240,22 +212,22 @@ def display_report_wireframes(
         show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
     """
     console.print_heading("Action: Displaying report wireframes")
-    pages_folder = os.path.join(report_path, "definition", "pages")
     pages_info = []
 
-    for page_folder in filter(
-        lambda x: os.path.isdir(os.path.join(pages_folder, x)), os.listdir(pages_folder)
-    ):
-        page_folder_path = os.path.join(pages_folder, page_folder)
+    for page_id, page_folder_path, page_data in iter_pages(report_path):
         try:
-            page_info = _extract_page_info(page_folder_path)
+            page_name = page_data.get("name")
+            display_name = page_data.get("displayName")
+            width = page_data.get("width")
+            height = page_data.get("height")
+
             visuals_folder_path = os.path.join(page_folder_path, "visuals")
             if os.path.exists(visuals_folder_path):
                 visuals_info = _extract_visual_info(visuals_folder_path)
             else:
                 visuals_info = {}
-            pages_info.append((*page_info, visuals_info))
-        except FileNotFoundError as e:
+            pages_info.append((page_name, display_name, width, height, visuals_info))
+        except Exception as e:
             print(e)
 
     if not pages_info:

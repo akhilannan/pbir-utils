@@ -7,7 +7,7 @@ Contains functions for managing pages in PBIR reports.
 import os
 import shutil
 
-from .common import load_json, write_json, process_json_files
+from .common import load_json, write_json, process_json_files, iter_pages
 from .console_utils import console
 
 
@@ -95,16 +95,8 @@ def set_first_page_as_active(
 
     # Map Page ID to (Folder Path, Page Data)
     page_map = {}
-    if os.path.exists(pages_dir):
-        for folder_name in os.listdir(pages_dir):
-            folder_path = os.path.join(pages_dir, folder_name)
-            if os.path.isdir(folder_path):
-                page_json_path_inner = os.path.join(folder_path, "page.json")
-                if os.path.exists(page_json_path_inner):
-                    page_data = load_json(page_json_path_inner)
-                    page_id = page_data.get("name")
-                    if page_id:
-                        page_map[page_id] = (folder_path, page_data)
+    for page_id, folder_path, page_data in iter_pages(report_path):
+        page_map[page_id] = (folder_path, page_data)
 
     # Find the first non-hidden page
     first_non_hidden_page = None
@@ -182,17 +174,10 @@ def remove_empty_pages(
     page_id_to_folder = {}
     folder_to_page_id = {}
 
-    if os.path.exists(pages_dir):
-        for folder_name in os.listdir(pages_dir):
-            folder_path = os.path.join(pages_dir, folder_name)
-            if os.path.isdir(folder_path):
-                page_json_path_inner = os.path.join(folder_path, "page.json")
-                if os.path.exists(page_json_path_inner):
-                    page_data = load_json(page_json_path_inner)
-                    page_id = page_data.get("name")
-                    if page_id:
-                        page_id_to_folder[page_id] = folder_path
-                        folder_to_page_id[folder_name] = page_id
+    for page_id, folder_path, page_data in iter_pages(report_path):
+        page_id_to_folder[page_id] = folder_path
+        folder_name = os.path.basename(folder_path)
+        folder_to_page_id[folder_name] = page_id
 
     non_empty_pages = []
     for page_id in page_order:
@@ -298,16 +283,9 @@ def set_page_size(
         console.print_warning("No pages directory found.")
         return False
 
-    for folder_name in os.listdir(pages_dir):
-        folder_path = os.path.join(pages_dir, folder_name)
-        if not os.path.isdir(folder_path):
-            continue
-
+    for page_id, folder_path, page_data in iter_pages(report_path):
         page_json_path = os.path.join(folder_path, "page.json")
-        if not os.path.exists(page_json_path):
-            continue
-
-        page_data = load_json(page_json_path)
+        folder_name = os.path.basename(folder_path)
 
         # Skip tooltip pages if configured
         if exclude_tooltip and page_data.get("type") == "Tooltip":
@@ -402,16 +380,9 @@ def set_page_display_option(
         console.print_warning("No pages directory found.")
         return False
 
-    for folder_name in os.listdir(pages_dir):
-        folder_path = os.path.join(pages_dir, folder_name)
-        if not os.path.isdir(folder_path):
-            continue
-
+    for page_id, folder_path, page_data in iter_pages(report_path):
         page_json_path = os.path.join(folder_path, "page.json")
-        if not os.path.exists(page_json_path):
-            continue
-
-        page_data = load_json(page_json_path)
+        folder_name = os.path.basename(folder_path)
 
         # Check if this page matches the filter (by name or displayName)
         if page is not None:

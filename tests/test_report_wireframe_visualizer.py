@@ -2,7 +2,6 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from pbir_utils.report_wireframe_visualizer import (
-    _extract_page_info,
     _extract_visual_info,
     _adjust_visual_positions,
     _create_wireframe_figure,
@@ -52,23 +51,6 @@ def mock_child_visual_json():
         "parentGroupName": "visual_group",
         "isHidden": True,
     }
-
-
-@patch("pbir_utils.report_wireframe_visualizer.load_json")
-@patch("os.path.exists")
-def test_extract_page_info(mock_exists, mock_load_json, mock_page_json):
-    mock_exists.return_value = True
-    mock_load_json.return_value = mock_page_json
-
-    info = _extract_page_info("dummy/path")
-    assert info == ("ReportSection1", "Page 1", 1280, 720)
-
-
-@patch("os.path.exists")
-def test_extract_page_info_not_found(mock_exists):
-    mock_exists.return_value = False
-    with pytest.raises(FileNotFoundError):
-        _extract_page_info("dummy/path")
 
 
 @patch("pbir_utils.report_wireframe_visualizer.load_json")
@@ -232,20 +214,26 @@ def test_apply_filters():
 @patch("dash.Dash")
 @patch("pbir_utils.report_wireframe_visualizer._get_page_order")
 @patch("pbir_utils.report_wireframe_visualizer._extract_visual_info")
-@patch("pbir_utils.report_wireframe_visualizer._extract_page_info")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.report_wireframe_visualizer.iter_pages")
+@patch("os.path.exists")
 def test_display_report_wireframes(
-    mock_isdir,
-    mock_listdir,
-    mock_extract_page,
+    mock_exists,
+    mock_iter_pages,
     mock_extract_visual,
     mock_get_order,
     mock_dash,
 ):
-    mock_isdir.return_value = True
-    mock_listdir.return_value = ["Page1"]
-    mock_extract_page.return_value = ("p1", "Page 1", 100, 100)
+    mock_exists.return_value = True
+    # iter_pages yields (page_id, page_folder_path, page_data)
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "p1",
+                "dummy/report/definition/pages/Page1",
+                {"name": "p1", "displayName": "Page 1", "width": 100, "height": 100},
+            )
+        ]
+    )
     mock_extract_visual.return_value = {}
     mock_get_order.return_value = ["p1"]
 

@@ -1,6 +1,6 @@
 import os
 
-from .common import load_json, write_json
+from .common import load_json, write_json, iter_pages
 from .console_utils import console
 
 
@@ -195,35 +195,30 @@ def _process_all_pages(
     Returns:
         bool: True if any changes were made (or would be made in dry run), False otherwise.
     """
-    pages_folder = os.path.join(report_path, "definition", "pages")
     pages_updated = 0
     any_changes = False
 
-    for root, _, files in os.walk(pages_folder):
-        for file_name in files:
-            if file_name.endswith("page.json"):
-                file_path = os.path.join(root, file_name)
-                page_json = load_json(file_path)
-
-                # Process the page if it's in the list or if all pages should be processed
-                if not pages or page_json.get("displayName") in pages:
-                    visuals_folder = os.path.join(os.path.dirname(file_path), "visuals")
-                    if os.path.isdir(visuals_folder):
-                        page_changed = _process_page(
-                            file_path,
-                            visuals_folder,
-                            source_ids,
-                            source_types,
-                            target_ids,
-                            target_types,
-                            update_type,
-                            interaction_type,
-                            dry_run=dry_run,
-                            summary=summary,
-                        )
-                        if page_changed:
-                            any_changes = True
-                        pages_updated += 1
+    for page_id, page_folder, page_json in iter_pages(report_path):
+        # Process the page if it's in the list or if all pages should be processed
+        if not pages or page_json.get("displayName") in pages:
+            file_path = os.path.join(page_folder, "page.json")
+            visuals_folder = os.path.join(page_folder, "visuals")
+            if os.path.isdir(visuals_folder):
+                page_changed = _process_page(
+                    file_path,
+                    visuals_folder,
+                    source_ids,
+                    source_types,
+                    target_ids,
+                    target_types,
+                    update_type,
+                    interaction_type,
+                    dry_run=dry_run,
+                    summary=summary,
+                )
+                if page_changed:
+                    any_changes = True
+                pages_updated += 1
 
     if summary:
         if dry_run:

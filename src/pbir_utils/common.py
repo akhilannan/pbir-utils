@@ -144,9 +144,8 @@ def iter_pages(report_path: str) -> Generator[tuple[str, str, dict], None, None]
             continue
 
         page_data = load_json(page_json_path)
-        page_id = page_data.get("name")
-        if page_id:
-            yield page_id, folder_path, page_data
+        page_id = page_data.get("name", folder_name)  # Fallback to folder name
+        yield page_id, folder_path, page_data
 
 
 def iter_visuals(page_folder: str) -> Generator[tuple[str, str, dict], None, None]:
@@ -176,9 +175,8 @@ def iter_visuals(page_folder: str) -> Generator[tuple[str, str, dict], None, Non
             continue
 
         visual_data = load_json(visual_json_path)
-        visual_id = visual_data.get("name")
-        if visual_id:
-            yield visual_id, folder_path, visual_data
+        visual_id = visual_data.get("name", folder_name)  # Fallback to folder name
+        yield visual_id, folder_path, visual_data
 
 
 def walk_json_files(directory: str, file_pattern: str) -> Generator[str, None, None]:

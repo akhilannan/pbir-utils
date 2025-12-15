@@ -643,6 +643,7 @@ def test_extract_report_filters(
     assert found
 
 
+@patch("pbir_utils.common.load_json")
 @patch("pbir_utils.filter_utils.load_json")
 @patch("pbir_utils.filter_utils.console.print_dry_run")
 @patch("pbir_utils.filter_utils.console.print_info")
@@ -656,6 +657,7 @@ def test_extract_page_filters(
     mock_print_info,
     mock_print_dry_run,
     mock_load_json,
+    mock_common_load_json,
 ):
     mock_exists.return_value = True
     mock_isdir.return_value = True
@@ -696,6 +698,7 @@ def test_extract_page_filters(
         return {}
 
     mock_load_json.side_effect = load_json_side_effect
+    mock_common_load_json.side_effect = load_json_side_effect
 
     clear_filters("dummy_path", show_page_filters=True)
 
@@ -718,13 +721,19 @@ def test_extract_page_filters(
     assert found_value
 
 
+@patch("pbir_utils.common.load_json")
 @patch("pbir_utils.filter_utils.load_json")
 @patch("pbir_utils.filter_utils.console.print_info")
 @patch("os.path.exists")
 @patch("os.listdir")
 @patch("os.path.isdir")
 def test_extract_page_filters_empty_target(
-    mock_isdir, mock_listdir, mock_exists, mock_print, mock_load_json
+    mock_isdir,
+    mock_listdir,
+    mock_exists,
+    mock_print,
+    mock_load_json,
+    mock_common_load_json,
 ):
     """Test extracting specific page filters when no filters exist."""
     mock_exists.return_value = True
@@ -737,6 +746,7 @@ def test_extract_page_filters_empty_target(
         return {}
 
     mock_load_json.side_effect = load_json_side_effect
+    mock_common_load_json.side_effect = load_json_side_effect
 
     clear_filters("dummy", target_page="Page1")
 
@@ -751,6 +761,7 @@ def test_extract_page_filters_empty_target(
     assert has_none
 
 
+@patch("pbir_utils.common.load_json")
 @patch("pbir_utils.filter_utils.load_json")
 @patch("pbir_utils.filter_utils.console.print_dry_run")
 @patch("pbir_utils.filter_utils.console.print_info")
@@ -764,6 +775,7 @@ def test_extract_visual_shows_page_filters(
     mock_print_info,
     mock_print_dry_run,
     mock_load_json,
+    mock_common_load_json,
 ):
     """Test that targeting a visual automagically shows page filters (context)."""
     mock_exists.return_value = True
@@ -807,6 +819,7 @@ def test_extract_visual_shows_page_filters(
         return {}
 
     mock_load_json.side_effect = load_json_side_effect
+    mock_common_load_json.side_effect = load_json_side_effect
 
     # Target specific visual, NOT explicitly asking for page filters
     clear_filters("dummy", target_visual="MyVisual")
@@ -852,6 +865,7 @@ def test_parse_condition_datespan():
     assert "Expression" not in result
 
 
+@patch("pbir_utils.common.load_json")
 @patch("pbir_utils.filter_utils.load_json")
 @patch("pbir_utils.filter_utils.console.print_dry_run")
 @patch("pbir_utils.filter_utils.console.print_info")
@@ -865,6 +879,7 @@ def test_extract_slicer_filters(
     mock_print_info,
     mock_print_dry_run,
     mock_load_json,
+    mock_common_load_json,
 ):
     """Test extracting filters from a Slicer visual."""
     mock_exists.return_value = True
@@ -932,9 +947,10 @@ def test_extract_slicer_filters(
         return {}
 
     mock_load_json.side_effect = load_json_side_effect
+    mock_common_load_json.side_effect = load_json_side_effect
 
-    # Use SlicerVisual to match the mocked listdir
-    clear_filters("dummy", target_visual="SlicerVisual")
+    # Use MySlicer to match the visual name in the mocked JSON
+    clear_filters("dummy", target_visual="MySlicer")
 
     # Check if the slicer header was printed via print_info
     # And the filter value was printed via print_dry_run
@@ -956,6 +972,7 @@ def test_extract_slicer_filters(
     assert found_slicer_filter
 
 
+@patch("pbir_utils.common.load_json")
 @patch("pbir_utils.filter_utils.load_json")
 @patch("pbir_utils.filter_utils.console.print_dry_run")
 @patch("pbir_utils.filter_utils.console.print_info")
@@ -969,6 +986,7 @@ def test_extract_page_with_slicers_implicit(
     mock_print_info,
     mock_print_dry_run,
     mock_load_json,
+    mock_common_load_json,
 ):
     """Test that requesting a page also shows its slicers' filters implicitly."""
     mock_exists.return_value = True
@@ -1067,6 +1085,7 @@ def test_extract_page_with_slicers_implicit(
         return {}
 
     mock_load_json.side_effect = load_json_side_effect
+    mock_common_load_json.side_effect = load_json_side_effect
 
     # Call with target_page ONLY (no visual filters requested explicitly)
     clear_filters("dummy", target_page="PageWithSlicer")

@@ -122,15 +122,12 @@ def test_process_page(mock_write_json, mock_get_visuals, mock_load_json):
     # v1->v2. v1->v1 is skipped.
 
 
-@patch("os.walk")
-@patch("pbir_utils.visual_interactions_utils.load_json")
+@patch("pbir_utils.visual_interactions_utils.iter_pages")
 @patch("pbir_utils.visual_interactions_utils._process_page")
 @patch("os.path.isdir")
-def test_disable_visual_interactions(
-    mock_isdir, mock_process_page, mock_load_json, mock_walk
-):
-    mock_walk.return_value = [("root", [], ["page.json"])]
-    mock_load_json.return_value = {"displayName": "Page 1"}
+def test_disable_visual_interactions(mock_isdir, mock_process_page, mock_iter_pages):
+    # iter_pages yields (page_id, page_folder_path, page_data)
+    mock_iter_pages.return_value = iter([("page1", "root", {"displayName": "Page 1"})])
     mock_isdir.return_value = True
 
     disable_visual_interactions("report_path", pages=["Page 1"])

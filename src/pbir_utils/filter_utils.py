@@ -3,7 +3,14 @@ import re
 from datetime import datetime
 from fnmatch import fnmatch
 
-from .common import load_json, write_json, get_report_paths, process_json_files
+from .common import (
+    load_json,
+    write_json,
+    get_report_paths,
+    process_json_files,
+    iter_pages,
+    iter_visuals,
+)
 from .console_utils import console
 
 
@@ -1124,16 +1131,8 @@ def clear_filters(
     if not os.path.exists(pages_dir):
         return found_any_filters
 
-    for page_id in os.listdir(pages_dir):
-        page_path = os.path.join(pages_dir, page_id)
-        if not os.path.isdir(page_path):
-            continue
-
+    for page_id, page_path, page_data in iter_pages(report_path):
         page_json_path = os.path.join(page_path, "page.json")
-        if not os.path.exists(page_json_path):
-            continue
-
-        page_data = load_json(page_json_path)
         page_name = page_data.get("displayName", page_id)
 
         # Filter by page if requested
@@ -1162,92 +1161,84 @@ def clear_filters(
         )
 
         if should_scan_visuals:
-            visuals_dir = os.path.join(page_path, "visuals")
-            if os.path.exists(visuals_dir):
-                for visual_id in os.listdir(visuals_dir):
-                    visual_folder = os.path.join(visuals_dir, visual_id)
-                    visual_json = os.path.join(visual_folder, "visual.json")
+            for visual_id, visual_folder, vis_data in iter_visuals(page_path):
+                visual_json = os.path.join(visual_folder, "visual.json")
+                vis_type = vis_data.get("visual", {}).get("visualType", "unknown")
+                vis_name = vis_data.get("name", visual_id)
 
-                    if not os.path.exists(visual_json):
+                # Filter by visual if requested
+                is_target_visual = False
+                if target_visual:
+                    if target_visual.lower() in [
+                        visual_id.lower(),
+                        vis_type.lower(),
+                    ]:
+                        is_target_visual = True
+                    else:
                         continue
 
-                    vis_data = load_json(visual_json)
-                    vis_type = vis_data.get("visual", {}).get("visualType", "unknown")
-                    vis_name = vis_data.get("name", visual_id)
+                vis_filters = _get_filter_strings(
+                    vis_data.get("filterConfig"),
+                    include_tables=include_tables,
+                    include_columns=include_columns,
+                    include_fields=include_fields,
+                )
 
-                    # Filter by visual if requested
-                    is_target_visual = False
-                    if target_visual:
-                        if target_visual.lower() in [
-                            visual_id.lower(),
-                            vis_type.lower(),
-                        ]:
-                            is_target_visual = True
-                        else:
-                            continue
+                # Slicer specific extraction (matches slicer, chicletSlicer, timelineSlicer, etc.)
+                slicer_filters_found = []
+                if "slicer" in vis_type.lower():
+                    slicer_data = _get_slicer_filter_data(vis_data)
+                    if slicer_data:
+                        filter_dict, field_def, target = slicer_data
+                        # Construct a temporary structure compatible with _get_filter_strings
+                        slicer_filter_wrapper = {
+                            "filters": [{"field": field_def, "filter": filter_dict}]
+                        }
+                        slicer_filters = _get_filter_strings(
+                            slicer_filter_wrapper,
+                            include_tables=include_tables,
+                            include_columns=include_columns,
+                            include_fields=include_fields,
+                        )
+                        slicer_filters_found.extend(slicer_filters)
+                        vis_filters.extend(slicer_filters)
 
-                    vis_filters = _get_filter_strings(
-                        vis_data.get("filterConfig"),
-                        include_tables=include_tables,
-                        include_columns=include_columns,
-                        include_fields=include_fields,
-                    )
+                # Logic for inclusion:
+                # 1. If explicit visual target or show_visual_filters -> Include
+                # 2. If it is a Slicer AND we have filters -> Include as context (or maybe just track for page level?)
+                #    - Current logic above adds to vis_filters.
 
-                    # Slicer specific extraction (matches slicer, chicletSlicer, timelineSlicer, etc.)
-                    slicer_filters_found = []
-                    if "slicer" in vis_type.lower():
-                        slicer_data = _get_slicer_filter_data(vis_data)
-                        if slicer_data:
-                            filter_dict, field_def, target = slicer_data
-                            # Construct a temporary structure compatible with _get_filter_strings
-                            slicer_filter_wrapper = {
-                                "filters": [{"field": field_def, "filter": filter_dict}]
-                            }
-                            slicer_filters = _get_filter_strings(
-                                slicer_filter_wrapper,
-                                include_tables=include_tables,
-                                include_columns=include_columns,
-                                include_fields=include_fields,
-                            )
-                            slicer_filters_found.extend(slicer_filters)
-                            vis_filters.extend(slicer_filters)
+                # Correction: If we are ONLY showing page filters, we don't want to show ALL visual blocks.
+                # Slicers go to distinct list if they have filters or if explicitly targeted.
 
-                    # Logic for inclusion:
-                    # 1. If explicit visual target or show_visual_filters -> Include
-                    # 2. If it is a Slicer AND we have filters -> Include as context (or maybe just track for page level?)
-                    #    - Current logic above adds to vis_filters.
+                if "slicer" in vis_type.lower():
+                    if slicer_filters_found or is_target_visual:
+                        # For slicers, we prefer the special extraction if available, otherwise fallback (which is likely empty)
+                        filters_to_show = (
+                            slicer_filters_found
+                            if slicer_filters_found
+                            else vis_filters
+                        )
 
-                    # Correction: If we are ONLY showing page filters, we don't want to show ALL visual blocks.
-                    # Slicers go to distinct list if they have filters or if explicitly targeted.
+                        if filters_to_show or is_target_visual:
+                            # Determine behavior:
+                            # If showing page filters -> show slicers (context)
+                            # If targeting visual -> show slicer
 
-                    if "slicer" in vis_type.lower():
-                        if slicer_filters_found or is_target_visual:
-                            # For slicers, we prefer the special extraction if available, otherwise fallback (which is likely empty)
-                            filters_to_show = (
-                                slicer_filters_found
-                                if slicer_filters_found
-                                else vis_filters
-                            )
-
-                            if filters_to_show or is_target_visual:
-                                # Determine behavior:
-                                # If showing page filters -> show slicers (context)
-                                # If targeting visual -> show slicer
-
-                                if (
-                                    show_page_filters
-                                    or is_target_page
-                                    or is_target_visual
-                                    or show_visual_filters
-                                ):
-                                    slicer_outputs.append((vis_name, filters_to_show))
-                    else:
-                        # Standard Visuals
-                        if show_visual_filters or is_target_visual:
                             if (
-                                vis_filters or is_target_visual
-                            ):  # Only add if filters exist or specifically targeted
-                                visual_outputs.append((vis_type, vis_name, vis_filters))
+                                show_page_filters
+                                or is_target_page
+                                or is_target_visual
+                                or show_visual_filters
+                            ):
+                                slicer_outputs.append((vis_name, filters_to_show))
+                else:
+                    # Standard Visuals
+                    if show_visual_filters or is_target_visual:
+                        if (
+                            vis_filters or is_target_visual
+                        ):  # Only add if filters exist or specifically targeted
+                            visual_outputs.append((vis_type, vis_name, vis_filters))
 
         # Store effective filtered lists for display purposes
         effective_slicer_outputs = [s for s in slicer_outputs if s[1]]
@@ -1329,78 +1320,65 @@ def clear_filters(
                     console.print_info("  Slicer Filters:")
                 if not dry_run and will_clear:
                     # Clear slicer filters (special path: objects.general[0].properties.filter)
-                    visuals_dir = os.path.join(page_path, "visuals")
-                    if os.path.exists(visuals_dir):
-                        for visual_id in os.listdir(visuals_dir):
-                            visual_folder = os.path.join(visuals_dir, visual_id)
-                            visual_json = os.path.join(visual_folder, "visual.json")
-                            if not os.path.exists(visual_json):
+                    for visual_id, visual_folder, vis_data in iter_visuals(page_path):
+                        visual_json = os.path.join(visual_folder, "visual.json")
+                        vis_type = vis_data.get("visual", {}).get(
+                            "visualType", "unknown"
+                        )
+
+                        if "slicer" not in vis_type.lower():
+                            continue
+
+                        # Apply same target logic
+                        if target_visual:
+                            if (
+                                target_visual.lower()
+                                not in [visual_id.lower(), vis_type.lower()]
+                                and not show_visual_filters
+                            ):
                                 continue
 
-                            vis_data = load_json(visual_json)
-                            vis_type = vis_data.get("visual", {}).get(
-                                "visualType", "unknown"
+                        # Check if slicer has filter to clear using helper
+                        slicer_data = _get_slicer_filter_data(vis_data)
+                        if slicer_data:
+                            filter_dict, field_def, target = slicer_data
+                            table_name, column_name = _parse_target_components(target)
+
+                            # Check if matches criteria (implicit all if no criteria)
+                            has_criteria = (
+                                include_tables or include_columns or include_fields
+                            )
+                            should_clear = (
+                                clear_all
+                                or not has_criteria
+                                or _filter_matches_criteria(
+                                    target,
+                                    table_name,
+                                    column_name,
+                                    include_tables,
+                                    include_columns,
+                                    include_fields,
+                                )
                             )
 
-                            if "slicer" not in vis_type.lower():
-                                continue
-
-                            # Apply same target logic
-                            if target_visual:
-                                if (
-                                    target_visual.lower()
-                                    not in [visual_id.lower(), vis_type.lower()]
-                                    and not show_visual_filters
-                                ):
-                                    continue
-
-                            # Check if slicer has filter to clear using helper
-                            slicer_data = _get_slicer_filter_data(vis_data)
-                            if slicer_data:
-                                filter_dict, field_def, target = slicer_data
-                                table_name, column_name = _parse_target_components(
-                                    target
-                                )
-
-                                # Check if matches criteria (implicit all if no criteria)
-                                has_criteria = (
-                                    include_tables or include_columns or include_fields
-                                )
-                                should_clear = (
-                                    clear_all
-                                    or not has_criteria
-                                    or _filter_matches_criteria(
-                                        target,
-                                        table_name,
-                                        column_name,
-                                        include_tables,
-                                        include_columns,
-                                        include_fields,
-                                    )
-                                )
-
-                                if should_clear:
-                                    # Get condition string before clearing
-                                    slicer_filter_wrapper = {
-                                        "filters": [
-                                            {"field": field_def, "filter": filter_dict}
-                                        ]
-                                    }
-                                    filter_strs = _get_filter_strings(
-                                        slicer_filter_wrapper
-                                    )
-
-                                    # Clear the slicer filter - need to access props directly
-                                    general_objs = vis_data["visual"]["objects"][
-                                        "general"
+                            if should_clear:
+                                # Get condition string before clearing
+                                slicer_filter_wrapper = {
+                                    "filters": [
+                                        {"field": field_def, "filter": filter_dict}
                                     ]
-                                    del general_objs[0]["properties"]["filter"]
-                                    write_json(visual_json, vis_data)
+                                }
+                                filter_strs = _get_filter_strings(slicer_filter_wrapper)
 
-                                    if not summary:
-                                        console.print_info(f"    [Slicer] {visual_id}")
-                                        for fs in filter_strs:
-                                            console.print_cleared(f"      {fs}")
+                                # Clear the slicer filter - need to access props directly
+                                general_objs = vis_data["visual"]["objects"]["general"]
+                                del general_objs[0]["properties"]["filter"]
+                                write_json(visual_json, vis_data)
+
+                                if not summary:
+                                    console.print_info(f"    [Slicer] {visual_id}")
+                                    for fs in filter_strs:
+                                        console.print_cleared(f"      {fs}")
 
                 else:
                     if not summary:
@@ -1468,53 +1446,48 @@ def clear_filters(
                 # Only clear visual filters if explicitly requested
                 if show_visual_filters or target_visual:
                     if visual_outputs:
-                        visuals_dir = os.path.join(page_path, "visuals")
-                        if os.path.exists(visuals_dir):
-                            for visual_id in os.listdir(visuals_dir):
-                                visual_folder = os.path.join(visuals_dir, visual_id)
-                                visual_json = os.path.join(visual_folder, "visual.json")
-                                if not os.path.exists(visual_json):
-                                    continue
+                        for visual_id, visual_folder, vis_data in iter_visuals(
+                            page_path
+                        ):
+                            visual_json = os.path.join(visual_folder, "visual.json")
+                            vis_type = vis_data.get("visual", {}).get(
+                                "visualType", "unknown"
+                            )
 
-                                vis_data = load_json(visual_json)
-                                vis_type = vis_data.get("visual", {}).get(
-                                    "visualType", "unknown"
-                                )
+                            # Filter by visual if requested (apply same logic as above)
+                            is_target_visual = False
+                            if target_visual:
+                                if target_visual.lower() in [
+                                    visual_id.lower(),
+                                    vis_type.lower(),
+                                ]:
+                                    is_target_visual = True
+                                else:
+                                    # But wait, we iterate all visuals here if show_visual_filters is True.
+                                    # The outer check `if show_visual_filters or target_visual` allows entry.
+                                    # If target_visual is set, we ONLY match that.
+                                    # If show_visual_filters is set, we match all.
+                                    # So if target_visual is set and DOES NOT match, we should skip IF show_visual_filters is False.
+                                    # If show_visual_filters is True, we proceed.
+                                    if not show_visual_filters:
+                                        continue
 
-                                # Filter by visual if requested (apply same logic as above)
-                                is_target_visual = False
-                                if target_visual:
-                                    if target_visual.lower() in [
-                                        visual_id.lower(),
-                                        vis_type.lower(),
-                                    ]:
-                                        is_target_visual = True
-                                    else:
-                                        # But wait, we iterate all visuals here if show_visual_filters is True.
-                                        # The outer check `if show_visual_filters or target_visual` allows entry.
-                                        # If target_visual is set, we ONLY match that.
-                                        # If show_visual_filters is set, we match all.
-                                        # So if target_visual is set and DOES NOT match, we should skip IF show_visual_filters is False.
-                                        # If show_visual_filters is True, we proceed.
-                                        if not show_visual_filters:
-                                            continue
+                            # Skip slicers here - handle separately
+                            if "slicer" in vis_type.lower():
+                                continue
 
-                                # Skip slicers here - handle separately
-                                if "slicer" in vis_type.lower():
-                                    continue
-
-                                cleared, vis_changed = _clear_matching_filters(
-                                    vis_data.get("filterConfig"),
-                                    include_tables=include_tables,
-                                    include_columns=include_columns,
-                                    include_fields=include_fields,
-                                    clear_all=clear_all,
-                                )
-                                if vis_changed:
-                                    write_json(visual_json, vis_data)
-                                    if not summary:
-                                        for c in cleared:
-                                            console.print_cleared(f"      {c}")
+                            cleared, vis_changed = _clear_matching_filters(
+                                vis_data.get("filterConfig"),
+                                include_tables=include_tables,
+                                include_columns=include_columns,
+                                include_fields=include_fields,
+                                clear_all=clear_all,
+                            )
+                            if vis_changed:
+                                write_json(visual_json, vis_data)
+                                if not summary:
+                                    for c in cleared:
+                                        console.print_cleared(f"      {c}")
 
     # Print summary if requested
     if summary:
