@@ -1,4 +1,2 @@
-### Updated
-- **Clear Filters**
-  - Added `--summary` option for concise count-based output
-  - Improved slicer detection to match all slicer types
+### Fixed
+- **Sanitize Command**: Now raises an error when `--config` path doesn't exist, instead of silently falling back to defaults

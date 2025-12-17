@@ -183,6 +183,11 @@ def load_config(
     # Find/load user config
     if config_path:
         user_path = Path(config_path)
+        if not user_path.exists():
+            raise FileNotFoundError(
+                f"Config file not found: {user_path}\n"
+                "Please check the path and try again."
+            )
     else:
         user_path = find_user_config(report_path)
 
