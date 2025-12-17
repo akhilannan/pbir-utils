@@ -130,7 +130,7 @@ def _create_wireframe_figure(
                 )
             )
 
-    legend_width_pixel = max(len(label) for label in legend_labels) * 7
+    legend_width_pixel = max((len(label) for label in legend_labels), default=0) * 7
     fig.update_layout(
         width=page_width + legend_width_pixel,
         height=page_height,
@@ -274,4 +274,4 @@ def display_report_wireframes(
             return dcc.Graph(figure=fig)
         return html.Div("Page not found")
 
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
