@@ -168,5 +168,6 @@ def sanitize_powerbi_report(
             }
             results[action_spec.name] = func(report_path, **kwargs)
 
+    print()  # Add blank line before final status
     console.print_success("Power BI report sanitization completed.")
     return results
