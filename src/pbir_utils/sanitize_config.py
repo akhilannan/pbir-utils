@@ -55,10 +55,6 @@ class SanitizeConfig:
     def summary(self) -> bool:
         return self.options.get("summary", False)
 
-    @property
-    def error_on_change(self) -> list[str]:
-        return self.options.get("error_on_change", [])
-
     def get_action_names(self) -> list[str]:
         """Get list of action names in execution order."""
         return [a.name for a in self.actions]

@@ -6,9 +6,6 @@ import textwrap
 from ..command_utils import (
     add_dry_run_arg,
     add_summary_arg,
-    add_error_on_change_arg,
-    check_error_on_change,
-    validate_error_on_change,
 )
 
 
@@ -71,7 +68,6 @@ def register(subparsers):
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle)
 
 
@@ -81,9 +77,8 @@ def handle(args):
     from ..common import resolve_report_path
     from ..visual_interactions_utils import disable_visual_interactions
 
-    validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
-    has_changes = disable_visual_interactions(
+    disable_visual_interactions(
         report_path,
         pages=args.pages,
         source_visual_ids=args.source_visual_ids,
@@ -94,4 +89,3 @@ def handle(args):
         dry_run=args.dry_run,
         summary=args.summary,
     )
-    check_error_on_change(args, has_changes, "disable-interactions")

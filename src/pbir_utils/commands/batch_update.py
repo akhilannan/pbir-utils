@@ -5,9 +5,6 @@ import textwrap
 
 from ..command_utils import (
     add_dry_run_arg,
-    add_error_on_change_arg,
-    check_error_on_change,
-    validate_error_on_change,
 )
 
 
@@ -46,7 +43,6 @@ def register(subparsers):
     )
     parser.add_argument("csv_path", help="Path to the Attribute_Mapping.csv file")
     add_dry_run_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle)
 
 
@@ -55,8 +51,4 @@ def handle(args):
     # Lazy import to speed up CLI startup
     from ..pbir_processor import batch_update_pbir_project
 
-    validate_error_on_change(args)
-    has_changes = batch_update_pbir_project(
-        args.directory_path, args.csv_path, dry_run=args.dry_run
-    )
-    check_error_on_change(args, has_changes, "batch-update")
+    batch_update_pbir_project(args.directory_path, args.csv_path, dry_run=args.dry_run)

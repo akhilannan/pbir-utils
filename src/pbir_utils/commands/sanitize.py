@@ -106,12 +106,6 @@ def register(subparsers):
         metavar="ACTION",
         help="Additional actions to include beyond config defaults.",
     )
-    parser.add_argument(
-        "--error-on-change",
-        nargs="+",
-        metavar="ACTION",
-        help="Exit with error code 1 if specified actions would make changes during dry run. Only valid with --dry-run.",
-    )
     parser.set_defaults(func=handle)
 
 
@@ -169,12 +163,6 @@ def handle(args):
         )
         return
 
-    # Validate --error-on-change requires --dry-run
-    error_on_change = getattr(args, "error_on_change", None)
-    if error_on_change and not args.dry_run:
-        console.print_error("--error-on-change requires --dry-run to be specified.")
-        sys.exit(1)
-
     # Build a proper config with resolved action specs
     from ..sanitize_config import SanitizeConfig, ActionSpec
 
@@ -195,18 +183,4 @@ def handle(args):
     )
 
     # Run sanitization with the full config
-    results = sanitize_powerbi_report(report_path, config=run_config)
-
-    # Check if any error_on_change actions would make changes
-    if error_on_change:
-        actions_with_changes = [
-            action
-            for action in error_on_change
-            if action in results and results[action]
-        ]
-        if actions_with_changes:
-            console.print_error(
-                f"Error: The following checks would make changes: {', '.join(actions_with_changes)}"
-            )
-            console.print_error("Build failed due to --error-on-change policy.")
-            sys.exit(1)
+    sanitize_powerbi_report(report_path, config=run_config)

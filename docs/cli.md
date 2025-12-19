@@ -296,7 +296,6 @@ pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --option FitToPage 
 | `--option` | **Required.** Display option to set (`ActualSize`, `FitToPage`, `FitToWidth`). |
 | `--dry-run` | Preview changes without modifying files. |
 | `--summary` | Show count-based summary instead of detailed messages. |
-| `--error-on-change` | Exit with error code 1 if changes would be made (CI/CD mode). |
 
 ### YAML Configuration
 
@@ -341,18 +340,3 @@ actions:
     - `set_first_page_as_active`, `remove_empty_pages`
     - `standardize_pbir_folders`, `reset_filter_pane_width`
 
----
-
-## CI/CD Integration
-
-The `--error-on-change` flag enables automated validation in CI/CD pipelines. When used with `--dry-run`, the CLI exits with code 1 if any changes would be made, allowing builds to fail automatically when reports don't meet standards.
-
-### Usage
-
-```bash
-# Fail if standardize_pbir_folders would make changes
-pbir-utils sanitize "MyReport.Report" --actions standardize_pbir_folders --dry-run --error-on-change standardize_pbir_folders
-
-# For sanitize: specify which actions should trigger failure
-pbir-utils sanitize "MyReport.Report" --dry-run --error-on-change set_first_page_as_active remove_empty_pages
-```

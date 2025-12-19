@@ -6,9 +6,6 @@ import textwrap
 from ..command_utils import (
     add_dry_run_arg,
     add_summary_arg,
-    add_error_on_change_arg,
-    check_error_on_change,
-    validate_error_on_change,
 )
 
 
@@ -65,7 +62,6 @@ def _register_remove_measures(subparsers):
     parser.set_defaults(check_visual_usage=True)
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_remove_measures)
 
 
@@ -116,16 +112,14 @@ def handle_remove_measures(args):
     from ..common import resolve_report_path
     from ..pbir_measure_utils import remove_measures
 
-    validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
-    has_changes = remove_measures(
+    remove_measures(
         report_path,
         measure_names=args.measure_names,
         check_visual_usage=args.check_visual_usage,
         dry_run=args.dry_run,
         summary=args.summary,
     )
-    check_error_on_change(args, has_changes, "remove-measures")
 
 
 def handle_measure_dependencies(args):

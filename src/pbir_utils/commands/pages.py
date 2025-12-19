@@ -6,9 +6,6 @@ import textwrap
 from ..command_utils import (
     add_dry_run_arg,
     add_summary_arg,
-    add_error_on_change_arg,
-    check_error_on_change,
-    validate_error_on_change,
 )
 
 
@@ -72,7 +69,6 @@ def _register_set_display_option(subparsers):
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_set_display_option)
 
 
@@ -85,15 +81,11 @@ def handle_set_display_option(args):
     from ..common import resolve_report_path
     from ..page_utils import set_page_display_option
 
-    validate_error_on_change(args)
-
     report_path = resolve_report_path(args.report_path)
-    has_changes = set_page_display_option(
+    set_page_display_option(
         report_path,
         display_option=args.option,
         page=args.page,
         dry_run=args.dry_run,
         summary=args.summary,
     )
-
-    check_error_on_change(args, has_changes, "set-display-option")

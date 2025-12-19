@@ -7,9 +7,6 @@ import textwrap
 from ..command_utils import (
     add_dry_run_arg,
     add_summary_arg,
-    add_error_on_change_arg,
-    check_error_on_change,
-    validate_error_on_change,
     parse_json_arg,
 )
 from ..console_utils import console
@@ -75,7 +72,6 @@ def _register_update_filters(subparsers):
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_update_filters)
 
 
@@ -127,7 +123,6 @@ def _register_sort_filters(subparsers):
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_sort_filters)
 
 
@@ -174,7 +169,6 @@ def _register_configure_filter_pane(subparsers):
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
-    add_error_on_change_arg(parser)
     parser.set_defaults(func=handle_configure_filter_pane)
 
 
@@ -250,20 +244,18 @@ def handle_update_filters(args):
     # Lazy import to speed up CLI startup
     from ..filter_utils import update_report_filters
 
-    validate_error_on_change(args)
     filters_list = parse_json_arg(args.filters, "filters")
     if not isinstance(filters_list, list):
         console.print_error("Filters must be a JSON list of objects.")
         sys.exit(1)
 
-    has_changes = update_report_filters(
+    update_report_filters(
         args.report_path,
         filters=filters_list,
         reports=args.reports,
         dry_run=args.dry_run,
         summary=args.summary,
     )
-    check_error_on_change(args, has_changes, "update-filters")
 
 
 def handle_sort_filters(args):
@@ -271,8 +263,7 @@ def handle_sort_filters(args):
     # Lazy import to speed up CLI startup
     from ..filter_utils import sort_report_filters
 
-    validate_error_on_change(args)
-    has_changes = sort_report_filters(
+    sort_report_filters(
         args.report_path,
         reports=args.reports,
         sort_order=args.sort_order,
@@ -280,7 +271,6 @@ def handle_sort_filters(args):
         dry_run=args.dry_run,
         summary=args.summary,
     )
-    check_error_on_change(args, has_changes, "sort-filters")
 
 
 def handle_configure_filter_pane(args):
@@ -289,16 +279,14 @@ def handle_configure_filter_pane(args):
     from ..common import resolve_report_path
     from ..filter_utils import configure_filter_pane
 
-    validate_error_on_change(args)
     report_path = resolve_report_path(args.report_path)
-    has_changes = configure_filter_pane(
+    configure_filter_pane(
         report_path,
         visible=args.visible,
         expanded=args.expanded,
         dry_run=args.dry_run,
         summary=args.summary,
     )
-    check_error_on_change(args, has_changes, "configure-filter-pane")
 
 
 def handle_clear_filters(args):
