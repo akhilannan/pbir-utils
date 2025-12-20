@@ -50,22 +50,22 @@ def register(subparsers):
     """
 
     sanitize_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
           # Run default actions from config
-          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --dry-run
+          pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
           
           # Run specific actions only
-          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --actions remove_unused_measures --dry-run
+          pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures --dry-run
           
           # Exclude specific actions from defaults
-          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --exclude set_first_page_as_active --dry-run
+          pbir-utils sanitize "C:\Reports\MyReport.Report" --exclude set_first_page_as_active --dry-run
           
           # Include additional actions beyond defaults
-          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --include standardize_pbir_folders --dry-run
+          pbir-utils sanitize "C:\Reports\MyReport.Report" --include standardize_pbir_folders --dry-run
           
           # Use a custom config file
-          pbir-utils sanitize "C:\\\\Reports\\\\MyReport.Report" --config my-config.yaml --dry-run
+          pbir-utils sanitize "C:\Reports\MyReport.Report" --config my-config.yaml --dry-run
     """
     )
 

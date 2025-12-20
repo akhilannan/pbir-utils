@@ -48,9 +48,9 @@ def _register_update_filters(subparsers):
     """
     )
     update_filters_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils update-filters "C:\\\\Reports" '[{"Table": "Sales", "Column": "Region", "Condition": "In", "Values": ["North", "South"]}]' --dry-run
+          pbir-utils update-filters "C:\Reports" '[{"Table": "Sales", "Column": "Region", "Condition": "In", "Values": ["North", "South"]}]' --dry-run
     """
     )
     parser = subparsers.add_parser(
@@ -90,10 +90,10 @@ def _register_sort_filters(subparsers):
     """
     )
     sort_filters_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils sort-filters "C:\\\\Reports" --sort-order Ascending --dry-run
-          pbir-utils sort-filters "C:\\\\Reports" --sort-order Custom --custom-order "Region" "Date"
+          pbir-utils sort-filters "C:\Reports\MyReport.Report" --sort-order Ascending --dry-run
+          pbir-utils sort-filters "C:\Reports\MyReport.Report" --sort-order Custom --custom-order "Region" "Date"
     """
     )
     parser = subparsers.add_parser(
@@ -136,11 +136,11 @@ def _register_configure_filter_pane(subparsers):
     """
     )
     configure_filter_pane_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils configure-filter-pane "C:\\\\Reports\\\\MyReport.Report" --dry-run
-          pbir-utils configure-filter-pane "C:\\\\Reports\\\\MyReport.Report" --visible false --dry-run
-          pbir-utils configure-filter-pane "C:\\\\Reports\\\\MyReport.Report" --expanded true --dry-run
+          pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --dry-run
+          pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --visible false --dry-run
+          pbir-utils configure-filter-pane "C:\Reports\MyReport.Report" --expanded true --dry-run
     """
     )
     parser = subparsers.add_parser(
@@ -185,11 +185,11 @@ def _register_clear_filters(subparsers):
         """
     )
     clear_filters_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --dry-run
-          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --table "Date*" --dry-run
-          pbir-utils clear-filters "C:\\\\Reports\\\\Uber.Report" --page "Page 1" --column "Year"
+          pbir-utils clear-filters "C:\Reports\Uber.Report" --dry-run
+          pbir-utils clear-filters "C:\Reports\Uber.Report" --table "Date*" --dry-run
+          pbir-utils clear-filters "C:\Reports\Uber.Report" --page "Page 1" --column "Year"
     """
     )
     parser = subparsers.add_parser(

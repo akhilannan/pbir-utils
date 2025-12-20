@@ -30,10 +30,10 @@ def _register_remove_measures(subparsers):
     """
     )
     remove_measures_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils remove-measures "C:\\\\Reports\\\\MyReport.Report" --dry-run
-          pbir-utils remove-measures "C:\\\\Reports\\\\MyReport.Report" --measure-names "Measure1" "Measure2" --no-check-usage
+          pbir-utils remove-measures "C:\Reports\MyReport.Report" --dry-run
+          pbir-utils remove-measures "C:\Reports\MyReport.Report" --measure-names "Measure1" "Measure2" --no-check-usage
     """
     )
     parser = subparsers.add_parser(
@@ -75,10 +75,10 @@ def _register_measure_dependencies(subparsers):
     """
     )
     measure_deps_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils measure-dependencies "C:\\\\Reports\\\\MyReport.Report"
-          pbir-utils measure-dependencies "C:\\\\Reports\\\\MyReport.Report" --measure-names "Total Sales" --include-visual-ids
+          pbir-utils measure-dependencies "C:\Reports\MyReport.Report"
+          pbir-utils measure-dependencies "C:\Reports\MyReport.Report" --measure-names "Total Sales" --include-visual-ids
     """
     )
     parser = subparsers.add_parser(

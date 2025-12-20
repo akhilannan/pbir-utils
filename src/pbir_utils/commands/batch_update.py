@@ -26,9 +26,9 @@ def register(subparsers):
     """
     )
     batch_update_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils batch-update "C:\\\\PBIR\\\\Project" "C:\\\\Mapping.csv" --dry-run
+          pbir-utils batch-update "C:\PBIR\Project" "C:\Mapping.csv" --dry-run
     """
     )
     parser = subparsers.add_parser(

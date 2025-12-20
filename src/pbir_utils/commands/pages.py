@@ -31,16 +31,16 @@ def _register_set_display_option(subparsers):
     )
 
     epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
           # Set all pages to FitToWidth (dry run)
-          pbir-utils set-display-option "C:\\\\Reports\\\\MyReport.Report" --option FitToWidth --dry-run
+          pbir-utils set-display-option "C:\Reports\MyReport.Report" --option FitToWidth --dry-run
           
           # Set a specific page by display name
-          pbir-utils set-display-option "C:\\\\Reports\\\\MyReport.Report" --page "Trends" --option ActualSize
+          pbir-utils set-display-option "C:\Reports\MyReport.Report" --page "Trends" --option ActualSize
           
           # Set a specific page by internal name
-          pbir-utils set-display-option "C:\\\\Reports\\\\MyReport.Report" --page "bb40336091625ae0070a" --option FitToPage
+          pbir-utils set-display-option "C:\Reports\MyReport.Report" --page "bb40336091625ae0070a" --option FitToPage
     """
     )
 

@@ -20,10 +20,10 @@ def register(subparsers):
     """
     )
     visualize_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils visualize "C:\\\\Reports\\\\MyReport.Report"
-          pbir-utils visualize "C:\\\\Reports\\\\MyReport.Report" --pages "Overview" "Detail" --visual-types slicer
+          pbir-utils visualize "C:\Reports\MyReport.Report"
+          pbir-utils visualize "C:\Reports\MyReport.Report" --pages "Overview" "Detail" --visual-types slicer
     """
     )
     parser = subparsers.add_parser(

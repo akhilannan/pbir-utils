@@ -18,10 +18,10 @@ def register(subparsers):
     """
     )
     extract_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils extract-metadata "C:\\\\Reports\\\\MyReport.Report" "C:\\\\Output\\\\metadata.csv"
-          pbir-utils extract-metadata "C:\\\\Reports" "C:\\\\Output\\\\all_metadata.csv" --filters '{"Page Name": ["Overview"]}'
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
+          pbir-utils extract-metadata "C:\Reports" "C:\Output\all_metadata.csv" --filters '{"Page Name": ["Overview"]}'
     """
     )
     parser = subparsers.add_parser(

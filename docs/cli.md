@@ -72,22 +72,53 @@ Configuration is resolved in the following order (highest to lowest):
 
 ## Extract Metadata
 
-Export attribute metadata from PBIR to CSV.
+Export attribute metadata from PBIR to CSV. Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.
 
 ```bash
+# Basic extraction
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
+
+# Filter by page name
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv" --filters '{"Page Name": ["Overview"]}'
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--filters` | JSON string to filter results (e.g., `'{"Page Name": ["Page1", "Page2"]}'`) |
 
 ---
 
 ## Visualize Wireframes
 
-Display report wireframes using Dash and Plotly.
+Display report wireframes using Dash and Plotly. Visualizes the layout of pages and their visual components in an interactive web interface.
 
 ```bash
+# Visualize all pages
 pbir-utils visualize "C:\Reports\MyReport.Report"
+
+# Filter by specific pages
 pbir-utils visualize "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
+
+# Filter by visual type
+pbir-utils visualize "C:\Reports\MyReport.Report" --visual-types slicer card
+
+# Hide hidden visuals
+pbir-utils visualize "C:\Reports\MyReport.Report" --no-show-hidden
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--pages` | List of page names to include (uses AND logic with other filters) |
+| `--visual-types` | List of visual types to include (e.g., `slicer`, `card`, `table`) |
+| `--visual-ids` | List of specific visual IDs to include |
+| `--no-show-hidden` | Hide hidden visuals (default: show them) |
+
+!!! note "Filter Logic"
+    The `--pages`, `--visual-types`, and `--visual-ids` options use AND logic—only visuals matching ALL specified criteria are shown.
 
 ---
 
@@ -103,33 +134,92 @@ pbir-utils batch-update "C:\PBIR\Project" "C:\Mapping.csv" --dry-run
 
 ## Disable Interactions
 
-Disable visual interactions between visuals.
+Disable visual interactions between visuals. Useful for preventing slicers or other visuals from affecting specific targets.
 
 ```bash
+# Disable all interactions on all pages
 pbir-utils disable-interactions "C:\Reports\MyReport.Report" --dry-run
+
+# Disable slicer interactions on specific pages
 pbir-utils disable-interactions "C:\Reports\MyReport.Report" --pages "Overview" --source-visual-types slicer
+
+# Disable interactions from specific source to target visuals
+pbir-utils disable-interactions "C:\Reports\MyReport.Report" --source-visual-ids "abc123" --target-visual-types card
+
+# Use Insert mode to add without modifying existing
+pbir-utils disable-interactions "C:\Reports\MyReport.Report" --update-type Insert --dry-run
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--pages` | List of page names to process (default: all pages) |
+| `--source-visual-ids` | List of source visual IDs |
+| `--source-visual-types` | List of source visual types (e.g., `slicer`) |
+| `--target-visual-ids` | List of target visual IDs |
+| `--target-visual-types` | List of target visual types |
+| `--update-type` | Update strategy: `Upsert` (default), `Insert`, or `Overwrite` |
+| `--dry-run` | Preview changes without modifying files |
+| `--summary` | Show count-based summary instead of detailed messages |
+
+### Update Types
+
+| Type | Behavior |
+|------|----------|
+| `Upsert` | Disables matching interactions and inserts new ones. Existing non-matching interactions remain unchanged. **(Default)** |
+| `Insert` | Only inserts new interactions without modifying existing ones. |
+| `Overwrite` | Replaces all existing interactions with the new configuration. |
 
 ---
 
 ## Remove Measures
 
-Remove report-level measures.
+Remove report-level measures. By default, only removes measures that are not used in any visuals (including their dependents).
 
 ```bash
+# Remove all unused measures (checks visual usage)
 pbir-utils remove-measures "C:\Reports\MyReport.Report" --dry-run
+
+# Remove specific measures by name
 pbir-utils remove-measures "C:\Reports\MyReport.Report" --measure-names "Measure1" "Measure2"
+
+# Force remove without checking visual usage
+pbir-utils remove-measures "C:\Reports\MyReport.Report" --measure-names "OldMeasure" --no-check-usage
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--measure-names` | List of specific measure names to remove (default: all measures) |
+| `--no-check-usage` | Skip visual usage check before removing (default: checks usage) |
+| `--dry-run` | Preview changes without modifying files |
+| `--summary` | Show count-based summary instead of detailed messages |
 
 ---
 
 ## Measure Dependencies
 
-Generate a dependency tree for measures.
+Generate a dependency tree for measures, showing which measures depend on other measures.
 
 ```bash
+# Show all measure dependencies
 pbir-utils measure-dependencies "C:\Reports\MyReport.Report"
+
+# Analyze specific measures
+pbir-utils measure-dependencies "C:\Reports\MyReport.Report" --measure-names "Total Sales" "Profit Margin"
+
+# Include visual IDs that use each measure
+pbir-utils measure-dependencies "C:\Reports\MyReport.Report" --include-visual-ids
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--measure-names` | List of specific measure names to analyze (default: all measures) |
+| `--include-visual-ids` | Include visual IDs where each measure is used in the output |
 
 ---
 
@@ -145,12 +235,37 @@ pbir-utils update-filters "C:\Reports" '[{"Table": "Sales", "Column": "Region", 
 
 ## Sort Filters
 
-Sort report-level filter pane items.
+Sort report-level filter pane items. Default sort order is `SelectedFilterTop`.
 
 ```bash
-pbir-utils sort-filters "C:\Reports" --sort-order Ascending --dry-run
-pbir-utils sort-filters "C:\Reports" --sort-order Custom --custom-order "Region" "Date"
+# Use default sort (SelectedFilterTop - filters with values first)
+pbir-utils sort-filters "C:\Reports\MyReport.Report" --dry-run
+
+# Sort alphabetically
+pbir-utils sort-filters "C:\Reports\MyReport.Report" --sort-order Ascending --dry-run
+
+# Custom order
+pbir-utils sort-filters "C:\Reports\MyReport.Report" --sort-order Custom --custom-order "Region" "Date" "Product"
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--sort-order` | Sort strategy: `SelectedFilterTop` (default), `Ascending`, `Descending`, or `Custom` |
+| `--custom-order` | List of filter names in desired order (required when using `Custom`) |
+| `--reports` | List of specific reports to update (when processing a directory) |
+| `--dry-run` | Preview changes without modifying files |
+| `--summary` | Show count-based summary instead of detailed messages |
+
+### Sort Order Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `SelectedFilterTop` | Filters with applied conditions appear first (A-Z), followed by unselected filters (A-Z). **(Default)** |
+| `Ascending` | Alphabetical order (A-Z) |
+| `Descending` | Reverse alphabetical order (Z-A) |
+| `Custom` | User-defined order via `--custom-order` |
 
 ---
 
@@ -172,31 +287,31 @@ Inspect and clear filter conditions from Power BI reports at report, page, or vi
 
 ```bash
 # Inspect all report-level filters (dry-run by default)
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --dry-run
 
 # Clear all report-level filters (remove --dry-run to apply)
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report"
+pbir-utils clear-filters "C:\Reports\MyReport.Report"
 
 # Inspect page-level filters (all pages)
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --page --dry-run
 
 # Target a specific page by name or ID
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page "Overview" --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --page "Overview" --dry-run
 
 # Inspect visual-level filters including slicers
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --visual --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --visual --dry-run
 
 # Filter by table name (supports wildcards)
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --table "Date*" "Sales" --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --table "Date*" "Sales" --dry-run
 
 # Filter by column name (supports wildcards)
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --column "Year" "*Date" --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --column "Year" "*Date" --dry-run
 
 # Filter by full field reference
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --field "'Sales'[Amount]" --dry-run
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --field "'Sales'[Amount]" --dry-run
 
 # Get concise summary output
-pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page --visual --dry-run --summary
+pbir-utils clear-filters "C:\Reports\MyReport.Report" --page --visual --dry-run --summary
 ```
 
 ### CLI Options
@@ -267,16 +382,16 @@ Set the display option for pages in a Power BI report. Controls how pages are re
 
 ```bash
 # Set all pages to FitToWidth (dry run)
-pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --option FitToWidth --dry-run
+pbir-utils set-display-option "C:\Reports\MyReport.Report" --option FitToWidth --dry-run
 
 # Set a specific page by display name
-pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --page "Trends" --option ActualSize
+pbir-utils set-display-option "C:\Reports\MyReport.Report" --page "Trends" --option ActualSize
 
 # Set a specific page by internal name/ID
-pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --page "bb40336091625ae0070a" --option FitToPage
+pbir-utils set-display-option "C:\Reports\MyReport.Report" --page "bb40336091625ae0070a" --option FitToPage
 
 # Apply to all pages with summary output
-pbir-utils set-display-option "C:\\Reports\\MyReport.Report" --option FitToPage --summary
+pbir-utils set-display-option "C:\Reports\MyReport.Report" --option FitToPage --summary
 ```
 
 ### Display Options
@@ -338,4 +453,5 @@ actions:
     - `hide_tooltip_pages`, `hide_drillthrough_pages`
     - `set_first_page_as_active`, `remove_empty_pages`
     - `standardize_pbir_folders`, `reset_filter_pane_width`
+
 

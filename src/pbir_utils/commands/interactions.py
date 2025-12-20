@@ -29,10 +29,10 @@ def register(subparsers):
     """
     )
     disable_interactions_epilog = textwrap.dedent(
-        """
+        r"""
         Examples:
-          pbir-utils disable-interactions "C:\\\\Reports\\\\MyReport.Report" --dry-run
-          pbir-utils disable-interactions "C:\\\\Reports\\\\MyReport.Report" --pages "Overview" --source-visual-types slicer
+          pbir-utils disable-interactions "C:\Reports\MyReport.Report" --dry-run
+          pbir-utils disable-interactions "C:\Reports\MyReport.Report" --pages "Overview" --source-visual-types slicer
     """
     )
     parser = subparsers.add_parser(
