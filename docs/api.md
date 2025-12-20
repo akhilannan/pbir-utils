@@ -337,6 +337,39 @@ pbir.clear_filters(
 
 ---
 
+## Hide Pages by Type
+
+Hides pages based on their type (Tooltip or Drillthrough).
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `page_type` | str | Type of pages to hide (`Tooltip` or `Drillthrough`) |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Hide all tooltip pages
+pbir.hide_pages_by_type(
+    report_path=r"C:\DEV\MyReport.Report",
+    page_type="Tooltip",
+    dry_run=True
+)
+
+# Hide all drillthrough pages
+pbir.hide_pages_by_type(
+    report_path=r"C:\DEV\MyReport.Report",
+    page_type="Drillthrough",
+    dry_run=False
+)
+```
+
+---
+
 ## Set Page Display Option
 
 Sets the display option for pages, controlling how pages are rendered in the Power BI viewer.
@@ -413,6 +446,9 @@ A powerful utility to clean up and optimize Power BI reports.
 | `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals |
 | `cleanup_invalid_bookmarks` | Remove bookmarks referencing non-existent pages/visuals |
 | `standardize_pbir_folders` | Standardize folder names to be descriptive |
+
+!!! tip "Additional Actions via YAML"
+    More actions are available through YAML configuration, including `set_page_size_16_9`, `expand_filter_pane`, `collapse_filter_pane`, `hide_filter_pane`, `sort_filters_ascending`, `clear_all_report_filters`, and display option actions. See the [CLI Reference](cli.md#yaml-configuration) for configuration details.
 
 ### Example
 
