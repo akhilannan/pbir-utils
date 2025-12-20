@@ -124,6 +124,7 @@ Disables interactions between visuals based on provided parameters.
 | `target_visual_types` | list | Target visual types |
 | `update_type` | str | `"Upsert"` (default), `"Insert"`, or `"Overwrite"` |
 | `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
 ### Update Types
 
@@ -157,6 +158,7 @@ Removes report-level measures from a Power BI report.
 | `measure_names` | list | Measures to remove (empty = all measures) |
 | `check_visual_usage` | bool | Only remove unused measures. Default: `True` |
 | `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
 ### Example
 
@@ -208,6 +210,7 @@ Updates filters in the Power BI report level filter pane.
 | `filters` | list | Filter configurations to apply |
 | `reports` | list | Specific reports to update (optional) |
 | `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
 ### Condition Types
 
@@ -254,6 +257,7 @@ Reorders filters in the report filter pane based on a sorting strategy.
 | `sort_order` | str | Sorting strategy (see below) |
 | `custom_order` | list | Custom filter order (required for `Custom`) |
 | `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
 ### Sorting Strategies
 
@@ -541,6 +545,7 @@ A powerful utility to clean up and optimize Power BI reports.
 | `report_path` | str | Path to the report folder |
 | `actions` | list | Sanitization actions to perform |
 | `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
 ### Available Actions
 
