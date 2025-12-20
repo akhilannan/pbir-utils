@@ -337,6 +337,78 @@ pbir.clear_filters(
 
 ---
 
+## Configure Filter Pane
+
+Configures the filter pane visibility and expanded/collapsed state at the report level.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `visible` | bool | Show/hide the filter pane entirely. Default: `True` |
+| `expanded` | bool | Expand/collapse the pane when visible. Default: `False` |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Hide the filter pane
+pbir.configure_filter_pane(
+    report_path=r"C:\DEV\MyReport.Report",
+    visible=False,
+    dry_run=True
+)
+
+# Show filter pane expanded
+pbir.configure_filter_pane(
+    report_path=r"C:\DEV\MyReport.Report",
+    visible=True,
+    expanded=True,
+    dry_run=False
+)
+
+# Show filter pane collapsed (default)
+pbir.configure_filter_pane(
+    report_path=r"C:\DEV\MyReport.Report",
+    visible=True,
+    expanded=False
+)
+```
+
+---
+
+## Reset Filter Pane Width
+
+Resets the filter pane width by removing any custom width settings from all pages, reverting to the default width.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Preview which pages have custom filter pane width
+pbir.reset_filter_pane_width(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=True
+)
+
+# Reset filter pane width on all pages
+pbir.reset_filter_pane_width(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=False
+)
+```
+
+---
+
 ## Hide Pages by Type
 
 Hides pages based on their type (Tooltip or Drillthrough).
@@ -415,6 +487,44 @@ pbir.set_page_display_option(
     report_path=r"C:\DEV\MyReport.Report",
     display_option="FitToWidth",
     page="bb40336091625ae0070a"
+)
+```
+
+---
+
+## Set Page Size
+
+Sets the page dimensions (width and height) for pages in the report.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `width` | int | Target page width in pixels. Default: `1280` |
+| `height` | int | Target page height in pixels. Default: `720` |
+| `exclude_tooltip` | bool | Skip tooltip pages. Default: `True` |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Set all pages to 16:9 HD (1280x720)
+pbir.set_page_size(
+    report_path=r"C:\DEV\MyReport.Report",
+    width=1280,
+    height=720,
+    dry_run=True
+)
+
+# Set pages to Full HD (1920x1080)
+pbir.set_page_size(
+    report_path=r"C:\DEV\MyReport.Report",
+    width=1920,
+    height=1080,
+    exclude_tooltip=True,
+    dry_run=False
 )
 ```
 
