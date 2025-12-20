@@ -179,7 +179,8 @@ def _update_property(data: dict, column_map: dict) -> bool:
                     if value != original_expression:
                         data[key] = value
                         updated = True
-                elif key == "filter":
+                elif key == "filter" and isinstance(value, dict):
+                    from_entity = None
                     if (
                         "From" in value
                         and "Where" in value
@@ -187,21 +188,30 @@ def _update_property(data: dict, column_map: dict) -> bool:
                         and "Entity" in value["From"][0]
                     ):
                         from_entity = value["From"][0]["Entity"]
-                    for condition in value["Where"]:
-                        column = (
-                            condition.get("Condition", {})
-                            .get("Not", {})
-                            .get("Expression", {})
-                            .get("In", {})
-                            .get("Expressions", [{}])[0]
-                            .get("Column", {})
-                        )
-                        property = column.get("Property")
-                        if property:
-                            if (from_entity, property) in column_map:
-                                new_property = column_map[(from_entity, property)]
-                                column["Property"] = new_property
-                                updated = True
+
+                    if "Where" in value and isinstance(value["Where"], list):
+                        for condition in value["Where"]:
+                            # Attempt to find Column property deep in the Condition structure
+                            # This handles common categorical filter structures
+                            try:
+                                column = (
+                                    condition.get("Condition", {})
+                                    .get("Not", {})
+                                    .get("Expression", {})
+                                    .get("In", {})
+                                    .get("Expressions", [{}])[0]
+                                    .get("Column", {})
+                                )
+                                property = column.get("Property")
+                                if property and from_entity:
+                                    if (from_entity, property) in column_map:
+                                        new_property = column_map[
+                                            (from_entity, property)
+                                        ]
+                                        column["Property"] = new_property
+                                        updated = True
+                            except (AttributeError, KeyError, IndexError):
+                                pass
                 else:
                     traverse_and_update(value)
         elif isinstance(data, list):
