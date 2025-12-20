@@ -56,6 +56,7 @@ def handle(args):
     if len(cmd_args) == 0:
         console.print_error("Output path required.")
         sys.exit(1)
+        return
     elif len(cmd_args) == 1:
         if cmd_args[0].lower().endswith(".csv"):
             report_path = resolve_report_path(None)
@@ -64,12 +65,14 @@ def handle(args):
             report_path = cmd_args[0]
             console.print_error("Output path required.")
             sys.exit(1)
+            return
     elif len(cmd_args) == 2:
         report_path = cmd_args[0]
         output_path = cmd_args[1]
     else:
         console.print_error("Too many arguments.")
         sys.exit(1)
+        return
 
     filters = parse_filters(args.filters)
     export_pbir_metadata_to_csv(report_path, output_path, filters=filters)
