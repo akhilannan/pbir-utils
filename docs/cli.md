@@ -5,110 +5,6 @@ The `pbir-utils` command-line interface provides access to all utilities after i
 !!! tip "Summary Mode"
     Use the `--summary` flag with any command to get concise count-based output instead of detailed messages.
 
-## Sanitize Report
-
-Sanitize a Power BI report by removing unused or unwanted components. Runs default actions from config when no `--actions` specified.
-
-```bash
-# Run default actions from config (--actions all is optional)
-pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
-
-# Run specific actions only
-pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures --dry-run
-
-# Exclude specific actions from defaults
-pbir-utils sanitize "C:\Reports\MyReport.Report" --exclude set_first_page_as_active --dry-run
-
-# Include additional actions beyond defaults
-pbir-utils sanitize "C:\Reports\MyReport.Report" --include standardize_pbir_folders set_page_size --dry-run
-
-# Concise output
-pbir-utils sanitize "C:\Reports\MyReport.Report" --summary
-```
-
-### Available Actions
-
-The following actions are available for use with `--actions`, `--include`, or `--exclude`:
-
-!!! tip "Default Actions"
-    Actions marked with ✓ run by default when no flags are specified. Use `--include` to add additional actions, or `--exclude` to skip default ones.
-
-| Action | Description | Default |
-|--------|-------------|:-------:|
-| `cleanup_invalid_bookmarks` | Remove bookmarks referencing non-existent pages or visuals | ✓ |
-| `remove_unused_bookmarks` | Remove bookmarks not used by bookmark navigators or visual link actions | ✓ |
-| `remove_unused_measures` | Remove measures not used in visuals (preserves measures referenced by used measures) | ✓ |
-| `remove_unused_custom_visuals` | Remove custom visual registrations not used by any visual | ✓ |
-| `disable_show_items_with_no_data` | Turn off "Show items with no data" on visuals (improves performance by hiding rows/columns with blank values) | ✓ |
-| `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks) | ✓ |
-| `remove_empty_pages` | Remove pages without visuals and clean up orphan folders | ✓ |
-| `set_first_page_as_active` | Set the first non-hidden page as the default active page | ✓ |
-| `reset_filter_pane_width` | Remove custom filter pane width from all pages | ✓ |
-| `hide_tooltip_pages` | Set visibility to hidden for Tooltip pages | ✓ |
-| `hide_drillthrough_pages` | Set visibility to hidden for Drillthrough pages | |
-| `standardize_pbir_folders` | Rename folders to be descriptive (e.g., `Overview_abc123` for pages, `slicer_xyz789` for visuals) | |
-| `set_page_size_16_9` | Set all non-tooltip pages to 1280×720 | |
-| `expand_filter_pane` | Show and expand the filter pane | |
-| `collapse_filter_pane` | Show but collapse the filter pane | |
-| `hide_filter_pane` | Hide the filter pane entirely | |
-| `sort_filters_selected_top` | Sort filters with applied conditions first, then alphabetically | |
-| `sort_filters_ascending` | Sort all filters alphabetically (A-Z) | |
-| `clear_all_report_filters` | Clear all report-level filter conditions | |
-| `set_display_option_fit_to_page` | Set all pages to FitToPage display mode | |
-| `set_display_option_fit_to_width` | Set all pages to FitToWidth display mode | |
-| `set_display_option_actual_size` | Set all pages to ActualSize display mode | |
-
-### YAML Configuration
-
-Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited:
-
-```yaml
-# pbir-sanitize.yaml - extends package defaults
-
-# Define or override action implementations and parameters
-definitions:
-  set_page_size_hd:         # Custom action name
-    description: Set page size to HD (1920x1080)  # Human-readable description for CLI output
-    implementation: set_page_size
-    params:
-      width: 1920
-      height: 1080
-      exclude_tooltip: true
-
-# Override default action list (replaces, does not merge)
-actions:
-  - cleanup_invalid_bookmarks
-  - remove_unused_measures
-  - set_page_size_hd          # Use our custom definition
-
-# Or use include/exclude to modify defaults
-include:
-  - standardize_pbir_folders  # Add to defaults
-
-exclude:
-  - set_first_page_as_active  # Remove from defaults
-
-options:
-  summary: true               # Override default options
-```
-
-!!! note "Custom Action Implementations"
-    The `implementation` field can reference any function from the [Python API](api.md). This allows you to wrap any API function with custom parameters as a reusable sanitize action.
-
-### Config Resolution Priority
-
-Configuration is resolved in the following order (highest to lowest):
-
-1. CLI flags (`--dry-run`, `--exclude`, etc.)
-2. User config (`pbir-sanitize.yaml` in CWD or report folder)
-3. Package defaults (`defaults/sanitize.yaml`)
-
-!!! tip "Auto-Discovery"
-    - **Config**: Place `pbir-sanitize.yaml` in your report folder or current directory and it will be used automatically. Use `--config path/to/config.yaml` to specify a different file.
-    - **Report Path**: When running from inside a `.Report` folder, the report path argument is optional—it will be detected automatically.
-
----
-
 ## Extract Metadata
 
 Export attribute metadata from PBIR to CSV. Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.
@@ -381,38 +277,6 @@ The command automatically detects all slicer types including:
 - Timeline slicers (`timelineSlicer`)
 - Any custom slicer visuals containing "slicer" in the type name
 
-### YAML Configuration
-
-Use `clear_filters` in your `pbir-sanitizer.yaml` to include it in sanitization pipelines:
-
-```yaml
-definitions:
-  clear_all_report_filters:
-    description: Clear all report-level filter conditions
-    implementation: clear_filters
-    params:
-      clear_all: true
-      dry_run: false
-
-  clear_date_filters:
-    description: Clear filters on Date tables
-    implementation: clear_filters
-    params:
-      include_tables:
-        - "Date*"
-      clear_all: true
-
-  clear_page_filters:
-    description: Clear all page-level filters
-    implementation: clear_filters
-    params:
-      show_page_filters: true
-      clear_all: true
-
-actions:
-  - clear_all_report_filters  # Add to your action list
-```
-
 ---
 
 ## Set Display Option
@@ -450,33 +314,133 @@ pbir-utils set-display-option "C:\Reports\MyReport.Report" --option FitToPage --
 | `--dry-run` | Preview changes without modifying files. |
 | `--summary` | Show count-based summary instead of detailed messages. |
 
+---
+
+## Sanitize Report
+
+Sanitize a Power BI report by applying best practices, standardizing configurations, and removing unused components. Runs default actions from config when no `--actions` specified.
+
+```bash
+# Run default actions from config (--actions all is optional)
+pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
+
+# Run specific actions only
+pbir-utils sanitize "C:\Reports\MyReport.Report" --actions remove_unused_measures --dry-run
+
+# Exclude specific actions from defaults
+pbir-utils sanitize "C:\Reports\MyReport.Report" --exclude set_first_page_as_active --dry-run
+
+# Include additional actions beyond defaults
+pbir-utils sanitize "C:\Reports\MyReport.Report" --include standardize_pbir_folders set_page_size --dry-run
+
+# Concise output
+pbir-utils sanitize "C:\Reports\MyReport.Report" --summary
+```
+
+### Available Actions
+
+The following actions are available for use with `--actions`, `--include`, or `--exclude`:
+
+!!! tip "**Default Actions**"
+    Actions marked with ✓ run by default when no flags are specified. Use `--include` to add additional actions, or `--exclude` to skip default ones.
+
+| Action | Description | Default |
+|--------|-------------|:-------:|
+| `cleanup_invalid_bookmarks` | Remove bookmarks referencing non-existent pages or visuals | ✓ |
+| `remove_unused_bookmarks` | Remove bookmarks not used by bookmark navigators or visual link actions | ✓ |
+| `remove_unused_measures` | Remove measures not used in visuals (preserves measures referenced by used measures) | ✓ |
+| `remove_unused_custom_visuals` | Remove custom visual registrations not used by any visual | ✓ |
+| `disable_show_items_with_no_data` | Turn off "Show items with no data" on visuals (improves performance by hiding rows/columns with blank values) | ✓ |
+| `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks) | ✓ |
+| `remove_empty_pages` | Remove pages without visuals and clean up orphan folders | ✓ |
+| `set_first_page_as_active` | Set the first non-hidden page as the default active page | ✓ |
+| `reset_filter_pane_width` | Remove custom filter pane width from all pages | ✓ |
+| `hide_tooltip_pages` | Set visibility to hidden for Tooltip pages | ✓ |
+| `hide_drillthrough_pages` | Set visibility to hidden for Drillthrough pages | |
+| `standardize_pbir_folders` | Rename folders to be descriptive (e.g., `Overview_abc123` for pages, `slicer_xyz789` for visuals) | |
+| `set_page_size_16_9` | Set all non-tooltip pages to 1280×720 | |
+| `expand_filter_pane` | Show and expand the filter pane | |
+| `collapse_filter_pane` | Show but collapse the filter pane | |
+| `hide_filter_pane` | Hide the filter pane entirely | |
+| `sort_filters_selected_top` | Sort filters with applied conditions first, then alphabetically | |
+| `sort_filters_ascending` | Sort all filters alphabetically (A-Z) | |
+| `clear_all_report_filters` | Clear all report-level filter conditions | |
+| `set_display_option_fit_to_page` | Set all pages to FitToPage display mode | |
+| `set_display_option_fit_to_width` | Set all pages to FitToWidth display mode | |
+| `set_display_option_actual_size` | Set all pages to ActualSize display mode | |
+
 ### YAML Configuration
 
-Use display option actions in your `pbir-sanitize.yaml`:
+Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited:
 
 ```yaml
+# pbir-sanitize.yaml - extends package defaults
+
+# Define or override action implementations and parameters
 definitions:
-  # These are already defined in package defaults
+  # --- Custom Action Examples ---
+  set_page_size_hd:         # Custom action name
+    description: Set page size to HD (1920x1080)
+    implementation: set_page_size
+    params:
+      width: 1920
+      height: 1080
+      exclude_tooltip: true
+
+  clear_all_report_filters:
+    description: Clear all report-level filter conditions
+    implementation: clear_filters
+    params:
+      clear_all: true
+      dry_run: false
+
+  clear_date_filters:
+    description: Clear filters on Date tables
+    implementation: clear_filters
+    params:
+      include_tables:
+        - "Date*"
+      clear_all: true
+
   set_display_option_fit_to_page:
     description: Set all pages to FitToPage display
     implementation: set_page_display_option
     params:
       display_option: FitToPage
 
-  set_display_option_fit_to_width:
-    description: Set all pages to FitToWidth display
-    implementation: set_page_display_option
-    params:
-      display_option: FitToWidth
+# Override default action list (replaces, does not merge)
+# actions:
+#   - cleanup_invalid_bookmarks
+#   - remove_unused_measures
+#   - set_page_size_hd          # Use our custom definition
+#   - clear_all_report_filters  # usage of common action configuration
 
-  set_display_option_actual_size:
-    description: Set all pages to ActualSize display
-    implementation: set_page_display_option
-    params:
-      display_option: ActualSize
+# Or use include/exclude to modify defaults
+include:
+  - standardize_pbir_folders    # part of additional actions
+  - set_display_option_fit_to_page # Custom action
+  - clear_date_filters        # Custom action
+  - set_page_size_hd          # Custom action
+  - clear_all_report_filters  # Custom action
 
-actions:
-  - set_display_option_fit_to_page  # Add to your sanitization pipeline
+exclude:
+  - set_first_page_as_active
+
+options:
+  summary: true               # Override default options
 ```
 
+!!! note "Custom Action Implementations"
+    The `implementation` field can reference any function from the [Python API](api.md). This allows you to wrap any API function with custom parameters as a reusable sanitize action.
 
+### Config Resolution Priority
+
+Configuration is resolved in the following order (highest to lowest):
+
+1. CLI flags (`--dry-run`, `--exclude`, etc.)
+2. User config (`pbir-sanitize.yaml` in CWD or report folder)
+3. Package defaults (`defaults/sanitize.yaml`)
+
+!!! tip "Auto-Discovery"
+    - **Config**: Place `pbir-sanitize.yaml` in your report folder or current directory and it will be used automatically. Use `--config path/to/config.yaml` to specify a different file.
+    - **Report Path**: When running from inside a `.Report` folder, the report path argument is optional—it will be detected automatically.
