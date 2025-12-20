@@ -38,7 +38,9 @@ def register(subparsers):
         nargs="?",
         help="Path to the Power BI report folder (optional if inside a .Report folder)",
     )
-    parser.add_argument("--pages", nargs="+", help="List of page IDs to include")
+    parser.add_argument(
+        "--pages", nargs="+", help="List of page ids or displayNames to include"
+    )
     parser.add_argument(
         "--visual-types", nargs="+", help="List of visual types to include"
     )

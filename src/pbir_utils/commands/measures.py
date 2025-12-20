@@ -101,7 +101,7 @@ def _register_measure_dependencies(subparsers):
     parser.add_argument(
         "--include-visual-ids",
         action="store_true",
-        help="Include visual IDs in the report",
+        help="Include visual IDs that use each measure in the output",
     )
     parser.set_defaults(func=handle_measure_dependencies)
 

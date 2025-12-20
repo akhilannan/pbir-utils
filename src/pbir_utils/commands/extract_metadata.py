@@ -34,7 +34,7 @@ def register(subparsers):
     parser.add_argument(
         "args",
         nargs="*",
-        help="[report_path] output_path. If 1 arg provided and it ends in .csv, it is treated as output_path and report_path is inferred.",
+        help="[report_path] output_path (report_path optional if inside a .Report folder)",
     )
     parser.add_argument(
         "--filters",

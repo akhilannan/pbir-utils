@@ -68,7 +68,9 @@ def _register_update_filters(subparsers):
         "filters", help="JSON string representing list of filter configurations"
     )
     parser.add_argument(
-        "--reports", nargs="+", help="List of specific reports to update"
+        "--reports",
+        nargs="+",
+        help="List of specific report names when processing a directory",
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
@@ -108,7 +110,9 @@ def _register_sort_filters(subparsers):
         help="Path to .Report folder or root directory containing reports",
     )
     parser.add_argument(
-        "--reports", nargs="+", help="List of specific reports to update"
+        "--reports",
+        nargs="+",
+        help="List of specific report names when processing a directory",
     )
     parser.add_argument(
         "--sort-order",
@@ -159,13 +163,13 @@ def _register_configure_filter_pane(subparsers):
         "--visible",
         type=lambda x: x.lower() == "true",
         default=True,
-        help="Show/hide the filter pane (default: true)",
+        help="Show/hide the filter pane: true/false (default: true)",
     )
     parser.add_argument(
         "--expanded",
         type=lambda x: x.lower() == "true",
         default=False,
-        help="Expand/collapse the filter pane (default: false)",
+        help="Expand/collapse the filter pane: true/false (default: false)",
     )
     add_dry_run_arg(parser)
     add_summary_arg(parser)
