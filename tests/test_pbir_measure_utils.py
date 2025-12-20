@@ -116,8 +116,12 @@ def test_generate_measure_dependencies_report(mock_get_deps, mock_load_data):
 
 @patch("pbir_utils.pbir_measure_utils._load_report_extension_data")
 @patch("pbir_utils.pbir_measure_utils.write_json")
-@patch("pbir_utils.pbir_measure_utils._is_measure_or_dependents_used_in_visuals")
-def test_remove_measures(mock_is_used, mock_write, mock_load_data):
+@patch("pbir_utils.pbir_measure_utils._get_all_measures_used_in_visuals")
+@patch("pbir_utils.pbir_measure_utils._build_dependency_graph")
+@patch("pbir_utils.pbir_measure_utils._get_all_used_measures")
+def test_remove_measures(
+    mock_get_all_used, mock_build_graph, mock_get_all, mock_write, mock_load_data
+):
     report_data = {
         "entities": [
             {
@@ -129,9 +133,12 @@ def test_remove_measures(mock_is_used, mock_write, mock_load_data):
         ]
     }
     mock_load_data.return_value = ("path/reportExtensions.json", report_data)
-
-    # Mock usage check: KeepMe is used, RemoveMe is not
-    mock_is_used.side_effect = lambda p, m, d: m == "KeepMe"
+    mock_get_all.return_value = {
+        "KeepMe"
+    }  # Pre-computed cache of visually used measures
+    mock_build_graph.return_value = {}  # Empty dependency graph for test
+    # Phase 3: Mock batch computation - KeepMe is used, RemoveMe is not
+    mock_get_all_used.return_value = {"KeepMe"}
 
     remove_measures("path", measure_names=None, check_visual_usage=True)
 

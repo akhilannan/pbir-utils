@@ -1,6 +1,6 @@
 import os
 
-from .common import load_json, write_json
+from .common import load_json, write_json, iter_pages, iter_visuals
 from .metadata_extractor import _extract_metadata_from_file
 from .console_utils import console
 
@@ -49,6 +49,110 @@ def _get_dependent_measures(
     )
 
 
+def _get_all_measures_used_in_visuals(report_path: str) -> set:
+    """
+    Pre-compute all measures/columns used across all visuals in one pass.
+
+    This function walks the report structure once and collects all measure/column
+    references, enabling O(1) lookups instead of repeated file system walks.
+
+    Args:
+        report_path (str): The file system path to the report folder.
+
+    Returns:
+        set: A set of measure/column names used in visuals.
+    """
+    used_measures = set()
+    for _, page_folder, _ in iter_pages(report_path):
+        for _, visual_folder, _ in iter_visuals(page_folder):
+            visual_file_path = os.path.join(visual_folder, "visual.json")
+            for row in _extract_metadata_from_file(visual_file_path):
+                col_or_measure = row.get("Column or Measure")
+                if col_or_measure:
+                    used_measures.add(col_or_measure)
+                    # Handle Table.Measure format
+                    if "." in col_or_measure:
+                        used_measures.add(col_or_measure.split(".")[-1])
+    return used_measures
+
+
+def _build_dependency_graph(measures_dict: dict) -> dict:
+    """
+    Build a graph of measure -> set of measures that depend on it.
+
+    This pre-computes all dependency relationships once, enabling O(1) lookups
+    instead of re-scanning expressions for each measure check.
+
+    Args:
+        measures_dict (dict): A dictionary of all measures with names as keys
+                              and expressions as values.
+
+    Returns:
+        dict: A dictionary mapping each measure to a set of measures that depend on it.
+    """
+    dependents = {m: set() for m in measures_dict}
+    for measure, expression in measures_dict.items():
+        for other in measures_dict:
+            if f"[{other}]" in expression:
+                dependents[other].add(measure)
+    return dependents
+
+
+def _get_all_dependents_from_graph(
+    measure: str, dep_graph: dict, visited: set = None
+) -> set:
+    """
+    Get all direct and indirect dependents using pre-built dependency graph.
+
+    Args:
+        measure (str): The measure to find dependents for.
+        dep_graph (dict): Pre-built dependency graph from _build_dependency_graph.
+        visited (set, optional): Set to track visited measures during recursion.
+
+    Returns:
+        set: All measures (direct and indirect) that depend on this measure.
+    """
+    visited = visited or set()
+    if measure in visited:
+        return set()
+    visited.add(measure)
+
+    direct = dep_graph.get(measure, set())
+    return direct.union(
+        *(_get_all_dependents_from_graph(d, dep_graph, visited) for d in direct)
+    )
+
+
+def _get_all_used_measures(
+    measures_dict: dict, used_in_visuals: set, dep_graph: dict
+) -> set:
+    """
+    Get all measures that are used directly or indirectly in a single pass.
+
+    This function computes the transitive closure of measure usage:
+    a measure is "used" if it's directly used in visuals, OR if any of its
+    dependents are used in visuals.
+
+    Args:
+        measures_dict (dict): A dictionary of all measures with names as keys.
+        used_in_visuals (set): Pre-computed set of measures used in visuals.
+        dep_graph (dict): Pre-built dependency graph from _build_dependency_graph.
+
+    Returns:
+        set: All measures that are used directly or indirectly.
+    """
+    all_used = set()
+    for measure in measures_dict:
+        if measure in used_in_visuals:
+            all_used.add(measure)
+            continue
+        # Check if any dependent is used
+        all_dependents = _get_all_dependents_from_graph(measure, dep_graph)
+        if any(dep in used_in_visuals for dep in all_dependents):
+            all_used.add(measure)
+    return all_used
+
+
 def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
     """
     Get a list of visual IDs that use the specified measure.
@@ -91,8 +195,26 @@ def _is_measure_used_in_visuals(report_path: str, measure_name: str) -> bool:
     return bool(_get_visual_ids_for_measure(report_path, measure_name))
 
 
+def _is_measure_in_cache(measure_name: str, used_measures_cache: set) -> bool:
+    """
+    Check if a measure is in the pre-computed cache.
+
+    Args:
+        measure_name (str): The name of the measure to check.
+        used_measures_cache (set): Pre-computed set of used measures.
+
+    Returns:
+        bool: True if the measure is in the cache.
+    """
+    return measure_name in used_measures_cache
+
+
 def _is_measure_or_dependents_used_in_visuals(
-    report_path: str, measure_name: str, measures_dict: dict
+    report_path: str,
+    measure_name: str,
+    measures_dict: dict,
+    used_measures_cache: set = None,
+    dep_graph: dict = None,
 ) -> bool:
     """
     Check if a measure or any of its dependents are used in visuals.
@@ -101,10 +223,27 @@ def _is_measure_or_dependents_used_in_visuals(
         report_path (str): The file system path to the report folder.
         measure_name (str): The name of the measure to check.
         measures_dict (dict): A dictionary of all measures with their names as keys and expressions as values.
+        used_measures_cache (set, optional): Pre-computed set of measures used in visuals.
+                                              If provided, uses O(1) lookups instead of file walks.
+        dep_graph (dict, optional): Pre-built dependency graph from _build_dependency_graph.
+                                    If provided, uses O(1) dependent lookups.
 
     Returns:
         bool: True if the measure or any of its dependents are used in visuals; False otherwise.
     """
+    if used_measures_cache is not None:
+        if _is_measure_in_cache(measure_name, used_measures_cache):
+            return True
+        if dep_graph is not None:
+            all_dependents = _get_all_dependents_from_graph(measure_name, dep_graph)
+        else:
+            all_dependents = _get_dependent_measures(
+                measure_name, measures_dict, include_all_dependents=True
+            )
+        return any(
+            _is_measure_in_cache(dep, used_measures_cache) for dep in all_dependents
+        )
+
     if _is_measure_used_in_visuals(report_path, measure_name):
         return True
 
@@ -279,11 +418,22 @@ def remove_measures(
     removed_measures = []
     entities_to_keep = []
 
+    used_measures_cache = None
+    if check_visual_usage:
+        used_measures_cache = _get_all_measures_used_in_visuals(report_path)
+
     for entity in report_data.get("entities", []):
         measures = entity.get("measures", [])
         measures_dict = {
             measure["name"]: measure.get("expression", "") for measure in measures
         }
+
+        all_used_measures = None
+        if check_visual_usage and used_measures_cache is not None:
+            dep_graph = _build_dependency_graph(measures_dict)
+            all_used_measures = _get_all_used_measures(
+                measures_dict, used_measures_cache, dep_graph
+            )
 
         entity["measures"] = [
             measure
@@ -296,8 +446,9 @@ def remove_measures(
                 )
                 and (
                     not check_visual_usage
-                    or not _is_measure_or_dependents_used_in_visuals(
-                        report_path, measure["name"], measures_dict
+                    or (
+                        all_used_measures is not None
+                        and measure["name"] not in all_used_measures
                     )
                 )
             )
