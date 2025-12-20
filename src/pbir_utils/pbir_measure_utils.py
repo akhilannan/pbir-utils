@@ -54,7 +54,7 @@ def _get_all_measures_used_in_visuals(report_path: str) -> set:
     Pre-compute all measures/columns used across all visuals in one pass.
 
     This function walks the report structure once and collects all measure/column
-    references, enabling O(1) lookups instead of repeated file system walks.
+    references.
 
     Args:
         report_path (str): The file system path to the report folder.
@@ -80,8 +80,7 @@ def _build_dependency_graph(measures_dict: dict) -> dict:
     """
     Build a graph of measure -> set of measures that depend on it.
 
-    This pre-computes all dependency relationships once, enabling O(1) lookups
-    instead of re-scanning expressions for each measure check.
+    This pre-computes all dependency relationships once.
 
     Args:
         measures_dict (dict): A dictionary of all measures with names as keys
@@ -224,9 +223,9 @@ def _is_measure_or_dependents_used_in_visuals(
         measure_name (str): The name of the measure to check.
         measures_dict (dict): A dictionary of all measures with their names as keys and expressions as values.
         used_measures_cache (set, optional): Pre-computed set of measures used in visuals.
-                                              If provided, uses O(1) lookups instead of file walks.
+                                              If provided, uses pre-computed cache.
         dep_graph (dict, optional): Pre-built dependency graph from _build_dependency_graph.
-                                    If provided, uses O(1) dependent lookups.
+                                    If provided, uses pre-built dependency graph.
 
     Returns:
         bool: True if the measure or any of its dependents are used in visuals; False otherwise.

@@ -399,7 +399,7 @@ class TestOtherHandlers:
 
         handle_batch(args)
 
-        mock_batch.assert_called_once_with("path", "map.csv", dry_run=False)
+        mock_batch.assert_called_once_with("resolved/path", "map.csv", dry_run=False)
 
     @patch("pbir_utils.common.resolve_report_path")
     @patch("pbir_utils.pbir_processor.batch_update_pbir_project")

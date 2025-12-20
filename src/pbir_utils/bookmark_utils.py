@@ -7,7 +7,7 @@ Contains functions for managing bookmarks in PBIR reports.
 import os
 import shutil
 
-from .common import load_json, write_json, process_json_files
+from .common import load_json, write_json, process_json_files, iter_pages, iter_visuals
 from .console_utils import console
 
 
@@ -36,41 +36,41 @@ def remove_unused_bookmarks(
 
     bookmarks_data = load_json(bookmarks_json_path)
 
-    def _is_bookmark_used(bookmark_name: str) -> bool:
-        """Check if a bookmark is used in the report."""
+    # Pre-compute ALL bookmark references from visuals in a single pass
 
-        def _check_visual(visual_data: dict, _: str) -> str:
+    all_used_bookmark_refs = set()
+    for _, page_folder, _ in iter_pages(report_path):
+        for _, _, visual_data in iter_visuals(page_folder):
             visual = visual_data.get("visual", {})
+
+            # From bookmarkNavigator visuals
             if visual.get("visualType") == "bookmarkNavigator":
-                bookmarks_obj = visual.get("objects", {}).get("bookmarks", [])
-                return any(
-                    bookmark.get("properties", {})
-                    .get("bookmarkGroup", {})
+                for bookmark in visual.get("objects", {}).get("bookmarks", []):
+                    val = (
+                        bookmark.get("properties", {})
+                        .get("bookmarkGroup", {})
+                        .get("expr", {})
+                        .get("Literal", {})
+                        .get("Value")
+                    )
+                    if val:
+                        all_used_bookmark_refs.add(val.strip("'"))
+
+            # From visualLink actions
+            for link in visual.get("visualContainerObjects", {}).get("visualLink", []):
+                val = (
+                    link.get("properties", {})
+                    .get("bookmark", {})
                     .get("expr", {})
                     .get("Literal", {})
                     .get("Value")
-                    == f"'{bookmark_name}'"
-                    for bookmark in bookmarks_obj
                 )
-            visual_link = visual.get("visualContainerObjects", {}).get("visualLink", [])
-            return any(
-                link.get("properties", {})
-                .get("bookmark", {})
-                .get("expr", {})
-                .get("Literal", {})
-                .get("Value")
-                == f"'{bookmark_name}'"
-                for link in visual_link
-            )
+                if val:
+                    all_used_bookmark_refs.add(val.strip("'"))
 
-        return any(
-            result[1]
-            for result in process_json_files(
-                os.path.join(report_path, "definition", "pages"),
-                "visual.json",
-                _check_visual,
-            )
-        )
+    def _is_bookmark_used(bookmark_name: str) -> bool:
+        """Check if a bookmark is referenced anywhere in the report."""
+        return bookmark_name in all_used_bookmark_refs
 
     used_bookmarks = set()
     new_items = []
@@ -159,6 +159,15 @@ def cleanup_invalid_bookmarks(
     pages_data = load_json(pages_json_path)
     valid_pages = set(pages_data.get("pageOrder", []))
 
+    # Pre-compute valid visuals per page in a single pass
+
+    valid_visuals_by_page = {}
+    for page_id in valid_pages:
+        page_folder = os.path.join(report_path, "definition", "pages", page_id)
+        valid_visuals_by_page[page_id] = {
+            visual_id for visual_id, _, _ in iter_visuals(page_folder)
+        }
+
     # Track bookmarks to remove globally
     bookmarks_to_remove = set()
     stats = {"processed": 0, "removed": 0, "cleaned": 0, "updated": 0}
@@ -185,18 +194,8 @@ def cleanup_invalid_bookmarks(
                 was_modified = True
                 continue
 
-            # Get valid visuals for this page
-            valid_visuals = {
-                result[1]
-                for result in process_json_files(
-                    os.path.join(
-                        report_path, "definition", "pages", section_name, "visuals"
-                    ),
-                    "visual.json",
-                    lambda data, _: data.get("name"),
-                )
-                if result[1]
-            }
+            # Use pre-computed valid visuals
+            valid_visuals = valid_visuals_by_page.get(section_name, set())
 
             # Clean up containers and groups
             for section_key in ["visualContainers", "visualContainerGroups"]:

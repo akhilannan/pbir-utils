@@ -264,27 +264,29 @@ def _consolidate_metadata_from_directory(
                     all_rows_with_expression.extend(rows_with_expression)
                     all_rows_without_expression.extend(rows_without_expression)
 
-    # Add expressions from rows_with_expression to rows_without_expression if applicable
-    for row_without in all_rows_without_expression:
-        for row_with in all_rows_with_expression:
-            if (
-                row_without["Report"] == row_with["Report"]
-                and row_without["Table"] == row_with["Table"]
-                and row_without["Column or Measure"] == row_with["Column or Measure"]
-            ):
-                row_without["Expression"] = row_with["Expression"]
-                break  # Stop looking once a match is found
+    # Build index for expression lookups
+    expression_index = {
+        (row["Report"], row["Table"], row["Column or Measure"]): row["Expression"]
+        for row in all_rows_with_expression
+    }
 
-    # Ensure rows_with_expression that were not used anywhere are added to rows_without_expression
+    # Match expressions
+    for row in all_rows_without_expression:
+        key = (row["Report"], row["Table"], row["Column or Measure"])
+        if key in expression_index:
+            row["Expression"] = expression_index[key]
+
+    # Build set of keys for lookup
+    existing_keys = {
+        (r["Report"], r["Table"], r["Column or Measure"])
+        for r in all_rows_without_expression
+    }
+
+    # Add rows with expressions that weren't matched
     final_rows = all_rows_without_expression + [
         row
         for row in all_rows_with_expression
-        if not any(
-            row["Report"] == r["Report"]
-            and row["Table"] == r["Table"]
-            and row["Column or Measure"] == r["Column or Measure"]
-            for r in all_rows_without_expression
-        )
+        if (row["Report"], row["Table"], row["Column or Measure"]) not in existing_keys
     ]
 
     # Extract distinct rows

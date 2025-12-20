@@ -201,12 +201,21 @@ def _get_hidden_visuals_info(
     )
 
 
-def _get_shown_visuals_from_bookmarks(report_path: str) -> tuple[set, set]:
-    """Helper to identify visuals and groups shown by bookmarks."""
+def _get_bookmark_visual_info(report_path: str) -> tuple[set, set, set]:
+    """
+    Single-pass collection of bookmark visual information.
 
-    def _check_bookmark(bookmark_data: dict, _: str) -> tuple[set, set]:
+    Returns:
+        tuple: (shown_visuals, shown_groups, filtered_visuals)
+            - shown_visuals: Visuals that are shown (not hidden) in at least one bookmark
+            - shown_groups: Visual groups that are shown in at least one bookmark
+            - filtered_visuals: Visuals that have filters applied in bookmarks
+    """
+
+    def _check_bookmark(bookmark_data: dict, _: str) -> tuple[set, set, set]:
         shown_visuals = set()
         shown_groups = set()
+        filtered_visuals = set()
 
         for section in (
             bookmark_data.get("explorationState", {}).get("sections", {}).values()
@@ -220,38 +229,13 @@ def _get_shown_visuals_from_bookmarks(report_path: str) -> tuple[set, set]:
 
             # Check visuals
             for visual_name, container in section.get("visualContainers", {}).items():
+                # Check if visible (not hidden)
                 if (
                     not container.get("singleVisual", {}).get("display", {}).get("mode")
                     == "hidden"
                 ):
                     shown_visuals.add(visual_name)
 
-        return shown_visuals, shown_groups
-
-    shown_visuals = set()
-    shown_groups = set()
-    for _, result in process_json_files(
-        os.path.join(report_path, "definition", "bookmarks"),
-        ".bookmark.json",
-        _check_bookmark,
-    ):
-        if result:
-            vis, grp = result
-            shown_visuals.update(vis)
-            shown_groups.update(grp)
-
-    return shown_visuals, shown_groups
-
-
-def _get_visuals_filtered_by_bookmarks(report_path: str) -> set:
-    """Helper to identify visuals that have filters applied in bookmarks."""
-
-    def _check_bookmark_filters(bookmark_data: dict, _: str) -> set:
-        filtered_visuals = set()
-        for section in (
-            bookmark_data.get("explorationState", {}).get("sections", {}).values()
-        ):
-            for visual_name, container in section.get("visualContainers", {}).items():
                 # Check for filters in the container or singleVisual
                 if "filters" in container:
                     filtered_visuals.add(visual_name)
@@ -260,18 +244,24 @@ def _get_visuals_filtered_by_bookmarks(report_path: str) -> set:
                     and "filters" in container["singleVisual"]
                 ):
                     filtered_visuals.add(visual_name)
-        return filtered_visuals
 
+        return shown_visuals, shown_groups, filtered_visuals
+
+    shown_visuals = set()
+    shown_groups = set()
     filtered_visuals = set()
     for _, result in process_json_files(
         os.path.join(report_path, "definition", "bookmarks"),
         ".bookmark.json",
-        _check_bookmark_filters,
+        _check_bookmark,
     ):
         if result:
-            filtered_visuals.update(result)
+            vis, grp, flt = result
+            shown_visuals.update(vis)
+            shown_groups.update(grp)
+            filtered_visuals.update(flt)
 
-    return filtered_visuals
+    return shown_visuals, shown_groups, filtered_visuals
 
 
 def remove_hidden_visuals_never_shown(
@@ -302,8 +292,10 @@ def remove_hidden_visuals_never_shown(
         visual_types,
         visuals_with_default_filters,
     ) = _get_hidden_visuals_info(report_path)
-    shown_visuals, shown_groups = _get_shown_visuals_from_bookmarks(report_path)
-    filtered_visuals = _get_visuals_filtered_by_bookmarks(report_path)
+    # Single pass through bookmark files (replaces 2 separate calls)
+    shown_visuals, shown_groups, filtered_visuals = _get_bookmark_visual_info(
+        report_path
+    )
 
     # Determine visuals to remove
     visuals_to_remove = set()
