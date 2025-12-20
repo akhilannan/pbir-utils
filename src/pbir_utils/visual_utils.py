@@ -25,9 +25,7 @@ def remove_unused_custom_visuals(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Removing unused custom visuals{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Removing unused custom visuals", dry_run)
 
     report_json_path = os.path.join(report_path, "definition", "report.json")
     report_data = load_json(report_json_path)
@@ -90,9 +88,7 @@ def disable_show_items_with_no_data(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Disabling 'Show items with no data'{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Disabling 'Show items with no data'", dry_run)
 
     def _remove_show_all(data: dict, _: str) -> bool:
         if isinstance(data, dict):
@@ -294,8 +290,8 @@ def remove_hidden_visuals_never_shown(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Removing hidden visuals that are never shown using bookmarks{' (Dry Run)' if dry_run else ''}"
+    console.print_action_heading(
+        "Removing hidden visuals that are never shown using bookmarks", dry_run
     )
 
     (

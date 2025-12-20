@@ -83,9 +83,7 @@ def set_first_page_as_active(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Setting the first non-hidden page as active{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Setting the first non-hidden page as active", dry_run)
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_json_path = os.path.join(pages_dir, "pages.json")
     pages_data = load_json(pages_json_path)
@@ -160,8 +158,8 @@ def remove_empty_pages(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Removing empty pages and cleaning up rogue folders{' (Dry Run)' if dry_run else ''}"
+    console.print_action_heading(
+        "Removing empty pages and cleaning up rogue folders", dry_run
     )
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_json_path = os.path.join(pages_dir, "pages.json")
@@ -272,9 +270,7 @@ def set_page_size(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Setting page size to {width}x{height}{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading(f"Setting page size to {width}x{height}", dry_run)
 
     pages_dir = os.path.join(report_path, "definition", "pages")
     modified_count = 0
@@ -368,9 +364,8 @@ def set_page_display_option(
         return False
 
     page_filter_msg = f" for page '{page}'" if page else " for all pages"
-    console.print_heading(
-        f"Action: Setting display option to {display_option}{page_filter_msg}"
-        f"{' (Dry Run)' if dry_run else ''}"
+    console.print_action_heading(
+        f"Setting display option to {display_option}{page_filter_msg}", dry_run
     )
 
     pages_dir = os.path.join(report_path, "definition", "pages")

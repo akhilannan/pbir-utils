@@ -25,9 +25,7 @@ def remove_unused_bookmarks(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Removing unused bookmarks{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Removing unused bookmarks", dry_run)
 
     bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
     bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
@@ -149,9 +147,7 @@ def cleanup_invalid_bookmarks(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Cleaning up invalid bookmarks{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Cleaning up invalid bookmarks", dry_run)
 
     bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
     if not os.path.exists(bookmarks_dir):

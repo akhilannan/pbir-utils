@@ -315,7 +315,7 @@ def export_pbir_metadata_to_csv(
     Returns:
         None
     """
-    console.print_heading("Action: Extracting metadata")
+    console.print_action_heading("Extracting metadata", False)
 
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 

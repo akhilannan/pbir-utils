@@ -3,12 +3,12 @@
 import argparse
 import json
 import sys
-from typing import Dict, Set, Optional
+from typing import Optional
 
 from .console_utils import console
 
 
-def parse_filters(filters_str: str) -> Optional[Dict[str, Set[str]]]:
+def parse_filters(filters_str: str) -> dict[str, set[str]] | None:
     """Parse a JSON string into a filters dictionary."""
     if not filters_str:
         return None

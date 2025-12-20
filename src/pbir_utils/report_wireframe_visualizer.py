@@ -211,7 +211,7 @@ def display_report_wireframes(
         visual_ids (list, optional): List of visual IDs to include. Defaults to None.
         show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
     """
-    console.print_heading("Action: Displaying report wireframes")
+    console.print_action_heading("Displaying report wireframes", False)
     pages_info = []
 
     for page_id, page_folder_path, page_data in iter_pages(report_path):

@@ -270,9 +270,7 @@ def batch_update_pbir_project(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Batch updating PBIR project{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Batch updating PBIR project", dry_run)
     any_changes = False
     error_occurred = False
     try:

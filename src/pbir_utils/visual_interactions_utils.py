@@ -263,9 +263,7 @@ def disable_visual_interactions(
     Raises:
         ValueError: If any of the provided parameters are not lists when expected.
     """
-    console.print_heading(
-        f"Action: Disabling visual interactions{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Disabling visual interactions", dry_run)
     # Validate that parameters are lists if they are not None
     for param_name, param_value in {
         "pages": pages,

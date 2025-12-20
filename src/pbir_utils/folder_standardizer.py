@@ -31,9 +31,7 @@ def standardize_pbir_folders(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Standardizing folder names{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Standardizing folder names", dry_run)
     pages_dir = os.path.join(report_path, "definition", "pages")
     if not os.path.exists(pages_dir):
         console.print_warning(f"Pages directory not found: {pages_dir}")

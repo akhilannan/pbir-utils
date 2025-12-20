@@ -336,9 +336,7 @@ def update_report_filters(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Updating report filters{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Updating report filters", dry_run)
     if filters is None or not filters:
         raise ValueError("The 'filters' parameter is required and cannot be empty.")
 
@@ -475,9 +473,7 @@ def sort_report_filters(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Sorting report filters{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Sorting report filters", dry_run)
     report_json_paths = get_report_paths(report_path, reports)
     any_changes = False
 
@@ -603,9 +599,7 @@ def configure_filter_pane(
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     state_desc = "hidden" if not visible else ("expanded" if expanded else "collapsed")
-    console.print_heading(
-        f"Action: Configuring filter pane ({state_desc}){' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading(f"Configuring filter pane ({state_desc})", dry_run)
 
     report_json_path = os.path.join(report_path, "definition", "report.json")
     report_data = load_json(report_json_path)
@@ -677,9 +671,7 @@ def reset_filter_pane_width(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_heading(
-        f"Action: Resetting filter pane width{' (Dry Run)' if dry_run else ''}"
-    )
+    console.print_action_heading("Resetting filter pane width", dry_run)
 
     pages_dir = os.path.join(report_path, "definition", "pages")
     pages_modified = 0

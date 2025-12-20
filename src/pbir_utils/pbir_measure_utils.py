@@ -268,9 +268,7 @@ def remove_measures(
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     if print_heading:
-        console.print_heading(
-            f"Action: Removing measures{' (Dry Run)' if dry_run else ''}"
-        )
+        console.print_action_heading("Removing measures", dry_run)
 
     report_file, report_data = _load_report_extension_data(report_path)
 
