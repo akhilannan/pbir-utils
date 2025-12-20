@@ -427,6 +427,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#available-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#yaml-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -784,17 +795,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consolidated-actions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consolidated Actions
-      
-    </span>
-  </a>
   
 </li>
       
@@ -872,6 +872,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#available-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#yaml-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1232,17 +1243,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#consolidated-actions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consolidated Actions
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1286,6 +1286,133 @@
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Concise output</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>pbir-utils<span class="w"> </span>sanitize<span class="w"> </span><span class="s2">&quot;C:\Reports\MyReport.Report&quot;</span><span class="w"> </span>--summary
 </span></code></pre></div>
+<h3 id="available-actions">Available Actions</h3>
+<p>The following actions are available for use with <code>--actions</code>, <code>--include</code>, or <code>--exclude</code>:</p>
+<div class="admonition tip">
+<p class="admonition-title">Default Actions</p>
+<p>Actions marked with ✓ run by default when no flags are specified. Use <code>--include</code> to add additional actions, or <code>--exclude</code> to skip default ones.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+<th style="text-align: center;">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cleanup_invalid_bookmarks</code></td>
+<td>Remove bookmarks referencing non-existent pages or visuals</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>remove_unused_bookmarks</code></td>
+<td>Remove bookmarks not used by bookmark navigators or visual link actions</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>remove_unused_measures</code></td>
+<td>Remove measures not used in visuals (preserves measures referenced by used measures)</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>remove_unused_custom_visuals</code></td>
+<td>Remove custom visual registrations not used by any visual</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>disable_show_items_with_no_data</code></td>
+<td>Turn off "Show items with no data" on visuals (improves performance by hiding rows/columns with blank values)</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>remove_hidden_visuals_never_shown</code></td>
+<td>Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks)</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>remove_empty_pages</code></td>
+<td>Remove pages without visuals and clean up orphan folders</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>set_first_page_as_active</code></td>
+<td>Set the first non-hidden page as the default active page</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>reset_filter_pane_width</code></td>
+<td>Remove custom filter pane width from all pages</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>hide_tooltip_pages</code></td>
+<td>Set visibility to hidden for Tooltip pages</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><code>hide_drillthrough_pages</code></td>
+<td>Set visibility to hidden for Drillthrough pages</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>standardize_pbir_folders</code></td>
+<td>Rename folders to be descriptive (e.g., <code>Overview_abc123</code> for pages, <code>slicer_xyz789</code> for visuals)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>set_page_size_16_9</code></td>
+<td>Set all non-tooltip pages to 1280×720</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>expand_filter_pane</code></td>
+<td>Show and expand the filter pane</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>collapse_filter_pane</code></td>
+<td>Show but collapse the filter pane</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>hide_filter_pane</code></td>
+<td>Hide the filter pane entirely</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>sort_filters_selected_top</code></td>
+<td>Sort filters with applied conditions first, then alphabetically</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>sort_filters_ascending</code></td>
+<td>Sort all filters alphabetically (A-Z)</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>clear_all_report_filters</code></td>
+<td>Clear all report-level filter conditions</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>set_display_option_fit_to_page</code></td>
+<td>Set all pages to FitToPage display mode</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>set_display_option_fit_to_width</code></td>
+<td>Set all pages to FitToWidth display mode</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td><code>set_display_option_actual_size</code></td>
+<td>Set all pages to ActualSize display mode</td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
 <h3 id="yaml-configuration">YAML Configuration</h3>
 <p>Create a <code>pbir-sanitize.yaml</code> file to customize defaults. You only need to specify what you want to <strong>change</strong> - defaults are inherited:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># pbir-sanitize.yaml - extends package defaults</span>
@@ -1316,6 +1443,10 @@
 </span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nt">options</span><span class="p">:</span>
 </span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">               </span><span class="c1"># Override default options</span>
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Custom Action Implementations</p>
+<p>The <code>implementation</code> field can reference any function from the <a href="../api/">Python API</a>. This allows you to wrap any API function with custom parameters as a reusable sanitize action.</p>
+</div>
 <h3 id="config-resolution-priority">Config Resolution Priority</h3>
 <p>Configuration is resolved in the following order (highest to lowest):</p>
 <ol>
@@ -1323,6 +1454,13 @@
 <li>User config (<code>pbir-sanitize.yaml</code> in CWD or report folder)</li>
 <li>Package defaults (<code>defaults/sanitize.yaml</code>)</li>
 </ol>
+<div class="admonition tip">
+<p class="admonition-title">Auto-Discovery</p>
+<ul>
+<li><strong>Config</strong>: Place <code>pbir-sanitize.yaml</code> in your report folder or current directory and it will be used automatically. Use <code>--config path/to/config.yaml</code> to specify a different file.</li>
+<li><strong>Report Path</strong>: When running from inside a <code>.Report</code> folder, the report path argument is optional—it will be detected automatically.</li>
+</ul>
+</div>
 <hr />
 <h2 id="extract-metadata">Extract Metadata</h2>
 <p>Export attribute metadata from PBIR to CSV. Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.</p>
@@ -1828,20 +1966,6 @@
 </span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="nt">actions</span><span class="p">:</span>
 </span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">set_display_option_fit_to_page</span><span class="w">  </span><span class="c1"># Add to your sanitization pipeline</span>
 </span></code></pre></div>
-<hr />
-<h2 id="consolidated-actions">Consolidated Actions</h2>
-<div class="admonition note">
-<p class="admonition-title">Sanitize Command</p>
-<p>Many individual commands have been consolidated into the <code>sanitize</code> command.
-Use <code>pbir-utils sanitize --actions &lt;action_name&gt;</code> for actions like:</p>
-<ul>
-<li><code>remove_unused_bookmarks</code>, <code>cleanup_invalid_bookmarks</code></li>
-<li><code>remove_unused_custom_visuals</code>, <code>disable_show_items_with_no_data</code></li>
-<li><code>hide_tooltip_pages</code>, <code>hide_drillthrough_pages</code></li>
-<li><code>set_first_page_as_active</code>, <code>remove_empty_pages</code></li>
-<li><code>standardize_pbir_folders</code>, <code>reset_filter_pane_width</code></li>
-</ul>
-</div>
 
 
 
