@@ -26,6 +26,38 @@ pbir-utils sanitize "C:\Reports\MyReport.Report" --include standardize_pbir_fold
 pbir-utils sanitize "C:\Reports\MyReport.Report" --summary
 ```
 
+### Available Actions
+
+The following actions are available for use with `--actions`, `--include`, or `--exclude`:
+
+!!! tip "Default Actions"
+    Actions marked with ✓ run by default when no flags are specified. Use `--include` to add additional actions, or `--exclude` to skip default ones.
+
+| Action | Description | Default |
+|--------|-------------|:-------:|
+| `cleanup_invalid_bookmarks` | Remove bookmarks referencing non-existent pages or visuals | ✓ |
+| `remove_unused_bookmarks` | Remove bookmarks not used by bookmark navigators or visual link actions | ✓ |
+| `remove_unused_measures` | Remove measures not used in visuals (preserves measures referenced by used measures) | ✓ |
+| `remove_unused_custom_visuals` | Remove custom visual registrations not used by any visual | ✓ |
+| `disable_show_items_with_no_data` | Turn off "Show items with no data" on visuals (improves performance by hiding rows/columns with blank values) | ✓ |
+| `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks) | ✓ |
+| `remove_empty_pages` | Remove pages without visuals and clean up orphan folders | ✓ |
+| `set_first_page_as_active` | Set the first non-hidden page as the default active page | ✓ |
+| `reset_filter_pane_width` | Remove custom filter pane width from all pages | ✓ |
+| `hide_tooltip_pages` | Set visibility to hidden for Tooltip pages | ✓ |
+| `hide_drillthrough_pages` | Set visibility to hidden for Drillthrough pages | |
+| `standardize_pbir_folders` | Rename folders to be descriptive (e.g., `Overview_abc123` for pages, `slicer_xyz789` for visuals) | |
+| `set_page_size_16_9` | Set all non-tooltip pages to 1280×720 | |
+| `expand_filter_pane` | Show and expand the filter pane | |
+| `collapse_filter_pane` | Show but collapse the filter pane | |
+| `hide_filter_pane` | Hide the filter pane entirely | |
+| `sort_filters_selected_top` | Sort filters with applied conditions first, then alphabetically | |
+| `sort_filters_ascending` | Sort all filters alphabetically (A-Z) | |
+| `clear_all_report_filters` | Clear all report-level filter conditions | |
+| `set_display_option_fit_to_page` | Set all pages to FitToPage display mode | |
+| `set_display_option_fit_to_width` | Set all pages to FitToWidth display mode | |
+| `set_display_option_actual_size` | Set all pages to ActualSize display mode | |
+
 ### YAML Configuration
 
 Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited:
@@ -60,6 +92,9 @@ options:
   summary: true               # Override default options
 ```
 
+!!! note "Custom Action Implementations"
+    The `implementation` field can reference any function from the [Python API](api.md). This allows you to wrap any API function with custom parameters as a reusable sanitize action.
+
 ### Config Resolution Priority
 
 Configuration is resolved in the following order (highest to lowest):
@@ -67,6 +102,10 @@ Configuration is resolved in the following order (highest to lowest):
 1. CLI flags (`--dry-run`, `--exclude`, etc.)
 2. User config (`pbir-sanitize.yaml` in CWD or report folder)
 3. Package defaults (`defaults/sanitize.yaml`)
+
+!!! tip "Auto-Discovery"
+    - **Config**: Place `pbir-sanitize.yaml` in your report folder or current directory and it will be used automatically. Use `--config path/to/config.yaml` to specify a different file.
+    - **Report Path**: When running from inside a `.Report` folder, the report path argument is optional—it will be detected automatically.
 
 ---
 
@@ -439,19 +478,5 @@ definitions:
 actions:
   - set_display_option_fit_to_page  # Add to your sanitization pipeline
 ```
-
----
-
-## Consolidated Actions
-
-!!! note "Sanitize Command"
-    Many individual commands have been consolidated into the `sanitize` command.
-    Use `pbir-utils sanitize --actions <action_name>` for actions like:
-
-    - `remove_unused_bookmarks`, `cleanup_invalid_bookmarks`
-    - `remove_unused_custom_visuals`, `disable_show_items_with_no_data`
-    - `hide_tooltip_pages`, `hide_drillthrough_pages`
-    - `set_first_page_as_active`, `remove_empty_pages`
-    - `standardize_pbir_folders`, `reset_filter_pane_width`
 
 

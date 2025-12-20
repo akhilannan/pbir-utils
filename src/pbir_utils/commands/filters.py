@@ -246,6 +246,7 @@ def _register_clear_filters(subparsers):
 def handle_update_filters(args):
     """Handle the update-filters command."""
     # Lazy import to speed up CLI startup
+    from ..common import resolve_report_path
     from ..filter_utils import update_report_filters
 
     filters_list = parse_json_arg(args.filters, "filters")
@@ -253,8 +254,9 @@ def handle_update_filters(args):
         console.print_error("Filters must be a JSON list of objects.")
         sys.exit(1)
 
+    report_path = resolve_report_path(args.report_path)
     update_report_filters(
-        args.report_path,
+        report_path,
         filters=filters_list,
         reports=args.reports,
         dry_run=args.dry_run,

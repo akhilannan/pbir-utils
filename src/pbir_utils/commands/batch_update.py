@@ -49,6 +49,8 @@ def register(subparsers):
 def handle(args):
     """Handle the batch-update command."""
     # Lazy import to speed up CLI startup
+    from ..common import resolve_report_path
     from ..pbir_processor import batch_update_pbir_project
 
-    batch_update_pbir_project(args.directory_path, args.csv_path, dry_run=args.dry_run)
+    directory_path = resolve_report_path(args.directory_path)
+    batch_update_pbir_project(directory_path, args.csv_path, dry_run=args.dry_run)
