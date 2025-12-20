@@ -1,7 +1,6 @@
 """Sanitize command for PBIR Utils CLI."""
 
 import argparse
-import sys
 import textwrap
 
 from ..command_utils import add_dry_run_arg, add_summary_arg

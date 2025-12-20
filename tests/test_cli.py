@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_sanitize_dry_run(simple_report, run_cli):
     result = run_cli(
         ["sanitize", simple_report, "--actions", "remove_unused_measures", "--dry-run"]

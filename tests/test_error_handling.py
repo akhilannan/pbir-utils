@@ -1,10 +1,8 @@
 """Tests for error handling paths in common utilities."""
 
-import os
-import sys
 import pytest
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pbir_utils.common import (
     load_json,
     resolve_report_path,
