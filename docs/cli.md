@@ -208,7 +208,6 @@ pbir-utils clear-filters "C:\\Reports\\MyReport.Report" --page --visual --dry-ru
 | `--table` | Filter by table name(s), supports wildcards (e.g., `Date*`) |
 | `--column` | Filter by column name(s), supports wildcards (e.g., `*Amount`) |
 | `--field` | Filter by full field reference(s), supports wildcards (e.g., `'Sales'[*]`) |
-| `--all` | Explicitly clear all matching filters |
 | `--dry-run` | Preview which filters would be cleared without modifying files |
 | `--summary` | Show concise count-based summary instead of detailed filter list |
 
