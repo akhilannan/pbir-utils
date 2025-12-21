@@ -5,6 +5,8 @@ repo_name: akhilannan/pbir-utils
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
     - scheme: default
       primary: indigo
@@ -48,3 +50,4 @@ nav:
   - Home: index.md
   - CLI Reference: cli.md
   - Python API: api.md
+  - CI/CD Integration: ci_cd.md

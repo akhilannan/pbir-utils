@@ -1,4 +1,7 @@
-# PBIR Utilities
+<div align="center">
+  <img src="docs/assets/logo.png" alt="pbir-utils logo" width="200"/>
+  <h1>PBIR Utilities</h1>
+</div>
 
 [![PyPI version](https://badge.fury.io/py/pbir-utils.svg)](https://badge.fury.io/py/pbir-utils)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

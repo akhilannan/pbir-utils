@@ -11,6 +11,17 @@ def main():
         description="PBIR Utilities CLI - A tool for managing Power BI Enhanced Report Format (PBIR) projects.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
+    print(
+        r"""
+    ____  ____  ____  ____           __  ____  _ __
+   / __ \/ __ )/  _/ / __ \         / / / / /_(_) /____
+  / /_/ / __  |/ /  / /_/ /_____   / / / / __/ / / ___/
+ / ____/ /_/ // /  / _, _/_____/  / /_/ / /_/ / (__  )
+/_/   /_____/___/ /_/ |_|         \____/\__/_/_/____/ 
+                                                       
+          -- Power BI PBIR Utilities --
+"""
+    )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Register all command modules
