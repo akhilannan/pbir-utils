@@ -1,6 +1,5 @@
 <div align="center">
   <img src="docs/assets/logo.svg" alt="pbir-utils logo" width="200"/>
-  <h1>PBIR Utilities</h1>
 </div>
 
 [![PyPI version](https://badge.fury.io/py/pbir-utils.svg)](https://badge.fury.io/py/pbir-utils)
