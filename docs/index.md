@@ -60,3 +60,4 @@ pbir.sanitize_powerbi_report("C:\\Reports\\MyReport.Report", actions=["remove_un
 
 - [CLI Reference](cli.md) - Detailed command-line usage
 - [Python API](api.md) - Python library documentation
+- [CI/CD Integration](ci_cd.md) - Pipeline integration and validation

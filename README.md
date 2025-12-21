@@ -13,6 +13,7 @@
 
 - [CLI Reference](https://akhilannan.github.io/pbir-utils/cli/) - Command-line usage and examples
 - [Python API](https://akhilannan.github.io/pbir-utils/api/) - Library documentation and code examples
+- [CI/CD Integration](https://akhilannan.github.io/pbir-utils/ci_cd/) - Pipeline integration and validation
 
 ## Installation
 
@@ -49,6 +50,7 @@ For more detailed examples, see the [example_usage.ipynb](examples/example_usage
 ## Features
 
 - **CLI Support**: Access all utilities directly from the command line
+- **CI/CD Integration**: Validate reports in pipelines before deployment
 - **Extract Metadata**: Retrieve key metadata from PBIR files
 - **Report Wireframe Visualizer**: Visualize PBIR report layout
 - **Sanitize Reports**: Clean up and optimize reports with YAML configuration
