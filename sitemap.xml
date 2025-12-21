@@ -2,14 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://akhilannan.github.io/pbir-utils/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2025-12-21</lastmod>
     </url>
     <url>
          <loc>https://akhilannan.github.io/pbir-utils/api/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2025-12-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/ci_cd/</loc>
+         <lastmod>2025-12-21</lastmod>
     </url>
     <url>
          <loc>https://akhilannan.github.io/pbir-utils/cli/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2025-12-21</lastmod>
     </url>
 </urlset>
