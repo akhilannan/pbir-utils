@@ -5,8 +5,8 @@ repo_name: akhilannan/pbir-utils
 
 theme:
   name: material
-  logo: assets/logo.png
-  favicon: assets/logo.png
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
   palette:
     - scheme: default
       primary: indigo

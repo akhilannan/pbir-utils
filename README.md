@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/logo.png" alt="pbir-utils logo" width="200"/>
+  <img src="docs/assets/logo.svg" alt="pbir-utils logo" width="200"/>
   <h1>PBIR Utilities</h1>
 </div>
 
