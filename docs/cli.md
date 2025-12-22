@@ -168,6 +168,15 @@ pbir-utils disable-interactions "C:\Reports\MyReport.Report" --update-type Inser
 | `Insert` | Only inserts new interactions without modifying existing ones. |
 | `Overwrite` | Replaces all existing interactions with the new configuration. |
 
+### Behavior
+
+The command's scope depends on which options are provided:
+
+1. **Only report path**: Disables interactions between all visuals across all pages.
+2. **With `--pages`**: Disables interactions between all visuals on the specified pages only.
+3. **With `--source-visual-ids` or `--source-visual-types`**: Disables interactions **from** the specified sources to all targets.
+4. **With `--target-visual-ids` or `--target-visual-types`**: Disables interactions **to** the specified targets from all sources.
+
 ---
 
 ## Remove Measures
@@ -230,19 +239,22 @@ pbir-utils update-filters "C:\Reports" '[{"Table": "Sales", "Column": "Region", 
 
 ### Condition Types
 
-| Type | Expected Values | Example |
-|------|-----------------|---------|
-| `GreaterThan`, `LessThan`, etc. | Single value | `{"Values": [50]}` |
-| `Between`, `NotBetween` | Two values (range) | `{"Values": [10, 20]}` |
-| `In`, `NotIn` | List of values | `{"Values": ["A", "B"]}` |
-| `Contains`, `StartsWith`, `EndsWith` | Single string | `{"Values": ["keyword"]}` |
-| `ContainsAnd`, `StartsWithOr` | Multiple strings | `{"Values": ["k1", "k2"]}` |
+| Category | Conditions | Expected Values |
+|----------|------------|------------------|
+| **Comparison** | `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual` | Single value |
+| **Range** | `Between`, `NotBetween` | Two values (start, end) |
+| **Inclusion** | `In`, `NotIn` | List of one or more values |
+| **Text Matching** | `Contains`, `StartsWith`, `EndsWith`, `NotContains`, `NotStartsWith`, `NotEndsWith` | Single string |
+| **Multi-Value Text** | `ContainsAnd`, `ContainsOr`, `StartsWithAnd`, `StartsWithOr`, `EndsWithAnd`, `EndsWithOr` | List of two or more strings |
 
-!!! note "Date Values"
-    Date values should be formatted as `DD-MMM-YYYY`, e.g., `"15-Sep-2023"`.
+### Filter Values
 
-!!! note "Clearing Filters"
-    Set `Values` to `None` to clear an existing filter.
+| Value Type | Format | Example |
+|------------|--------|---------|
+| **Date** | `DD-MMM-YYYY` string | `"15-Sep-2023"` |
+| **Numeric** | Integer or float | `100`, `99.5` |
+| **Text** | String | `"North"` |
+| **Clear Filter** | `null` or `None` | Removes existing filter on the column |
 
 ---
 

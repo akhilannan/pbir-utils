@@ -146,6 +146,18 @@ Disables interactions between visuals based on provided parameters.
 - **Insert**: Adds new interactions without modifying existing ones.
 - **Overwrite**: Replaces all existing interactions with the new configuration.
 
+### Behavior
+
+The function's scope depends on which parameters are provided:
+
+1. **Only `report_path`**: Disables interactions between all visuals across all pages.
+
+2. **`report_path` + `pages`**: Disables interactions between all visuals on the specified pages only.
+
+3. **With `source_visual_ids` or `source_visual_types`**: Disables interactions **from** the specified source visuals to all other visuals (or specified targets) on the pages.
+
+4. **With `target_visual_ids` or `target_visual_types`**: Disables interactions **to** the specified target visuals from all source visuals (or specified sources) on the pages.
+
 ### Example
 
 ```python
@@ -228,19 +240,22 @@ Updates filters in the Power BI report level filter pane.
 
 ### Condition Types
 
-| Type | Expected Values | Example |
-|------|-----------------|---------|
-| `GreaterThan`, `LessThan`, etc. | Single value | `{"Values": [50]}` |
-| `Between`, `NotBetween` | Two values (range) | `{"Values": [10, 20]}` |
-| `In`, `NotIn` | List of values | `{"Values": ["A", "B"]}` |
-| `Contains`, `StartsWith`, `EndsWith` | Single string | `{"Values": ["keyword"]}` |
-| `ContainsAnd`, `StartsWithOr` | Multiple strings | `{"Values": ["k1", "k2"]}` |
+| Category | Conditions | Expected Values |
+|----------|------------|------------------|
+| **Comparison** | `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual` | Single value |
+| **Range** | `Between`, `NotBetween` | Two values (start, end) |
+| **Inclusion** | `In`, `NotIn` | List of one or more values |
+| **Text Matching** | `Contains`, `StartsWith`, `EndsWith`, `NotContains`, `NotStartsWith`, `NotEndsWith` | Single string |
+| **Multi-Value Text** | `ContainsAnd`, `ContainsOr`, `StartsWithAnd`, `StartsWithOr`, `EndsWithAnd`, `EndsWithOr` | List of two or more strings |
 
-!!! note "Date Values"
-    Date values should be formatted as `DD-MMM-YYYY`, e.g., `"15-Sep-2023"`.
+### Filter Values
 
-!!! note "Clearing Filters"
-    Set `Values` to `None` to clear an existing filter.
+| Value Type | Format | Example |
+|------------|--------|---------|
+| **Date** | `DD-MMM-YYYY` string | `"15-Sep-2023"` |
+| **Numeric** | Integer or float | `100`, `99.5` |
+| **Text** | String | `"North"` |
+| **Clear Filter** | `None` | Removes existing filter on the column |
 
 ### Example
 
@@ -248,9 +263,16 @@ Updates filters in the Power BI report level filter pane.
 pbir.update_report_filters(
     directory_path=r"C:\DEV\MyReport.Report",
     filters=[
+        # Inclusion filter
         {"Table": "Sales", "Column": "Region", "Condition": "In", "Values": ["North", "South"]},
-        {"Table": "Sales", "Column": "Date", "Condition": "Between", "Values": ["01-Jan-2023", "31-Dec-2023"]},
+        # Date range filter
+        {"Table": "Orders", "Column": "OrderDate", "Condition": "Between", "Values": ["01-Jan-2023", "31-Dec-2023"]},
+        # Numeric comparison
         {"Table": "Sales", "Column": "Amount", "Condition": "GreaterThan", "Values": [100]},
+        # Text matching
+        {"Table": "Products", "Column": "Name", "Condition": "Contains", "Values": ["Pro"]},
+        # Clear existing filter
+        {"Table": "Sales", "Column": "Category", "Condition": "In", "Values": None},
     ],
     dry_run=True
 )
