@@ -53,8 +53,6 @@ import pbir_utils as pbir
 pbir.sanitize_powerbi_report("C:\\Reports\\MyReport.Report", actions=["remove_unused_measures"])
 ```
 
-!!! tip "Runnable Examples"
-    For a complete set of runnable Python examples, see the [example_usage.ipynb](https://github.com/akhilannan/pbir-utils/blob/main/examples/example_usage.ipynb) notebook.
 
 ## Next Steps
 

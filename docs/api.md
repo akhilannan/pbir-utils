@@ -6,9 +6,6 @@ The `pbir_utils` library provides a comprehensive Python API for programmatic ac
 import pbir_utils as pbir
 ```
 
-!!! tip "Runnable Examples"
-    For complete, runnable examples, see the [example_usage.ipynb](https://github.com/akhilannan/pbir-utils/blob/main/examples/example_usage.ipynb) notebook.
-
 ---
 
 ## Batch Update Attributes
