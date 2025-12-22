@@ -57,9 +57,9 @@ Exports metadata from PBIR into a CSV file. Supports two modes: **attribute meta
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `directory_path` | str | Path to directory containing PBIR files |
+| `directory_path` | str | Path to the PBIR report folder or a parent directory containing multiple reports |
 | `csv_output_path` | str | Path for output CSV file. If not provided, defaults to `metadata.csv` or `visuals.csv` in the report folder |
-| `filters` | dict | Dictionary to filter output data (keys are column names, values are sets of allowed values) |
+| `filters` | dict | Dictionary to filter output data (keys are column names, values are sets of allowed values). Keys with empty sets are ignored. |
 | `visuals_only` | bool | If `True`, exports visual-level metadata instead of attribute usage. Default: `False` |
 
 ### Example

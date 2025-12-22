@@ -460,3 +460,48 @@ class TestVisualMetadataExport:
 
         assert len(rows) == 1
         assert rows[0]["Is Hidden"] == "True"
+
+    def test_visuals_only_recursive_search(self, tmp_path):
+        """Test recursive search for .Report folders in visual export."""
+        root_dir = tmp_path / "Root"
+        # Report 1
+        r1_dir = root_dir / "Report1.Report"
+        create_dummy_file(r1_dir, "definition/pages/pages.json", {"pageOrder": ["P1"]})
+        create_dummy_file(
+            r1_dir,
+            "definition/pages/P1/page.json",
+            {"name": "P1", "displayName": "Page1"},
+        )
+        create_dummy_file(
+            r1_dir,
+            "definition/pages/P1/visuals/V1/visual.json",
+            {"name": "V1", "visual": {"visualType": "card"}},
+        )
+
+        # Report 2 nested
+        r2_dir = root_dir / "subdir" / "Report2.Report"
+        create_dummy_file(r2_dir, "definition/pages/pages.json", {"pageOrder": ["P2"]})
+        create_dummy_file(
+            r2_dir,
+            "definition/pages/P2/page.json",
+            {"name": "P2", "displayName": "Page2"},
+        )
+        create_dummy_file(
+            r2_dir,
+            "definition/pages/P2/visuals/V2/visual.json",
+            {"name": "V2", "visual": {"visualType": "slicer"}},
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(root_dir), str(output_csv), visuals_only=True)
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        assert len(rows) == 2
+        reports = {r["Report"] for r in rows}
+        assert "Report1" in reports
+        assert "Report2" in reports

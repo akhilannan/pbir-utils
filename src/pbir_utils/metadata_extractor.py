@@ -1,6 +1,5 @@
 import os
 import csv
-import fnmatch
 
 from .common import load_json, traverse_pbir_json, iter_pages, extract_visual_info
 from .console_utils import console
@@ -230,6 +229,31 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
     return all_rows
 
 
+def _find_report_directories(directory_path: str) -> list:
+    """
+    Recursively find all .Report directories in the given path.
+
+    Args:
+        directory_path (str): The root directory to search.
+
+    Returns:
+        list: A list of absolute paths to .Report directories.
+    """
+    report_paths = []
+    # Check if the directory_path itself is a report folder
+    if directory_path.endswith(".Report") and os.path.exists(
+        os.path.join(directory_path, "definition")
+    ):
+        report_paths.append(directory_path)
+    else:
+        # Search recursively for .Report folders
+        for root, dirs, _ in os.walk(directory_path):
+            for d in dirs:
+                if d.endswith(".Report"):
+                    report_paths.append(os.path.join(root, d))
+    return report_paths
+
+
 def _consolidate_metadata_from_directory(
     directory_path: str, filters: dict = None
 ) -> list:
@@ -247,14 +271,21 @@ def _consolidate_metadata_from_directory(
     all_rows_with_expression = []
     all_rows_without_expression = []
     report_filter = filters.get("Report") if filters else None
-    report_pattern = (
-        "|".join([f"*{report_name}.Report*" for report_name in report_filter])
-        if report_filter
-        else "*.Report*"
-    )
 
-    for root, _, files in os.walk(directory_path):
-        if fnmatch.fnmatch(root, report_pattern):
+    # Find all report directories
+    report_dirs = _find_report_directories(directory_path)
+
+    if not report_dirs:
+        console.print_warning(f"No .Report folders found in {directory_path}")
+        return []
+
+    for report_dir in report_dirs:
+        # Check report filter
+        report_name = _extract_report_name(os.path.join(report_dir, "dummy"))
+        if report_filter and report_name not in report_filter:
+            continue
+
+        for root, _, files in os.walk(report_dir):
             for file in files:
                 if file.endswith(".json"):
                     json_file_path = os.path.join(root, file)
@@ -351,43 +382,60 @@ def _export_visual_metadata(
     """Export visual-level metadata using iter_pages + extract_visual_info."""
     console.print_action_heading("Extracting visual metadata", False)
 
-    report_name = _extract_report_name(directory_path)
     metadata = []
+    report_paths = _find_report_directories(directory_path)
 
-    for page_id, page_folder, page_data in iter_pages(directory_path):
-        page_name = page_data.get("displayName", "NA")
+    if not report_paths:
+        console.print_warning(f"No .Report folders found in {directory_path}")
 
-        # Apply page filter if specified
-        if (
-            filters
-            and filters.get("Page Name")
-            and page_name not in filters["Page Name"]
-        ):
+    for report_path in report_paths:
+        # Construct a dummy path to use the existing extractor
+        dummy_file_path = os.path.join(report_path, "definition", "report.json")
+        report_name = _extract_report_name(dummy_file_path)
+
+        # Apply report filter if specified
+        report_filter = filters.get("Report") if filters else None
+        if report_filter and report_name not in report_filter:
             continue
 
-        visuals_info = extract_visual_info(page_folder)
-        for visual_id, info in visuals_info.items():
-            row = {
-                "Report": report_name,
-                "Page Name": page_name,
-                "Page ID": page_id,
-                "Visual Type": info["visualType"],
-                "Visual ID": visual_id,
-                "Parent Group ID": info["parentGroupName"],
-                "Is Hidden": info["isHidden"],
-            }
-            if _apply_filters(row, filters):
-                metadata.append(row)
+        for page_id, page_folder, page_data in iter_pages(report_path):
+            page_name = page_data.get("displayName", "NA")
 
-    # Sort by page order
-    page_order = _get_page_order(directory_path)
+            # Apply page filter if specified
+            if (
+                filters
+                and filters.get("Page Name")
+                and page_name not in filters["Page Name"]
+            ):
+                continue
+
+            visuals_info = extract_visual_info(page_folder)
+            for visual_id, info in visuals_info.items():
+                row = {
+                    "Report": report_name,
+                    "Page Name": page_name,
+                    "Page ID": page_id,
+                    "Visual Type": info["visualType"],
+                    "Visual ID": visual_id,
+                    "Parent Group ID": info["parentGroupName"],
+                    "Is Hidden": info["isHidden"],
+                }
+                if _apply_filters(row, filters):
+                    metadata.append(row)
+
+    # Build page order map for sorting
+    report_page_orders = {}
+    for r_path in report_paths:
+        r_name = _extract_report_name(os.path.join(r_path, "definition", "report.json"))
+        report_page_orders[r_name] = _get_page_order(r_path)
+
     metadata.sort(
         key=lambda row: (
             row["Report"],
             (
-                page_order.index(row["Page ID"])
-                if row["Page ID"] in page_order
-                else len(page_order) + 1
+                report_page_orders.get(row["Report"], []).index(row["Page ID"])
+                if row["Page ID"] in report_page_orders.get(row["Report"], [])
+                else len(report_page_orders.get(row["Report"], [])) + 1
             ),
         )
     )
@@ -411,20 +459,12 @@ def _export_attribute_metadata(
 
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
-    # Extract report paths to gather the page order
+    # Build page order map for sorting
+    all_report_paths = _find_report_directories(directory_path)
     report_paths = {}
-    for row in metadata:
-        report_name = row["Report"]
-        # Check if the directory_path itself is the report folder
-        if (
-            os.path.basename(os.path.normpath(directory_path))
-            == f"{report_name}.Report"
-        ):
-            report_paths[report_name] = directory_path
-        else:
-            report_paths[report_name] = os.path.join(
-                directory_path, report_name + ".Report"
-            )
+    for r_path in all_report_paths:
+        r_name = _extract_report_name(os.path.join(r_path, "definition", "report.json"))
+        report_paths[r_name] = r_path
 
     # Get page orders for each report
     report_page_orders = {

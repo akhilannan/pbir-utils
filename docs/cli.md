@@ -65,11 +65,27 @@ Batch update attributes in PBIR project using a mapping CSV.
 pbir-utils batch-update "C:\PBIR\Project" "C:\Mapping.csv" --dry-run
 ```
 
+### CSV Format
+
+The mapping CSV should have these columns:
+
+| old_tbl | old_col | new_tbl | new_col |
+|---------|---------|---------|---------|
+| Sale | sale_id | Sales | Sale Id |
+| Sale | order_date | Sales | OrderDate |
+| Date | | Dates | |
+| Product | product_name | | Product Name |
+
+- If a table name is unchanged, `new_tbl` is optional
+- If only the table name changes, `old_col` and `new_col` can be omitted
+
 ---
 
 ## Extract Metadata
 
 Extract metadata from PBIR reports to CSV. Supports two modes: **attribute metadata** (default) and **visual metadata** (`--visuals-only`).
+
+You can specify a single `.Report` folder or a parent directory containing multiple reports. When a parent directory is provided, the tool recursively processes all reports found within it.
 
 If no output path is specified, creates `metadata.csv` (or `visuals.csv` with `--visuals-only`) in the report folder.
 
@@ -211,6 +227,22 @@ Update report-level filters.
 ```bash
 pbir-utils update-filters "C:\Reports" '[{"Table": "Sales", "Column": "Region", "Condition": "In", "Values": ["North", "South"]}]' --dry-run
 ```
+
+### Condition Types
+
+| Type | Expected Values | Example |
+|------|-----------------|---------|
+| `GreaterThan`, `LessThan`, etc. | Single value | `{"Values": [50]}` |
+| `Between`, `NotBetween` | Two values (range) | `{"Values": [10, 20]}` |
+| `In`, `NotIn` | List of values | `{"Values": ["A", "B"]}` |
+| `Contains`, `StartsWith`, `EndsWith` | Single string | `{"Values": ["keyword"]}` |
+| `ContainsAnd`, `StartsWithOr` | Multiple strings | `{"Values": ["k1", "k2"]}` |
+
+!!! note "Date Values"
+    Date values should be formatted as `DD-MMM-YYYY`, e.g., `"15-Sep-2023"`.
+
+!!! note "Clearing Filters"
+    Set `Values` to `None` to clear an existing filter.
 
 ---
 
