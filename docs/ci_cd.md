@@ -2,7 +2,7 @@
 
 `pbir-utils` can be integrated into your CI/CD pipeline to validate Power BI reports before deployment. This ensures all reports adhere to your team's standards and best practices.
 
-This guide demonstrates how to set up a CI/CD check using Azure DevOps as an example, though the concepts apply to GitHub Actions, GitLab CI, and other tools.
+This guide demonstrates how to set up CI/CD checks for both **GitHub Actions** and **Azure DevOps** using a single, platform-agnostic validation script.
 
 ## Repository Structure
 
@@ -17,9 +17,8 @@ my-powerbi-repo/
 │   ├── HRReport.Report/
 │   └── ...
 ├── scripts/
-│   └── check_reports.py         # The custom validation script
+│   └── check_reports.py         # The validation script (works on any CI)
 ├── pbir-sanitize.yaml           # Shared sanitization configuration
-├── azure-pipelines.yaml         # CI/CD Pipeline definition
 └── requirements.txt             # Dependencies (including pbir-utils)
 ```
 
@@ -59,17 +58,18 @@ For more details on configuration and available actions, see the [CLI Reference]
 
 ## 2. Create the Validation Script
 
-Create a Python script (e.g., `scripts/check_reports.py`) that uses the `pbir-utils` API to check each report. 
+Create a Python script (e.g., `scripts/check_reports.py`) that validates each report. This script **automatically detects** whether it's running on GitHub Actions, Azure DevOps, or locally, and formats output accordingly.
 
-This script will:
+The script will:
 
 1. Iterate through all reports in your repository.
 2. Run `sanitize_powerbi_report` in `dry_run` mode.
-3. If any changes **would** be made (i.e., the report is not "clean"), it logs warnings or errors in a format that Azure DevOps understands.
+3. Log warnings or errors in the appropriate CI format.
 4. Configure `BLOCKING_RULES` to specify which actions should **fail** the build. Actions not in this set will only produce warnings. Set it to `{}` (empty) if you want warnings only.
 
 ```python
-"""CI/CD validation script for Power BI reports."""
+"""CI/CD validation script for Power BI reports (GitHub Actions & Azure DevOps)."""
+import os
 import sys
 from pathlib import Path
 from pbir_utils import sanitize_powerbi_report
@@ -79,7 +79,18 @@ REPORT_PATTERN = "src/*.Report"
 BLOCKING_RULES = {"remove_identifier_filters", "remove_unused_measures"}
 
 
-def main():
+def log_issue(message: str, is_error: bool = False) -> None:
+    """Log an issue in the appropriate CI format."""
+    level = "error" if is_error else "warning"
+    if os.getenv("GITHUB_ACTIONS"):
+        print(f"::{level}::{message}")
+    elif os.getenv("TF_BUILD"):
+        print(f"##vso[task.logissue type={level}]{message}")
+    else:
+        print(f"  [{level.upper()}] {message}")
+
+
+def main() -> None:
     reports = list(Path.cwd().glob(REPORT_PATTERN))
     if not reports:
         print(f"No reports found matching '{REPORT_PATTERN}'")
@@ -101,8 +112,7 @@ def main():
 
         for action in failed:
             is_error = action in BLOCKING_RULES
-            level = "error" if is_error else "warning"
-            print(f"##vso[task.logissue type={level}][{name}] {action}")
+            log_issue(f"[{name}] {action}", is_error=is_error)
             if is_error:
                 has_blocking_errors = True
 
@@ -116,12 +126,47 @@ if __name__ == "__main__":
     main()
 ```
 
-## 3. Configure Azure DevOps Pipeline
+## 3. Configure Your CI Pipeline
 
-Finally, add a step in your `azure-pipelines.yaml` to run this script.
+### GitHub Actions
+
+Create `.github/workflows/validate-reports.yml`:
+
+```yaml
+name: Validate Power BI Reports
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pbir-utils
+        run: pip install pbir-utils
+
+      - name: Validate Reports
+        run: python scripts/check_reports.py
+```
+
+### Azure DevOps
+
+Create `azure-pipelines.yaml`:
 
 ```yaml
 trigger:
+  - main
+
+pr:
   - main
 
 pool:
@@ -136,22 +181,19 @@ steps:
       versionSpec: '3.12'
       addToPath: true
 
-  - script: |
-      python -m pip install --upgrade pip
-      pip install pbir-utils
+  - script: pip install pbir-utils
     displayName: 'Install pbir-utils'
 
-  - script: |
-      python scripts/check_reports.py
+  - script: python scripts/check_reports.py
     displayName: 'Validate Power BI Reports'
 ```
 
-### How it Works in Practice
+## How it Works
 
-1. **Pull Request**: When a developer opens a PR, this pipeline runs.
-2. **Validation**: It scans the reports.
-3. **Feedback**: If a report has issues, the script emits `##vso[task.logissue]` commands with `type=warning` or `type=error` based on `BLOCKING_RULES`.
-4. **Visibility**: Azure DevOps highlights these issues on the pipeline summary and PR view, alerting reviewers.
+1. **Pull Request**: When a developer opens a PR, the pipeline runs.
+2. **Validation**: The script scans all reports matching the pattern.
+3. **Feedback**: Issues are logged in the native CI format (errors/warnings appear in the PR view).
+4. **Result**: Build fails if any `BLOCKING_RULES` are triggered; otherwise, it passes with warnings.
 
 ## Why not auto-fix in CI?
 
