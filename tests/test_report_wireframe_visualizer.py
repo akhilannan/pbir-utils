@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from pbir_utils.report_wireframe_visualizer import (
-    _extract_visual_info,
+    _get_visual_info_as_tuples,
     _adjust_visual_positions,
     _create_wireframe_figure,
     _apply_filters,
@@ -53,88 +53,90 @@ def mock_child_visual_json():
     }
 
 
-@patch("pbir_utils.report_wireframe_visualizer.load_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_extract_visual_info(
-    mock_listdir, mock_exists, mock_load_json, mock_visual_json, mock_child_visual_json
+@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
+def test_get_visual_info_as_tuples(
+    mock_extract_visual_info, mock_visual_json, mock_child_visual_json
 ):
-    mock_listdir.return_value = ["visual1", "visual2"]
-    mock_exists.return_value = True
+    # Mock extract_visual_info to return dict format
+    mock_extract_visual_info.return_value = {
+        "visual1": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 200,
+            "visualType": "columnChart",
+            "parentGroupName": None,
+            "isHidden": False,
+        },
+        "visual2": {
+            "x": 10,
+            "y": 10,
+            "width": 50,
+            "height": 50,
+            "visualType": "card",
+            "parentGroupName": "visual_group",
+            "isHidden": True,
+        },
+    }
 
-    # Return different data for different calls
-    def side_effect(path):
-        if "visual1" in path:
-            return mock_visual_json
-        # Create a copy for visual2 with correct name
-        v2 = mock_child_visual_json.copy()
-        v2["name"] = "visual2"
-        return v2
-
-    mock_load_json.side_effect = side_effect
-
-    visuals = _extract_visual_info("dummy/visuals")
+    visuals = _get_visual_info_as_tuples("dummy/page")
     assert len(visuals) == 2
     assert "visual1" in visuals
     assert "visual2" in visuals
     assert visuals["visual1"][4] == "columnChart"
 
 
-@patch("pbir_utils.report_wireframe_visualizer.load_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_extract_visual_info_renamed_folders(
-    mock_listdir, mock_exists, mock_load_json, mock_visual_json
+@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
+def test_get_visual_info_as_tuples_renamed_folders(
+    mock_extract_visual_info, mock_visual_json
 ):
     """Test that visual info is extracted correctly even if folder name differs from visual ID."""
-    mock_listdir.return_value = ["Folder_Visual1"]
-    mock_exists.return_value = True
+    mock_extract_visual_info.return_value = {
+        "Visual1": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 200,
+            "visualType": "columnChart",
+            "parentGroupName": None,
+            "isHidden": False,
+        },
+    }
 
-    # Mock visual.json content where name="Visual1" but folder is "Folder_Visual1"
-    visual_data = mock_visual_json.copy()
-    visual_data["name"] = "Visual1"
-    mock_load_json.return_value = visual_data
-
-    visuals = _extract_visual_info("dummy/visuals")
+    visuals = _get_visual_info_as_tuples("dummy/page")
 
     assert len(visuals) == 1
     assert "Visual1" in visuals  # Key should be the ID from JSON
     assert "Folder_Visual1" not in visuals  # Key should NOT be the folder name
 
 
-@patch("pbir_utils.report_wireframe_visualizer.load_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_extract_visual_info_string_and_prefixed_coordinates(
-    mock_listdir, mock_exists, mock_load_json
+@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
+def test_get_visual_info_as_tuples_string_and_prefixed_coordinates(
+    mock_extract_visual_info,
 ):
     """Test that string coordinates and @@__PRESERVE_FLOAT__@@ prefixes are parsed correctly."""
-    mock_listdir.return_value = ["visual1", "visual2"]
-    mock_exists.return_value = True
+    mock_extract_visual_info.return_value = {
+        "visual1": {
+            "x": "100",
+            "y": "200",
+            "width": "50",
+            "height": "60",
+            "visualType": "chart",
+            "parentGroupName": None,
+            "isHidden": False,
+        },
+        "visual2": {
+            "x": "@@__PRESERVE_FLOAT__@@123.456",
+            "y": "@@__PRESERVE_FLOAT__@@78.9",
+            "width": 100,
+            "height": 100,
+            "visualType": "card",
+            "parentGroupName": None,
+            "isHidden": False,
+        },
+    }
 
-    def side_effect(path):
-        if "visual1" in path:
-            # String coordinates
-            return {
-                "name": "visual1",
-                "position": {"x": "100", "y": "200", "width": "50", "height": "60"},
-                "visual": {"visualType": "chart"},
-            }
-        # Preserve float prefix coordinates
-        return {
-            "name": "visual2",
-            "position": {
-                "x": "@@__PRESERVE_FLOAT__@@123.456",
-                "y": "@@__PRESERVE_FLOAT__@@78.9",
-                "width": 100,
-                "height": 100,
-            },
-            "visual": {"visualType": "card"},
-        }
-
-    mock_load_json.side_effect = side_effect
-
-    visuals = _extract_visual_info("dummy/visuals")
+    visuals = _get_visual_info_as_tuples("dummy/page")
 
     assert len(visuals) == 2
     # String coordinates should be parsed to floats
@@ -213,17 +215,14 @@ def test_apply_filters():
 
 @patch("dash.Dash")
 @patch("pbir_utils.report_wireframe_visualizer._get_page_order")
-@patch("pbir_utils.report_wireframe_visualizer._extract_visual_info")
+@patch("pbir_utils.report_wireframe_visualizer._get_visual_info_as_tuples")
 @patch("pbir_utils.report_wireframe_visualizer.iter_pages")
-@patch("os.path.exists")
 def test_display_report_wireframes(
-    mock_exists,
     mock_iter_pages,
-    mock_extract_visual,
+    mock_get_visual_info,
     mock_get_order,
     mock_dash,
 ):
-    mock_exists.return_value = True
     # iter_pages yields (page_id, page_folder_path, page_data)
     mock_iter_pages.return_value = iter(
         [
@@ -234,7 +233,7 @@ def test_display_report_wireframes(
             )
         ]
     )
-    mock_extract_visual.return_value = {}
+    mock_get_visual_info.return_value = {}
     mock_get_order.return_value = ["p1"]
 
     mock_app = MagicMock()

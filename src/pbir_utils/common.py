@@ -179,6 +179,32 @@ def iter_visuals(page_folder: str) -> Generator[tuple[str, str, dict], None, Non
         yield visual_id, folder_path, visual_data
 
 
+def extract_visual_info(page_folder: str) -> dict:
+    """
+    Extract visual information from all visuals in a page folder.
+
+    Args:
+        page_folder: Path to the page folder containing a 'visuals' subdirectory.
+
+    Returns:
+        dict: A dictionary with visual IDs as keys and dicts of visual info as values.
+              Each dict contains: x, y, width, height, visualType, parentGroupName, isHidden.
+    """
+    visuals = {}
+    for visual_id, _, visual_data in iter_visuals(page_folder):
+        position = visual_data.get("position", {})
+        visuals[visual_id] = {
+            "x": position.get("x"),
+            "y": position.get("y"),
+            "width": position.get("width"),
+            "height": position.get("height"),
+            "visualType": visual_data.get("visual", {}).get("visualType", "Group"),
+            "parentGroupName": visual_data.get("parentGroupName"),
+            "isHidden": visual_data.get("isHidden", False),
+        }
+    return visuals
+
+
 def walk_json_files(directory: str, file_pattern: str) -> Generator[str, None, None]:
     """
     Walk through JSON files in a directory matching a specific pattern.

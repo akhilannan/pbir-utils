@@ -1,6 +1,4 @@
-import os
-
-from .common import load_json, iter_pages
+from .common import iter_pages, extract_visual_info
 from .metadata_extractor import _get_page_order
 from .console_utils import console
 
@@ -15,46 +13,31 @@ def _parse_coordinate(value) -> float:
     return float(value)
 
 
-def _extract_visual_info(visuals_folder: str) -> dict:
+def _get_visual_info_as_tuples(page_folder: str) -> dict:
     """
-    Extract visual information from `visual.json` files in a visuals folder.
+    Extract visual information as tuples for wireframe rendering.
+
+    Uses extract_visual_info from common.py and converts to tuple format.
 
     Args:
-        visuals_folder (str): Path to the visuals folder containing visual subdirectories.
+        page_folder (str): Path to the page folder.
 
     Returns:
-        dict: A dictionary with visual IDs as keys and tuples of visual information as values.
-              Each tuple contains (x, y, width, height, visualType, parentGroupName, isHidden).
+        dict: Visual IDs as keys, tuples of (x, y, width, height, visualType, parentGroupName, isHidden).
     """
-    visuals = {}
-    for visual_folder_name in os.listdir(visuals_folder):
-        visual_json_path = os.path.join(
-            visuals_folder, visual_folder_name, "visual.json"
+    visuals_info = extract_visual_info(page_folder)
+    return {
+        vid: (
+            _parse_coordinate(info["x"]),
+            _parse_coordinate(info["y"]),
+            _parse_coordinate(info["width"]),
+            _parse_coordinate(info["height"]),
+            info["visualType"],
+            info["parentGroupName"],
+            info["isHidden"],
         )
-        if not os.path.exists(visual_json_path):
-            continue
-
-        visual_data = load_json(visual_json_path)
-        visual_id = visual_data.get(
-            "name"
-        )  # Use the ID from the JSON, not the folder name
-
-        if not visual_id:
-            continue
-
-        position = visual_data["position"]
-
-        visuals[visual_id] = (
-            _parse_coordinate(position["x"]),
-            _parse_coordinate(position["y"]),
-            _parse_coordinate(position["width"]),
-            _parse_coordinate(position["height"]),
-            visual_data.get("visual", {}).get("visualType", "Group"),
-            visual_data.get("parentGroupName"),
-            visual_data.get("isHidden", False),
-        )
-
-    return visuals
+        for vid, info in visuals_info.items()
+    }
 
 
 def _adjust_visual_positions(visuals: dict) -> dict:
@@ -221,11 +204,7 @@ def display_report_wireframes(
             width = page_data.get("width")
             height = page_data.get("height")
 
-            visuals_folder_path = os.path.join(page_folder_path, "visuals")
-            if os.path.exists(visuals_folder_path):
-                visuals_info = _extract_visual_info(visuals_folder_path)
-            else:
-                visuals_info = {}
+            visuals_info = _get_visual_info_as_tuples(page_folder_path)
             pages_info.append((page_name, display_name, width, height, visuals_info))
         except Exception as e:
             print(e)

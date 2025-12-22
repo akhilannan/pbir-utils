@@ -67,6 +67,52 @@ pbir-utils batch-update "C:\PBIR\Project" "C:\Mapping.csv" --dry-run
 
 ---
 
+## Extract Metadata
+
+Extract metadata from PBIR reports to CSV. Supports two modes: **attribute metadata** (default) and **visual metadata** (`--visuals-only`).
+
+If no output path is specified, creates `metadata.csv` (or `visuals.csv` with `--visuals-only`) in the report folder.
+
+### Attribute Metadata (Default)
+
+Exports detailed information about tables, columns, measures, DAX expressions, and usage contexts.
+
+```bash
+# Creates metadata.csv in the report folder
+pbir-utils extract-metadata "C:\Reports\MyReport.Report"
+
+# With custom output path
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
+
+# With filters
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" --filters '{"Page Name": ["Overview"]}'
+```
+
+**Output columns:** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
+
+### Visual Metadata
+
+Exports visual-level information including type, grouping, and hidden status.
+
+```bash
+# Creates visuals.csv in the report folder
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only
+
+# With custom output path
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv" --visuals-only
+```
+
+**Output columns:** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--filters` | JSON string to filter results (e.g., `'{"Page Name": ["Page1"]}'`) |
+| `--visuals-only` | Extract visual-level metadata instead of attribute usage |
+
+---
+
 ## Disable Interactions
 
 Disable visual interactions between visuals. Useful for preventing slicers or other visuals from affecting specific targets.

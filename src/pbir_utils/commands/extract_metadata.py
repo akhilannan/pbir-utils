@@ -15,13 +15,18 @@ def register(subparsers):
         Export attribute metadata from PBIR to CSV.
         
         Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.
+        Use --visuals-only to export visual-level metadata instead.
+        
+        If no output path is specified, creates metadata.csv (or visuals.csv with --visuals-only) in the report folder.
     """
     )
     extract_epilog = textwrap.dedent(
         r"""
         Examples:
-          pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
-          pbir-utils extract-metadata "C:\Reports" "C:\Output\all_metadata.csv" --filters '{"Page Name": ["Overview"]}'
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report"
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\custom.csv"
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --filters '{"Page Name": ["Overview"]}'
     """
     )
     parser = subparsers.add_parser(
@@ -34,11 +39,16 @@ def register(subparsers):
     parser.add_argument(
         "args",
         nargs="*",
-        help="[report_path] output_path (report_path optional if inside a .Report folder)",
+        help="[report_path] [output_path] (both optional if inside a .Report folder)",
     )
     parser.add_argument(
         "--filters",
         help='JSON string representing filters (e.g., \'{"Page Name": ["Page1"]}\').',
+    )
+    parser.add_argument(
+        "--visuals-only",
+        action="store_true",
+        help="Extract visual-level metadata instead of attribute usage.",
     )
     parser.set_defaults(func=handle)
 
@@ -54,18 +64,16 @@ def handle(args):
     output_path = None
 
     if len(cmd_args) == 0:
-        console.print_error("Output path required.")
-        sys.exit(1)
-        return
+        # No args - resolve report path from CWD, use default output
+        report_path = resolve_report_path(None)
     elif len(cmd_args) == 1:
         if cmd_args[0].lower().endswith(".csv"):
+            # Single arg is CSV - resolve report path from CWD
             report_path = resolve_report_path(None)
             output_path = cmd_args[0]
         else:
+            # Single arg is report path - use default output
             report_path = cmd_args[0]
-            console.print_error("Output path required.")
-            sys.exit(1)
-            return
     elif len(cmd_args) == 2:
         report_path = cmd_args[0]
         output_path = cmd_args[1]
@@ -75,4 +83,6 @@ def handle(args):
         return
 
     filters = parse_filters(args.filters)
-    export_pbir_metadata_to_csv(report_path, output_path, filters=filters)
+    export_pbir_metadata_to_csv(
+        report_path, output_path, filters=filters, visuals_only=args.visuals_only
+    )

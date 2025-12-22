@@ -324,3 +324,139 @@ class TestExportPbirMetadataToCsv:
         export_pbir_metadata_to_csv(str(report_dir), str(output_csv), filters)
 
         assert output_csv.exists()
+
+
+class TestVisualMetadataExport:
+    """Tests for visual metadata export (visuals_only=True)."""
+
+    def test_visuals_only_creates_csv(self, tmp_path):
+        """Test that visuals_only export creates a CSV file."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        # Create minimal report structure
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        visual_data = {
+            "name": "Visual1",
+            "position": {"x": 10, "y": 20, "width": 100, "height": 200},
+            "visual": {"visualType": "card"},
+            "isHidden": False,
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Visual1/visual.json",
+            visual_data,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        assert output_csv.exists()
+
+    def test_visuals_only_has_correct_headers(self, tmp_path):
+        """Test that visuals_only CSV has correct headers."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        with open(output_csv, "r") as f:
+            header = f.readline().strip()
+
+        expected_headers = (
+            "Report,Page Name,Page ID,Visual Type,Visual ID,Parent Group ID,Is Hidden"
+        )
+        assert header == expected_headers
+
+    def test_visuals_only_extracts_parent_group(self, tmp_path):
+        """Test that parent group is correctly extracted."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        # Create parent group
+        group_data = {
+            "name": "Group1",
+            "position": {"x": 0, "y": 0, "width": 300, "height": 300},
+            "visual": {"visualType": "Group"},
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Group1/visual.json",
+            group_data,
+        )
+
+        # Create child visual
+        child_data = {
+            "name": "Child1",
+            "position": {"x": 10, "y": 10, "width": 50, "height": 50},
+            "visual": {"visualType": "card"},
+            "parentGroupName": "Group1",
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Child1/visual.json",
+            child_data,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        assert len(rows) == 2
+        child_row = next(r for r in rows if r["Visual ID"] == "Child1")
+        assert child_row["Parent Group ID"] == "Group1"
+
+    def test_visuals_only_extracts_hidden_status(self, tmp_path):
+        """Test that hidden status is correctly extracted."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        # Hidden visual
+        hidden_visual = {
+            "name": "HiddenVis",
+            "position": {"x": 0, "y": 0, "width": 100, "height": 100},
+            "visual": {"visualType": "slicer"},
+            "isHidden": True,
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/HiddenVis/visual.json",
+            hidden_visual,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        assert len(rows) == 1
+        assert rows[0]["Is Hidden"] == "True"

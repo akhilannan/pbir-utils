@@ -1,10 +1,5 @@
 ### Added
-- **Project Identity**
-    - Added official project logo to README and Documentation.
-    - Added ASCII art startup banner to CLI for better user experience.
-
-### Documentation
-- **CI/CD Integration**
-    - Added new "CI/CD Integration" guide covering Azure DevOps pipeline setup
-    - Added comprehensive validation script example with blocking rules configuration
-    - Included strict validation strategy (fail build vs warn) guidance
+- **Visual Metadata Extraction**
+    - Added `--visuals-only` flag to `extract-metadata` command for visual-level metadata export
+    - Exports Visual Type, Visual ID, Parent Group ID, and Is Hidden status
+    - Made output path optional - defaults to `metadata.csv` or `visuals.csv` in the report folder

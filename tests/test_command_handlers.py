@@ -424,24 +424,31 @@ class TestOtherHandlers:
     def test_handle_extract_metadata(self, mock_export, mock_resolve):
         """Test extract-metadata handler."""
         mock_resolve.return_value = "resolved/path"
-        args = argparse.Namespace(args=["path", "out.csv"], filters=None)
+        args = argparse.Namespace(
+            args=["path", "out.csv"], filters=None, visuals_only=False
+        )
 
         from pbir_utils.commands.extract_metadata import handle as handle_extract
 
         handle_extract(args)
 
-        mock_export.assert_called_once_with("path", "out.csv", filters=None)
+        mock_export.assert_called_once_with(
+            "path", "out.csv", filters=None, visuals_only=False
+        )
 
-    @patch("pbir_utils.commands.extract_metadata.console")
-    @patch("sys.exit")
-    def test_handle_extract_metadata_no_args(self, mock_exit, mock_console):
-        """Test extract-metadata handler with no arguments."""
-        args = argparse.Namespace(args=[], filters=None)
+    @patch("pbir_utils.common.resolve_report_path")
+    @patch("pbir_utils.metadata_extractor.export_pbir_metadata_to_csv")
+    def test_handle_extract_metadata_no_args(self, mock_export, mock_resolve):
+        """Test extract-metadata handler with no arguments resolves from CWD."""
+        mock_resolve.return_value = "resolved/path"
+        args = argparse.Namespace(args=[], filters=None, visuals_only=False)
         from pbir_utils.commands.extract_metadata import handle as handle_extract
 
         handle_extract(args)
-        mock_console.print_error.assert_called_with("Output path required.")
-        mock_exit.assert_called_with(1)
+        mock_resolve.assert_called_with(None)
+        mock_export.assert_called_once_with(
+            "resolved/path", None, filters=None, visuals_only=False
+        )
 
 
 class TestVisualizeHandler:

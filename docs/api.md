@@ -51,30 +51,44 @@ pbir.batch_update_pbir_project(
 
 ## Export Metadata to CSV
 
-Exports metadata from PBIR into a CSV file, including tables, columns, measures, DAX expressions, and usage contexts.
+Exports metadata from PBIR into a CSV file. Supports two modes: **attribute metadata** (default) and **visual metadata** (`visuals_only=True`).
 
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `directory_path` | str | Path to directory containing PBIR files |
-| `csv_output_path` | str | Path for output CSV file |
+| `csv_output_path` | str | Path for output CSV file. If not provided, defaults to `metadata.csv` or `visuals.csv` in the report folder |
 | `filters` | dict | Dictionary to filter output data (keys are column names, values are sets of allowed values) |
+| `visuals_only` | bool | If `True`, exports visual-level metadata instead of attribute usage. Default: `False` |
 
 ### Example
 
 ```python
+# Export attribute metadata with default output (metadata.csv in report folder)
 pbir.export_pbir_metadata_to_csv(
     directory_path=r"C:\DEV\Power BI Report",
-    csv_output_path=r"C:\DEV\output.csv",
-    filters={
-        "Report": {},
-        "Page Name": {},
-        "Table": {},
-        "Column or Measure": {},
-    },
+)
+
+# Export attribute metadata with custom path
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    csv_output_path=r"C:\DEV\metadata.csv",
+    filters={"Page Name": {"Overview"}},
+)
+
+# Export visual metadata with default output (visuals.csv in report folder)
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    visuals_only=True,
 )
 ```
+
+### Output Columns
+
+**Attribute Metadata (default):** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
+
+**Visual Metadata (`visuals_only=True`):** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
 
 ---
 

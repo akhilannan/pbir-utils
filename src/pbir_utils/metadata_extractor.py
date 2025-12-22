@@ -2,7 +2,7 @@ import os
 import csv
 import fnmatch
 
-from .common import load_json, traverse_pbir_json
+from .common import load_json, traverse_pbir_json, iter_pages, extract_visual_info
 from .console_utils import console
 
 HEADER_FIELDS = [
@@ -15,6 +15,16 @@ HEADER_FIELDS = [
     "Used In",
     "Used In Detail",
     "ID",
+]
+
+VISUAL_HEADER_FIELDS = [
+    "Report",
+    "Page Name",
+    "Page ID",
+    "Visual Type",
+    "Visual ID",
+    "Parent Group ID",
+    "Is Hidden",
 ]
 
 
@@ -302,21 +312,101 @@ def _consolidate_metadata_from_directory(
 
 
 def export_pbir_metadata_to_csv(
-    directory_path: str, csv_output_path: str, filters: dict = None
+    directory_path: str,
+    csv_output_path: str = None,
+    filters: dict = None,
+    visuals_only: bool = False,
 ):
     """
     Exports the extracted Power BI Enhanced Report Format (PBIR) metadata to a CSV file.
 
     Args:
         directory_path (str): The directory path containing PBIR JSON files.
-        csv_output_path (str): The output path for the CSV file containing the extracted metadata.
+        csv_output_path (str, optional): The output path for the CSV file. If not provided,
+                                         defaults to 'metadata.csv' or 'visuals.csv' (based on mode)
+                                         in the same directory as directory_path.
         filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
                                   If a filter key has an empty set/dict, it will be ignored.
                                   If filters is None or an empty dict, all data will be processed.
+        visuals_only (bool, optional): If True, exports visual-level metadata instead of attribute usage.
+                                       Defaults to False.
 
     Returns:
         None
     """
+    # Generate default output path if not provided
+    if csv_output_path is None:
+        default_filename = "visuals.csv" if visuals_only else "metadata.csv"
+        csv_output_path = os.path.join(directory_path, default_filename)
+
+    if visuals_only:
+        _export_visual_metadata(directory_path, csv_output_path, filters)
+    else:
+        _export_attribute_metadata(directory_path, csv_output_path, filters)
+
+
+def _export_visual_metadata(
+    directory_path: str, csv_output_path: str, filters: dict = None
+):
+    """Export visual-level metadata using iter_pages + extract_visual_info."""
+    console.print_action_heading("Extracting visual metadata", False)
+
+    report_name = _extract_report_name(directory_path)
+    metadata = []
+
+    for page_id, page_folder, page_data in iter_pages(directory_path):
+        page_name = page_data.get("displayName", "NA")
+
+        # Apply page filter if specified
+        if (
+            filters
+            and filters.get("Page Name")
+            and page_name not in filters["Page Name"]
+        ):
+            continue
+
+        visuals_info = extract_visual_info(page_folder)
+        for visual_id, info in visuals_info.items():
+            row = {
+                "Report": report_name,
+                "Page Name": page_name,
+                "Page ID": page_id,
+                "Visual Type": info["visualType"],
+                "Visual ID": visual_id,
+                "Parent Group ID": info["parentGroupName"],
+                "Is Hidden": info["isHidden"],
+            }
+            if _apply_filters(row, filters):
+                metadata.append(row)
+
+    # Sort by page order
+    page_order = _get_page_order(directory_path)
+    metadata.sort(
+        key=lambda row: (
+            row["Report"],
+            (
+                page_order.index(row["Page ID"])
+                if row["Page ID"] in page_order
+                else len(page_order) + 1
+            ),
+        )
+    )
+
+    # Write to CSV
+    try:
+        with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=VISUAL_HEADER_FIELDS)
+            writer.writeheader()
+            writer.writerows(metadata)
+        console.print_success(f"Visual metadata exported to {csv_output_path}")
+    except Exception as e:
+        console.print_error(f"Error exporting visual metadata: {e}")
+
+
+def _export_attribute_metadata(
+    directory_path: str, csv_output_path: str, filters: dict = None
+):
+    """Export attribute-level metadata (original behavior)."""
     console.print_action_heading("Extracting metadata", False)
 
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
