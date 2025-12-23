@@ -5,12 +5,6 @@ def test_sanitize_dry_run(simple_report, run_cli):
     assert result.returncode == 0
 
 
-def test_extract_metadata(simple_report, tmp_path, run_cli):
-    output_csv = tmp_path / "output.csv"
-    result = run_cli(["extract-metadata", simple_report, str(output_csv)])
-    assert result.returncode == 0
-
-
 def test_visualize_help(run_cli):
     result = run_cli(["visualize", "--help"])
     assert result.returncode == 0
@@ -43,9 +37,6 @@ def test_measure_dependencies(simple_report, run_cli):
 def test_update_filters_dry_run(simple_report, run_cli):
     filters = '[{"Table": "Tbl", "Column": "Col", "Condition": "In", "Values": ["A"]}]'
     result = run_cli(["update-filters", simple_report, filters, "--dry-run"])
-    if result.returncode != 0:
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
     assert result.returncode == 0
 
 
@@ -90,19 +81,12 @@ def test_extract_metadata_explicit_path(simple_report, tmp_path, run_cli):
     assert result.returncode == 0
 
 
-def test_extract_metadata_no_args_error(simple_report, run_cli):
-    # Run extract-metadata with no args
+def test_extract_metadata_no_args_success(simple_report, run_cli):
+    # Run extract-metadata with no args inside a report folder
     result = run_cli(["extract-metadata"], cwd=simple_report)
-    assert result.returncode != 0
-    assert "Error: Output path required." in result.stderr
-
-
-def test_visualize_no_path_in_report_dir(simple_report, run_cli):
-    # Run visualize without path inside a .Report dir
-    # Note: visualize might try to open a browser or server, but we just check if it parses args correctly.
-    # However, visualize usually blocks. We might need to mock it or just check if it fails with path error if not in report dir.
-    # Since we can't easily test blocking commands, we'll test the failure case outside report dir.
-    pass
+    assert result.returncode == 0
+    # Verify the success message is printed (confirms file was written)
+    assert "Metadata exported to" in result.stdout
 
 
 def test_visualize_no_path_outside_report_dir(tmp_path, run_cli):
@@ -180,9 +164,6 @@ def test_set_first_page_as_active_dry_run(complex_report, run_cli):
             "--dry-run",
         ]
     )
-    if result.returncode != 0:
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
     assert result.returncode == 0
 
 
@@ -190,9 +171,6 @@ def test_remove_empty_pages_dry_run(complex_report, run_cli):
     result = run_cli(
         ["sanitize", complex_report, "--actions", "remove_empty_pages", "--dry-run"]
     )
-    if result.returncode != 0:
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
     assert result.returncode == 0
 
 
@@ -219,9 +197,6 @@ def test_cleanup_invalid_bookmarks_dry_run(complex_report, run_cli):
             "--dry-run",
         ]
     )
-    if result.returncode != 0:
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
     assert result.returncode == 0
 
 
