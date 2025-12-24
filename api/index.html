@@ -542,6 +542,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#output-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output Columns
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -614,6 +625,17 @@
     <span class="md-ellipsis">
       
         Update Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior
       
     </span>
   </a>
@@ -742,6 +764,17 @@
     <span class="md-ellipsis">
       
         Condition Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter Values
       
     </span>
   </a>
@@ -1265,6 +1298,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#output-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output Columns
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1337,6 +1381,17 @@
     <span class="md-ellipsis">
       
         Update Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior
       
     </span>
   </a>
@@ -1465,6 +1520,17 @@
     <span class="md-ellipsis">
       
         Condition Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter Values
       
     </span>
   </a>
@@ -1867,10 +1933,6 @@
 <p>The <code>pbir_utils</code> library provides a comprehensive Python API for programmatic access to all utilities.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pbir_utils</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pbir</span>
 </span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Runnable Examples</p>
-<p>For complete, runnable examples, see the <a href="https://github.com/akhilannan/pbir-utils/blob/main/examples/example_usage.ipynb">example_usage.ipynb</a> notebook.</p>
-</div>
 <hr />
 <h2 id="batch-update-attributes">Batch Update Attributes</h2>
 <p>Performs a batch update on all components of a PBIR project by processing JSON files. Updates table and column references based on mappings provided in a CSV file.</p>
@@ -1952,7 +2014,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="export-metadata-to-csv">Export Metadata to CSV</h2>
-<p>Exports metadata from PBIR into a CSV file, including tables, columns, measures, DAX expressions, and usage contexts.</p>
+<p>Exports metadata from PBIR into a CSV file. Supports two modes: <strong>attribute metadata</strong> (default) and <strong>visual metadata</strong> (<code>visuals_only=True</code>).</p>
 <h3 id="parameters_1">Parameters</h3>
 <table>
 <thead>
@@ -1966,32 +2028,47 @@
 <tr>
 <td><code>directory_path</code></td>
 <td>str</td>
-<td>Path to directory containing PBIR files</td>
+<td>Path to the PBIR report folder or a parent directory containing multiple reports</td>
 </tr>
 <tr>
 <td><code>csv_output_path</code></td>
 <td>str</td>
-<td>Path for output CSV file</td>
+<td>Path for output CSV file. If not provided, defaults to <code>metadata.csv</code> or <code>visuals.csv</code> in the report folder</td>
 </tr>
 <tr>
 <td><code>filters</code></td>
 <td>dict</td>
-<td>Dictionary to filter output data (keys are column names, values are sets of allowed values)</td>
+<td>Dictionary to filter output data (keys are column names, values are sets of allowed values). Keys with empty sets are ignored.</td>
+</tr>
+<tr>
+<td><code>visuals_only</code></td>
+<td>bool</td>
+<td>If <code>True</code>, exports visual-level metadata instead of attribute usage. Default: <code>False</code></td>
 </tr>
 </tbody>
 </table>
 <h3 id="example_1">Example</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">pbir</span><span class="o">.</span><span class="n">export_pbir_metadata_to_csv</span><span class="p">(</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">directory_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\Power BI Report&quot;</span><span class="p">,</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">csv_output_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\output.csv&quot;</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">filters</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="s2">&quot;Report&quot;</span><span class="p">:</span> <span class="p">{},</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">&quot;Page Name&quot;</span><span class="p">:</span> <span class="p">{},</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="p">{},</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="s2">&quot;Column or Measure&quot;</span><span class="p">:</span> <span class="p">{},</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="p">},</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Export attribute metadata with default output (metadata.csv in report folder)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">pbir</span><span class="o">.</span><span class="n">export_pbir_metadata_to_csv</span><span class="p">(</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">directory_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\Power BI Report&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Export attribute metadata with custom path</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">pbir</span><span class="o">.</span><span class="n">export_pbir_metadata_to_csv</span><span class="p">(</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">directory_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\Power BI Report&quot;</span><span class="p">,</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">csv_output_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\metadata.csv&quot;</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Page Name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Overview&quot;</span><span class="p">}},</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Export visual metadata with default output (visuals.csv in report folder)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">pbir</span><span class="o">.</span><span class="n">export_pbir_metadata_to_csv</span><span class="p">(</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">directory_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\Power BI Report&quot;</span><span class="p">,</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">visuals_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">)</span>
 </span></code></pre></div>
+<h3 id="output-columns">Output Columns</h3>
+<p><strong>Attribute Metadata (default):</strong> Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID</p>
+<p><strong>Visual Metadata (<code>visuals_only=True</code>):</strong> Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden</p>
 <hr />
 <h2 id="display-report-wireframes">Display Report Wireframes</h2>
 <p>Generates and displays interactive wireframes for a report using Dash and Plotly.</p>
@@ -2110,6 +2187,22 @@
 <li><strong>Insert</strong>: Adds new interactions without modifying existing ones.</li>
 <li><strong>Overwrite</strong>: Replaces all existing interactions with the new configuration.</li>
 </ul>
+<h3 id="behavior">Behavior</h3>
+<p>The function's scope depends on which parameters are provided:</p>
+<ol>
+<li>
+<p><strong>Only <code>report_path</code></strong>: Disables interactions between all visuals across all pages.</p>
+</li>
+<li>
+<p><strong><code>report_path</code> + <code>pages</code></strong>: Disables interactions between all visuals on the specified pages only.</p>
+</li>
+<li>
+<p><strong>With <code>source_visual_ids</code> or <code>source_visual_types</code></strong>: Disables interactions <strong>from</strong> the specified source visuals to all other visuals (or specified targets) on the pages.</p>
+</li>
+<li>
+<p><strong>With <code>target_visual_ids</code> or <code>target_visual_types</code></strong>: Disables interactions <strong>to</strong> the specified target visuals from all source visuals (or specified sources) on the pages.</p>
+</li>
+</ol>
 <h3 id="example_3">Example</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">pbir</span><span class="o">.</span><span class="n">disable_visual_interactions</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">report_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\MyReport.Report&quot;</span><span class="p">,</span>
@@ -2249,57 +2342,88 @@
 <table>
 <thead>
 <tr>
-<th>Type</th>
+<th>Category</th>
+<th>Conditions</th>
 <th>Expected Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Comparison</strong></td>
+<td><code>GreaterThan</code>, <code>GreaterThanOrEqual</code>, <code>LessThan</code>, <code>LessThanOrEqual</code></td>
+<td>Single value</td>
+</tr>
+<tr>
+<td><strong>Range</strong></td>
+<td><code>Between</code>, <code>NotBetween</code></td>
+<td>Two values (start, end)</td>
+</tr>
+<tr>
+<td><strong>Inclusion</strong></td>
+<td><code>In</code>, <code>NotIn</code></td>
+<td>List of one or more values</td>
+</tr>
+<tr>
+<td><strong>Text Matching</strong></td>
+<td><code>Contains</code>, <code>StartsWith</code>, <code>EndsWith</code>, <code>NotContains</code>, <code>NotStartsWith</code>, <code>NotEndsWith</code></td>
+<td>Single string</td>
+</tr>
+<tr>
+<td><strong>Multi-Value Text</strong></td>
+<td><code>ContainsAnd</code>, <code>ContainsOr</code>, <code>StartsWithAnd</code>, <code>StartsWithOr</code>, <code>EndsWithAnd</code>, <code>EndsWithOr</code></td>
+<td>List of two or more strings</td>
+</tr>
+</tbody>
+</table>
+<h3 id="filter-values">Filter Values</h3>
+<table>
+<thead>
+<tr>
+<th>Value Type</th>
+<th>Format</th>
 <th>Example</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>GreaterThan</code>, <code>LessThan</code>, etc.</td>
-<td>Single value</td>
-<td><code>{"Values": [50]}</code></td>
+<td><strong>Date</strong></td>
+<td><code>DD-MMM-YYYY</code> string</td>
+<td><code>"15-Sep-2023"</code></td>
 </tr>
 <tr>
-<td><code>Between</code>, <code>NotBetween</code></td>
-<td>Two values (range)</td>
-<td><code>{"Values": [10, 20]}</code></td>
+<td><strong>Numeric</strong></td>
+<td>Integer or float</td>
+<td><code>100</code>, <code>99.5</code></td>
 </tr>
 <tr>
-<td><code>In</code>, <code>NotIn</code></td>
-<td>List of values</td>
-<td><code>{"Values": ["A", "B"]}</code></td>
+<td><strong>Text</strong></td>
+<td>String</td>
+<td><code>"North"</code></td>
 </tr>
 <tr>
-<td><code>Contains</code>, <code>StartsWith</code>, <code>EndsWith</code></td>
-<td>Single string</td>
-<td><code>{"Values": ["keyword"]}</code></td>
-</tr>
-<tr>
-<td><code>ContainsAnd</code>, <code>StartsWithOr</code></td>
-<td>Multiple strings</td>
-<td><code>{"Values": ["k1", "k2"]}</code></td>
+<td><strong>Clear Filter</strong></td>
+<td><code>None</code></td>
+<td>Removes existing filter on the column</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition note">
-<p class="admonition-title">Date Values</p>
-<p>Date values should be formatted as <code>DD-MMM-YYYY</code>, e.g., <code>"15-Sep-2023"</code>.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Clearing Filters</p>
-<p>Set <code>Values</code> to <code>None</code> to clear an existing filter.</p>
-</div>
 <h3 id="example_6">Example</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">pbir</span><span class="o">.</span><span class="n">update_report_filters</span><span class="p">(</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">directory_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;C:\DEV\MyReport.Report&quot;</span><span class="p">,</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">filters</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Region&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;In&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;North&quot;</span><span class="p">,</span> <span class="s2">&quot;South&quot;</span><span class="p">]},</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Date&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;Between&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;01-Jan-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;31-Dec-2023&quot;</span><span class="p">]},</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Amount&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;GreaterThan&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">]},</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="p">],</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">)</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="c1"># Inclusion filter</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Region&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;In&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;North&quot;</span><span class="p">,</span> <span class="s2">&quot;South&quot;</span><span class="p">]},</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="c1"># Date range filter</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Orders&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;OrderDate&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;Between&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;01-Jan-2023&quot;</span><span class="p">,</span> <span class="s2">&quot;31-Dec-2023&quot;</span><span class="p">]},</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="c1"># Numeric comparison</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Amount&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;GreaterThan&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">]},</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="c1"># Text matching</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Products&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;Contains&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Pro&quot;</span><span class="p">]},</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="c1"># Clear existing filter</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>        <span class="p">{</span><span class="s2">&quot;Table&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;Column&quot;</span><span class="p">:</span> <span class="s2">&quot;Category&quot;</span><span class="p">,</span> <span class="s2">&quot;Condition&quot;</span><span class="p">:</span> <span class="s2">&quot;In&quot;</span><span class="p">,</span> <span class="s2">&quot;Values&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="p">],</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="sort-report-filters">Sort Report Filters</h2>
