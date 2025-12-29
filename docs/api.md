@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Python API
 
 The `pbir_utils` library provides a comprehensive Python API for programmatic access to all utilities.

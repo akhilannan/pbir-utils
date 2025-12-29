@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # PBIR Utils
 
 **pbir-utils** is a Python library designed to streamline the tasks that Power BI developers typically handle manually in Power BI Desktop. This module offers a range of utility functions to efficiently manage and manipulate PBIR (Power BI Enhanced Report Format) metadata.

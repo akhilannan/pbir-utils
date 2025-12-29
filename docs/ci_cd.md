@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # CI/CD Integration
 
 `pbir-utils` can be integrated into your CI/CD pipeline to validate Power BI reports before deployment. This ensures all reports adhere to your team's standards and best practices.

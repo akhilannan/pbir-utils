@@ -61,3 +61,4 @@ nav:
   - CLI Reference: cli.md
   - Python API: api.md
   - CI/CD Integration: ci_cd.md
+  - Release Notes: releases.md

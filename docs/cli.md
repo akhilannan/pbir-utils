@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # CLI Reference
 
 The `pbir-utils` command-line interface provides access to all utilities after installation.

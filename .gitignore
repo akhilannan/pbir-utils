@@ -66,3 +66,5 @@ ENV/
 *.csv
 *.json
 site/
+.agent
+docs/releases.md
