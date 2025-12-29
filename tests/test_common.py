@@ -90,7 +90,7 @@ def test_get_report_paths(tmp_path):
     assert any("Report1.Report" in p for p in paths)
     assert any("Report2.Report" in p for p in paths)
 
-    # Test finding specific report by folder path (The Fix)
+    # Test finding specific report by folder path
     report1_path = tmp_path / "Report1.Report"
     paths = get_report_paths(str(report1_path))
     assert len(paths) == 1

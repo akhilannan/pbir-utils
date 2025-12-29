@@ -45,9 +45,6 @@ def test_sort_filters_dry_run(simple_report, run_cli):
     assert result.returncode == 0
 
 
-# Tests from test_cli_optional_path.py
-
-
 def test_sanitize_no_path_in_report_dir(simple_report, run_cli):
     # Run sanitize without path inside a .Report dir
     result = run_cli(
@@ -109,9 +106,6 @@ def test_measure_dependencies_no_path_in_report_dir(simple_report, run_cli):
     # measure-dependencies prints to stdout, doesn't block
     result = run_cli(["measure-dependencies"], cwd=simple_report)
     assert result.returncode == 0
-
-
-# Tests from test_cli_sanitization.py (now using sanitize command)
 
 
 def test_remove_unused_bookmarks_dry_run(simple_report, run_cli):
