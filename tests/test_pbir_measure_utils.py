@@ -44,22 +44,32 @@ def test_get_dependent_measures(measures_dict):
     assert "MeasureC" in all_deps_A
 
 
-@patch("pbir_utils.pbir_measure_utils.os.walk")
-@patch("pbir_utils.pbir_measure_utils.load_json")
+@patch("pbir_utils.pbir_measure_utils.iter_pages")
+@patch("pbir_utils.pbir_measure_utils.iter_visuals")
 @patch("pbir_utils.pbir_measure_utils._extract_metadata_from_file")
-def test_get_visual_ids_for_measure(mock_extract, mock_load, mock_walk):
-    mock_walk.return_value = [("root", [], ["visual.json"])]
-    mock_load.return_value = {"name": "Visual123"}
+def test_get_visual_ids_for_measure(mock_extract, mock_iter_visuals, mock_iter_pages):
+    # iter_pages yields (page_id, page_folder, page_data)
+    mock_iter_pages.return_value = iter([("page1", "/path/page1", {})])
+    # iter_visuals yields (visual_id, visual_folder, visual_data)
+    mock_iter_visuals.return_value = iter([("Visual123", "/path/page1/visuals/v1", {})])
 
     # Case 1: Measure is used
     mock_extract.return_value = [{"Column or Measure": "MeasureA"}]
     ids = _get_visual_ids_for_measure("dummy_path", "MeasureA")
     assert ids == ["Visual123"]
 
+    # Reset mocks for next case
+    mock_iter_pages.return_value = iter([("page1", "/path/page1", {})])
+    mock_iter_visuals.return_value = iter([("Visual123", "/path/page1/visuals/v1", {})])
+
     # Case 2: Measure is not used
     mock_extract.return_value = [{"Column or Measure": "OtherMeasure"}]
     ids = _get_visual_ids_for_measure("dummy_path", "MeasureA")
     assert ids == []
+
+    # Reset mocks for next case
+    mock_iter_pages.return_value = iter([("page1", "/path/page1", {})])
+    mock_iter_visuals.return_value = iter([("Visual123", "/path/page1/visuals/v1", {})])
 
     # Case 3: Measure is used with qualified name (Table.Measure)
     mock_extract.return_value = [{"Column or Measure": "Table.MeasureA"}]

@@ -10,18 +10,21 @@ from pbir_utils.visual_interactions_utils import (
 )
 
 
-@patch("os.listdir")
-@patch("os.path.isfile")
-@patch("pbir_utils.visual_interactions_utils.load_json")
-def test_get_visuals(mock_load_json, mock_isfile, mock_listdir):
-    mock_listdir.return_value = ["visual1", "visual2"]
-    mock_isfile.return_value = True
-    mock_load_json.side_effect = [
-        {"name": "v1", "visual": {"visualType": "barChart"}},
-        {"name": "v2", "visualGroup": "group"},  # Should be skipped
-    ]
+@patch("pbir_utils.visual_interactions_utils.iter_visuals")
+def test_get_visuals(mock_iter_visuals):
+    # iter_visuals yields (visual_id, visual_folder_path, visual_data)
+    mock_iter_visuals.return_value = iter(
+        [
+            ("v1", "/path/v1", {"name": "v1", "visual": {"visualType": "barChart"}}),
+            (
+                "v2",
+                "/path/v2",
+                {"name": "v2", "visualGroup": "group"},
+            ),  # Should be skipped
+        ]
+    )
 
-    visual_ids, visual_types = _get_visuals("dummy_path")
+    visual_ids, visual_types = _get_visuals("dummy_page_folder")
 
     assert visual_ids == ["v1"]
     assert visual_types == {"v1": "barChart"}
@@ -107,7 +110,7 @@ def test_process_page(mock_write_json, mock_get_visuals, mock_load_json):
 
     _process_page(
         "page.json",
-        "visuals_folder",
+        "page_folder",  # Now uses page_folder instead of visuals_folder
         source_ids=None,
         source_types=["barChart"],
         target_ids=None,

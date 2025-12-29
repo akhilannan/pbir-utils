@@ -1,8 +1,7 @@
 import csv
-import os
 import re
 
-from .common import load_json, write_json
+from .common import load_json, write_json, walk_json_files
 from .console_utils import console
 
 
@@ -302,14 +301,11 @@ def batch_update_pbir_project(
                 effective_tbl = table_map.get(old_tbl, old_tbl)
                 column_map[(effective_tbl, old_col)] = new_col
 
-        for root, _, files in os.walk(directory_path):
-            for file in files:
-                if file.endswith(".json"):
-                    file_path = os.path.join(root, file)
-                    if _update_pbir_component(
-                        file_path, table_map, column_map, dry_run=dry_run
-                    ):
-                        any_changes = True
+        for file_path in walk_json_files(directory_path, ".json"):
+            if _update_pbir_component(
+                file_path, table_map, column_map, dry_run=dry_run
+            ):
+                any_changes = True
     except Exception as e:
         error_occurred = True
         console.print_error(f"An error occurred: {str(e)}")

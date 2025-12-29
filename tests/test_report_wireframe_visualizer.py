@@ -5,7 +5,7 @@ from pbir_utils.report_wireframe_visualizer import (
     _get_visual_info_as_tuples,
     _adjust_visual_positions,
     _create_wireframe_figure,
-    _apply_filters,
+    _apply_wireframe_filters,
     display_report_wireframes,
 )
 
@@ -182,7 +182,7 @@ def test_create_wireframe_figure():
     assert len(fig.data) == 1
 
 
-def test_apply_filters():
+def test_apply_wireframe_filters():
     pages_info = [
         (
             "p1",
@@ -198,17 +198,17 @@ def test_apply_filters():
     ]
 
     # Filter by page
-    filtered = _apply_filters(pages_info, pages=["p1"])
+    filtered = _apply_wireframe_filters(pages_info, pages=["p1"])
     assert len(filtered) == 1
     assert filtered[0][0] == "p1"
 
     # Filter by visual type
-    filtered = _apply_filters(pages_info, visual_types=["chart"])
+    filtered = _apply_wireframe_filters(pages_info, visual_types=["chart"])
     assert len(filtered) == 1  # p2 is empty, p1 has chart
     assert len(filtered[0][4]) == 1  # only v1
 
     # Filter by visual id
-    filtered = _apply_filters(pages_info, visual_ids=["v2"])
+    filtered = _apply_wireframe_filters(pages_info, visual_ids=["v2"])
     assert len(filtered) == 1
     assert "v2" in filtered[0][4]
 

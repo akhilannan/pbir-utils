@@ -7,7 +7,7 @@ from pbir_utils.metadata_extractor import (
     _extract_report_name,
     _extract_active_section,
     _get_page_order,
-    _apply_filters,
+    _apply_row_filters,
     _extract_metadata_from_file,
     _consolidate_metadata_from_directory,
     export_pbir_metadata_to_csv,
@@ -115,43 +115,43 @@ class TestGetPageOrder:
 
 
 class TestApplyFilters:
-    """Tests for _apply_filters function."""
+    """Tests for _apply_row_filters function."""
 
     def test_no_filters(self):
         """Test that row passes when no filters specified."""
         row = {"Report": "Sales", "Page Name": "Overview"}
-        assert _apply_filters(row, None) is True
-        assert _apply_filters(row, {}) is True
+        assert _apply_row_filters(row, None) is True
+        assert _apply_row_filters(row, {}) is True
 
     def test_matching_filter(self):
         """Test that row passes when it matches filter."""
         row = {"Report": "Sales", "Page Name": "Overview"}
         filters = {"Report": {"Sales"}}
-        assert _apply_filters(row, filters) is True
+        assert _apply_row_filters(row, filters) is True
 
     def test_non_matching_filter(self):
         """Test that row fails when it doesn't match filter."""
         row = {"Report": "Sales", "Page Name": "Overview"}
         filters = {"Report": {"Finance"}}
-        assert _apply_filters(row, filters) is False
+        assert _apply_row_filters(row, filters) is False
 
     def test_multiple_filters_all_match(self):
         """Test that row passes when it matches all filters."""
         row = {"Report": "Sales", "Page Name": "Overview"}
         filters = {"Report": {"Sales"}, "Page Name": {"Overview"}}
-        assert _apply_filters(row, filters) is True
+        assert _apply_row_filters(row, filters) is True
 
     def test_multiple_filters_one_fails(self):
         """Test that row fails when one filter doesn't match."""
         row = {"Report": "Sales", "Page Name": "Overview"}
         filters = {"Report": {"Sales"}, "Page Name": {"Detail"}}
-        assert _apply_filters(row, filters) is False
+        assert _apply_row_filters(row, filters) is False
 
     def test_empty_filter_value(self):
         """Test that empty filter value is ignored."""
         row = {"Report": "Sales", "Page Name": "Overview"}
         filters = {"Report": set()}  # Empty set
-        assert _apply_filters(row, filters) is True
+        assert _apply_row_filters(row, filters) is True
 
 
 class TestExtractMetadataFromFile:

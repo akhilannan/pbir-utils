@@ -164,10 +164,9 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
         list: A list of visual IDs (strings) that use the measure.
     """
     visual_ids = []
-    for root, _, files in os.walk(report_path):
-        if "visual.json" in files:
-            visual_file_path = os.path.join(root, "visual.json")
-            visual_data = load_json(visual_file_path)
+    for _, page_folder, _ in iter_pages(report_path):
+        for visual_id, visual_folder, _ in iter_visuals(page_folder):
+            visual_file_path = os.path.join(visual_folder, "visual.json")
             if any(
                 row["Column or Measure"] == measure_name
                 or (
@@ -176,7 +175,7 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
                 )
                 for row in _extract_metadata_from_file(visual_file_path)
             ):
-                visual_ids.append(visual_data.get("name"))
+                visual_ids.append(visual_id)
     return visual_ids
 
 

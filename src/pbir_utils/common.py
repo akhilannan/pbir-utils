@@ -117,6 +117,31 @@ def get_report_paths(directory_path: str, reports: list = None) -> list:
     return report_paths
 
 
+def find_report_folders(directory_path: str) -> list[str]:
+    """
+    Recursively find all .Report directories in the given path.
+
+    Args:
+        directory_path (str): The root directory to search.
+
+    Returns:
+        list: A list of absolute paths to .Report directories.
+    """
+    report_paths = []
+    # Check if the directory_path itself is a report folder
+    if directory_path.endswith(".Report") and os.path.exists(
+        os.path.join(directory_path, "definition")
+    ):
+        report_paths.append(directory_path)
+    else:
+        # Search recursively for .Report folders
+        for root, dirs, _ in os.walk(directory_path):
+            for d in dirs:
+                if d.endswith(".Report"):
+                    report_paths.append(os.path.join(root, d))
+    return report_paths
+
+
 def iter_pages(report_path: str) -> Generator[tuple[str, str, dict], None, None]:
     """
     Iterate over pages in a Power BI report.

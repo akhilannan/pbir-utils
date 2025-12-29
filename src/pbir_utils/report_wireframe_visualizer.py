@@ -125,7 +125,7 @@ def _create_wireframe_figure(
     return fig
 
 
-def _apply_filters(
+def _apply_wireframe_filters(
     pages_info: list,
     pages: list = None,
     visual_types: list = None,
@@ -213,7 +213,9 @@ def display_report_wireframes(
         print("No pages found.")
         return
 
-    filtered_pages_info = _apply_filters(pages_info, pages, visual_types, visual_ids)
+    filtered_pages_info = _apply_wireframe_filters(
+        pages_info, pages, visual_types, visual_ids
+    )
     if not filtered_pages_info:
         print("No pages match the given filters.")
         return

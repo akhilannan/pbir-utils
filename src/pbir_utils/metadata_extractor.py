@@ -1,7 +1,13 @@
 import os
 import csv
 
-from .common import load_json, traverse_pbir_json, iter_pages, extract_visual_info
+from .common import (
+    load_json,
+    traverse_pbir_json,
+    iter_pages,
+    extract_visual_info,
+    find_report_folders,
+)
 from .console_utils import console
 
 HEADER_FIELDS = [
@@ -121,7 +127,7 @@ def _get_page_order(report_path: str) -> list:
     return pages_data.get("pageOrder", [])
 
 
-def _apply_filters(row: dict, filters: dict) -> bool:
+def _apply_row_filters(row: dict, filters: dict) -> bool:
     """
     Apply filters to a row with early exit.
 
@@ -223,35 +229,10 @@ def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> li
             yield temp_row
 
     for row in row_generator():
-        if _apply_filters(row, filters):
+        if _apply_row_filters(row, filters):
             all_rows.append(row)
 
     return all_rows
-
-
-def _find_report_directories(directory_path: str) -> list:
-    """
-    Recursively find all .Report directories in the given path.
-
-    Args:
-        directory_path (str): The root directory to search.
-
-    Returns:
-        list: A list of absolute paths to .Report directories.
-    """
-    report_paths = []
-    # Check if the directory_path itself is a report folder
-    if directory_path.endswith(".Report") and os.path.exists(
-        os.path.join(directory_path, "definition")
-    ):
-        report_paths.append(directory_path)
-    else:
-        # Search recursively for .Report folders
-        for root, dirs, _ in os.walk(directory_path):
-            for d in dirs:
-                if d.endswith(".Report"):
-                    report_paths.append(os.path.join(root, d))
-    return report_paths
 
 
 def _consolidate_metadata_from_directory(
@@ -273,7 +254,7 @@ def _consolidate_metadata_from_directory(
     report_filter = filters.get("Report") if filters else None
 
     # Find all report directories
-    report_dirs = _find_report_directories(directory_path)
+    report_dirs = find_report_folders(directory_path)
 
     if not report_dirs:
         console.print_warning(f"No .Report folders found in {directory_path}")
@@ -383,7 +364,7 @@ def _export_visual_metadata(
     console.print_action_heading("Extracting visual metadata", False)
 
     metadata = []
-    report_paths = _find_report_directories(directory_path)
+    report_paths = find_report_folders(directory_path)
 
     if not report_paths:
         console.print_warning(f"No .Report folders found in {directory_path}")
@@ -420,7 +401,7 @@ def _export_visual_metadata(
                     "Parent Group ID": info["parentGroupName"],
                     "Is Hidden": info["isHidden"],
                 }
-                if _apply_filters(row, filters):
+                if _apply_row_filters(row, filters):
                     metadata.append(row)
 
     # Build page order map for sorting
@@ -460,7 +441,7 @@ def _export_attribute_metadata(
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
     # Build page order map for sorting
-    all_report_paths = _find_report_directories(directory_path)
+    all_report_paths = find_report_folders(directory_path)
     report_paths = {}
     for r_path in all_report_paths:
         r_name = _extract_report_name(os.path.join(r_path, "definition", "report.json"))

@@ -1,42 +1,31 @@
 import os
 
-from .common import load_json, write_json, iter_pages
+from .common import load_json, write_json, iter_pages, iter_visuals
 from .console_utils import console
 
 
-def _get_visuals(visuals_folder: str) -> tuple:
+def _get_visuals(page_folder: str) -> tuple:
     """
-    Retrieves visual IDs and their types from the visuals folder.
+    Retrieves visual IDs and their types from a page folder.
 
     Args:
-        visuals_folder (str): Path to the folder containing visual JSON files.
+        page_folder (str): Path to the page folder containing a 'visuals' subdirectory.
 
     Returns:
-        Tuple[list, dict]: A tuple containing a list of visual IDs and a dictionary mapping visual IDs to their types.
+        Tuple[list, dict]: A tuple containing a list of visual IDs and a dictionary
+                           mapping visual IDs to their types.
     """
     visual_ids = []
     visual_types = {}
 
-    for visual_folder in os.listdir(visuals_folder):
-        visual_folder_path = os.path.join(visuals_folder, visual_folder)
-        visual_file_path = os.path.join(visual_folder_path, "visual.json")
-
-        if not os.path.isfile(visual_file_path):
+    for visual_id, _, visual_data in iter_visuals(page_folder):
+        # Skip visual groups
+        if "visualGroup" in visual_data:
             continue
 
-        # Load the visual JSON data
-        visual_json = load_json(visual_file_path)
-
-        visual_id = visual_json.get("name")
-
-        # Skip visuals with a visualGroup
-        if "visualGroup" in visual_json:
-            continue
-
-        visual_type = visual_json.get("visual", {}).get("visualType", "Unknown")
-        if visual_id:
-            visual_ids.append(visual_id)
-            visual_types[visual_id] = visual_type
+        visual_type = visual_data.get("visual", {}).get("visualType", "Unknown")
+        visual_ids.append(visual_id)
+        visual_types[visual_id] = visual_type
 
     return visual_ids, visual_types
 
@@ -108,7 +97,7 @@ def _filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
 
 def _process_page(
     page_json_path: str,
-    visuals_folder: str,
+    page_folder: str,
     source_ids: list,
     source_types: list,
     target_ids: list,
@@ -123,7 +112,7 @@ def _process_page(
 
     Args:
         page_json_path (str): Path to the page JSON file.
-        visuals_folder (str): Path to the folder containing visual JSON files.
+        page_folder (str): Path to the page folder containing a 'visuals' subdirectory.
         source_ids (list[str] or None): List of source visual IDs.
         source_types (list[str] or None): List of source visual types.
         target_ids (list[str] or None): List of target visual IDs.
@@ -136,7 +125,7 @@ def _process_page(
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     page_json = load_json(page_json_path)
-    visual_ids, visual_types = _get_visuals(visuals_folder)
+    visual_ids, visual_types = _get_visuals(page_folder)
 
     target_ids = _filter_ids_by_type(
         set(target_ids or visual_ids), target_types, visual_types
@@ -202,11 +191,11 @@ def _process_all_pages(
         # Process the page if it's in the list or if all pages should be processed
         if not pages or page_json.get("displayName") in pages:
             file_path = os.path.join(page_folder, "page.json")
-            visuals_folder = os.path.join(page_folder, "visuals")
-            if os.path.isdir(visuals_folder):
+            visuals_dir = os.path.join(page_folder, "visuals")
+            if os.path.isdir(visuals_dir):
                 page_changed = _process_page(
                     file_path,
-                    visuals_folder,
+                    page_folder,
                     source_ids,
                     source_types,
                     target_ids,
