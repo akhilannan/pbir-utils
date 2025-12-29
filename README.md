@@ -15,13 +15,13 @@
 - [Python API](https://akhilannan.github.io/pbir-utils/api/) - Library documentation and code examples
 - [CI/CD Integration](https://akhilannan.github.io/pbir-utils/ci_cd/) - Pipeline integration and validation
 
-## Installation
+## 📦 Installation
 
 ```bash
 pip install pbir-utils
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### CLI
 
@@ -46,18 +46,18 @@ pbir.sanitize_powerbi_report("C:\\Reports\\MyReport.Report", actions=["remove_un
 ```
 
 
-## Features
+## ✨ Features
 
-- **CLI Support**: Access all utilities directly from the command line
-- **CI/CD Integration**: Validate reports in pipelines before deployment
-- **Extract Metadata**: Retrieve key metadata from PBIR files
-- **Report Wireframe Visualizer**: Visualize PBIR report layout
-- **Sanitize Reports**: Clean up and optimize reports with YAML configuration
-- **Disable Visual Interactions**: Bulk disable interactions
-- **Manage Measures**: Remove unused measures, analyze dependencies
-- **Filter Management**: Update and sort report-level filters
-- **Standardize Folder Names**: Organize page and visual folders
+- **💻 CLI Support**: Access all utilities directly from the command line
+- **⚙️ CI/CD Integration**: Validate reports in pipelines before deployment
+- **📄 Extract Metadata**: Retrieve key metadata from PBIR files
+- **🖼️ Wireframe Visualizer**: Visualize PBIR report layout
+- **🧼 Sanitize Reports**: Clean up and optimize reports with YAML configuration
+- **⛔ Disable Interactions**: Bulk disable interactions
+- **🧹 Manage Measures**: Remove unused measures, analyze dependencies
+- **🔍 Filter Management**: Update and sort report-level filters
+- **📂 Standardize Folder Names**: Organize page and visual folders
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

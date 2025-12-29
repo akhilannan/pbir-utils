@@ -24,10 +24,20 @@ theme:
     - navigation.tabs
     - navigation.sections
     - navigation.top
+    - navigation.tracking
+    - navigation.instant
+    - navigation.expand
+    - toc.follow
     - search.suggest
     - search.highlight
     - content.code.copy
     - content.code.annotate
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/akhilannan/pbir-utils
+  generator: false
 
 markdown_extensions:
   - pymdownx.highlight:
