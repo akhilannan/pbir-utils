@@ -218,7 +218,7 @@ class TestFiltersHandlers:
         )
 
     @patch("pbir_utils.common.resolve_report_path")
-    @patch("pbir_utils.filter_utils.clear_filters")
+    @patch("pbir_utils.filter_clear.clear_filters")
     def test_handle_clear_filters(self, mock_clear, mock_resolve):
         """Test clear-filters handler."""
         mock_resolve.return_value = "resolved/path"

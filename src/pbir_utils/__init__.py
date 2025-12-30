@@ -8,8 +8,8 @@ from .filter_utils import (
     sort_report_filters,
     configure_filter_pane,
     reset_filter_pane_width,
-    clear_filters,
 )
+from .filter_clear import clear_filters
 from .pbir_report_sanitizer import (
     sanitize_powerbi_report,
     get_available_actions,

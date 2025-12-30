@@ -298,7 +298,7 @@ def handle_configure_filter_pane(args):
 def handle_clear_filters(args):
     """Handle the clear-filters command."""
     # Lazy import
-    from ..filter_utils import clear_filters
+    from ..filter_clear import clear_filters
     from ..common import resolve_report_path
 
     try:

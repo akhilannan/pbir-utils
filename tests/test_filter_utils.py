@@ -14,6 +14,8 @@ from pbir_utils.filter_utils import (
     sort_report_filters,
     configure_filter_pane,
     reset_filter_pane_width,
+)
+from pbir_utils.filter_clear import (
     clear_filters,
     _parse_condition,
     _get_target_from_field,
@@ -597,9 +599,9 @@ def test_get_target_from_field_measure():
     assert _get_target_from_field(field) == "'Table'[Meas]"
 
 
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_dry_run")
-@patch("pbir_utils.filter_utils.console.print_info")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.console.print_dry_run")
+@patch("pbir_utils.filter_clear.console.print_info")
 @patch("os.path.exists")
 def test_extract_report_filters(
     mock_exists, mock_print_info, mock_print_dry_run, mock_load_json

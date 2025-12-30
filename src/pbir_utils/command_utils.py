@@ -3,7 +3,7 @@
 import argparse
 import json
 import sys
-from typing import Optional
+
 
 from .console_utils import console
 
@@ -26,7 +26,7 @@ def parse_filters(filters_str: str) -> dict[str, set[str]] | None:
         sys.exit(1)
 
 
-def parse_json_arg(json_str: Optional[str], arg_name: str):
+def parse_json_arg(json_str: str | None, arg_name: str):
     """Parse an optional JSON string argument."""
     if not json_str:
         return None

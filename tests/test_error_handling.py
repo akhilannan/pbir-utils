@@ -109,15 +109,15 @@ class TestCommonErrorHandling:
 class TestFilterEdgeCases:
     """Tests for edge cases in filter_utils.py."""
 
-    @patch("pbir_utils.filter_utils.console")
-    @patch("pbir_utils.filter_utils.load_json")
-    @patch("pbir_utils.filter_utils.write_json")
-    @patch("pbir_utils.filter_utils.iter_pages")
+    @patch("pbir_utils.filter_clear.console")
+    @patch("pbir_utils.filter_clear.load_json")
+    @patch("pbir_utils.filter_clear.write_json")
+    @patch("pbir_utils.filter_clear.iter_pages")
     def test_clear_filters_with_table_wildcard(
         self, mock_pages, mock_write, mock_load, mock_console
     ):
         """Test clear_filters with wildcard table names."""
-        from pbir_utils.filter_utils import clear_filters
+        from pbir_utils.filter_clear import clear_filters
 
         mock_pages.return_value = iter(
             [
@@ -214,7 +214,7 @@ class TestFilterEdgeCases:
 
     def test_slicer_detection_variants(self):
         """Test detection of various slicer types with valid structured data."""
-        from pbir_utils.filter_utils import _get_slicer_filter_data
+        from pbir_utils.filter_clear import _get_slicer_filter_data
 
         def create_slicer_data(v_type):
             return {
@@ -252,7 +252,7 @@ class TestFilterEdgeCases:
 
     def test_clear_filters_summary_actual(self, tmp_path):
         """Test clear_filters with summary=True and dry_run=False."""
-        from pbir_utils.filter_utils import clear_filters
+        from pbir_utils.filter_clear import clear_filters
 
         # Setup a dummy report structure
         report_dir = tmp_path / "Test.Report"
@@ -326,7 +326,7 @@ class TestFilterEdgeCases:
             )
         )
 
-        with patch("pbir_utils.filter_utils.console") as mock_console:
+        with patch("pbir_utils.filter_clear.console") as mock_console:
             result = clear_filters(
                 str(report_dir), show_page_filters=True, dry_run=False, summary=True
             )
@@ -340,7 +340,7 @@ class TestFilterEdgeCases:
 
     def test_literal_display_value_edge_cases(self):
         """Test _get_literal_display_value with DateSpan and numeric suffixes."""
-        from pbir_utils.filter_utils import _get_literal_display_value
+        from pbir_utils.filter_clear import _get_literal_display_value
 
         # Decimal suffix
         expr = {"Literal": {"Value": "123.45D"}}

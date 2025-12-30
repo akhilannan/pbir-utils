@@ -6,6 +6,20 @@ from typing import Callable, Generator, Any
 
 from .console_utils import console
 
+__all__ = [
+    "load_json",
+    "write_json",
+    "resolve_report_path",
+    "get_report_paths",
+    "find_report_folders",
+    "iter_pages",
+    "iter_visuals",
+    "extract_visual_info",
+    "walk_json_files",
+    "process_json_files",
+    "traverse_pbir_json",
+]
+
 # Magic prefix for preserving float precision during JSON round-trips.
 # Floats are loaded as strings with this prefix, then the prefix (and quotes)
 # are removed during write_json to restore the original numeric representation.
