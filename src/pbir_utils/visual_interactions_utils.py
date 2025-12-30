@@ -1,10 +1,10 @@
-import os
+from pathlib import Path
 
 from .common import load_json, write_json, iter_pages, iter_visuals
 from .console_utils import console
 
 
-def _get_visuals(page_folder: str) -> tuple:
+def _get_visuals(page_folder: str) -> tuple[list[str], dict[str, str]]:
     """
     Retrieves visual IDs and their types from a page folder.
 
@@ -31,12 +31,12 @@ def _get_visuals(page_folder: str) -> tuple:
 
 
 def _update_interactions(
-    existing_interactions: list,
-    source_ids: list,
-    target_ids: list,
+    existing_interactions: list[dict],
+    source_ids: list[str],
+    target_ids: list[str],
     update_type: str = "Upsert",
     interaction_type: str = "NoFilter",
-) -> list:
+) -> list[dict]:
     """
     Updates visual interactions based on the update type and interaction type.
 
@@ -80,7 +80,9 @@ def _update_interactions(
     return list(interactions_dict.values())
 
 
-def _filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
+def _filter_ids_by_type(
+    ids: set[str], types: list[str] | None, visual_types: dict[str, str]
+) -> set[str]:
     """
     Filters a set of visual IDs by their types.
 
@@ -96,12 +98,12 @@ def _filter_ids_by_type(ids: set, types: list, visual_types: dict) -> set:
 
 
 def _process_page(
-    page_json_path: str,
+    page_json_path: str | Path,
     page_folder: str,
-    source_ids: list,
-    source_types: list,
-    target_ids: list,
-    target_types: list,
+    source_ids: list[str] | None,
+    source_types: list[str] | None,
+    target_ids: list[str] | None,
+    target_types: list[str] | None,
     update_type: str,
     interaction_type: str,
     dry_run: bool = False,
@@ -111,7 +113,7 @@ def _process_page(
     Processes and updates visual interactions for a specific page.
 
     Args:
-        page_json_path (str): Path to the page JSON file.
+        page_json_path (str | Path): Path to the page JSON file.
         page_folder (str): Path to the page folder containing a 'visuals' subdirectory.
         source_ids (list[str] or None): List of source visual IDs.
         source_types (list[str] or None): List of source visual types.
@@ -157,11 +159,11 @@ def _process_page(
 
 def _process_all_pages(
     report_path: str,
-    pages: list = None,
-    source_ids: list = None,
-    source_types: list = None,
-    target_ids: list = None,
-    target_types: list = None,
+    pages: list[str] | None = None,
+    source_ids: list[str] | None = None,
+    source_types: list[str] | None = None,
+    target_ids: list[str] | None = None,
+    target_types: list[str] | None = None,
     update_type: str = "Upsert",
     interaction_type: str = "NoFilter",
     dry_run: bool = False,
@@ -190,9 +192,10 @@ def _process_all_pages(
     for page_id, page_folder, page_json in iter_pages(report_path):
         # Process the page if it's in the list or if all pages should be processed
         if not pages or page_json.get("displayName") in pages:
-            file_path = os.path.join(page_folder, "page.json")
-            visuals_dir = os.path.join(page_folder, "visuals")
-            if os.path.isdir(visuals_dir):
+            page_folder_path = Path(page_folder)
+            file_path = page_folder_path / "page.json"
+            visuals_dir = page_folder_path / "visuals"
+            if visuals_dir.is_dir():
                 page_changed = _process_page(
                     file_path,
                     page_folder,
@@ -224,11 +227,11 @@ def _process_all_pages(
 
 def disable_visual_interactions(
     report_path: str,
-    pages: list = None,
-    source_visual_ids: list = None,
-    source_visual_types: list = None,
-    target_visual_ids: list = None,
-    target_visual_types: list = None,
+    pages: list[str] | None = None,
+    source_visual_ids: list[str] | None = None,
+    source_visual_types: list[str] | None = None,
+    target_visual_ids: list[str] | None = None,
+    target_visual_types: list[str] | None = None,
     update_type: str = "Upsert",
     dry_run: bool = False,
     summary: bool = False,

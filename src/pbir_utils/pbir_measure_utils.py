@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from .common import load_json, write_json, iter_pages, iter_visuals
 from .metadata_extractor import _extract_metadata_from_file
@@ -65,7 +65,7 @@ def _get_all_measures_used_in_visuals(report_path: str) -> set:
     used_measures = set()
     for _, page_folder, _ in iter_pages(report_path):
         for _, visual_folder, _ in iter_visuals(page_folder):
-            visual_file_path = os.path.join(visual_folder, "visual.json")
+            visual_file_path = Path(visual_folder) / "visual.json"
             for row in _extract_metadata_from_file(visual_file_path):
                 col_or_measure = row.get("Column or Measure")
                 if col_or_measure:
@@ -166,7 +166,7 @@ def _get_visual_ids_for_measure(report_path: str, measure_name: str) -> list:
     visual_ids = []
     for _, page_folder, _ in iter_pages(report_path):
         for visual_id, visual_folder, _ in iter_visuals(page_folder):
-            visual_file_path = os.path.join(visual_folder, "visual.json")
+            visual_file_path = Path(visual_folder) / "visual.json"
             if any(
                 row["Column or Measure"] == measure_name
                 or (
@@ -314,10 +314,10 @@ def _load_report_extension_data(report_path: str) -> tuple:
     Returns:
         tuple: A tuple containing the report file path and the loaded report extension data as a dictionary.
     """
-    report_file = os.path.join(report_path, "definition", "reportExtensions.json")
-    if not os.path.exists(report_file):
-        return report_file, {}
-    return report_file, load_json(report_file)
+    report_file = Path(report_path) / "definition" / "reportExtensions.json"
+    if not report_file.exists():
+        return str(report_file), {}
+    return str(report_file), load_json(report_file)
 
 
 def generate_measure_dependencies_report(
@@ -487,7 +487,7 @@ def remove_measures(
             return False
     else:
         if not dry_run:
-            os.remove(report_file)
+            Path(report_file).unlink()
             console.print_success(
                 "All measures removed. The reportExtensions.json file has been deleted."
             )

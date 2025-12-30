@@ -1,5 +1,13 @@
 """Filter-related commands for PBIR Utils CLI."""
 
+__all__ = [
+    "register",
+    "handle_update_filters",
+    "handle_sort_filters",
+    "handle_configure_filter_pane",
+    "handle_clear_filters",
+]
+
 import argparse
 import sys
 import textwrap

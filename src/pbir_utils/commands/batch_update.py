@@ -1,5 +1,7 @@
 """Batch update command for PBIR Utils CLI."""
 
+__all__ = ["register", "handle"]
+
 import argparse
 import textwrap
 

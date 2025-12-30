@@ -5,7 +5,7 @@ from .common import load_json, write_json, walk_json_files
 from .console_utils import console
 
 
-def _load_csv_mapping(csv_path: str) -> list[dict]:
+def _load_csv_mapping(csv_path: str) -> list[dict[str, str]]:
     """
     Load a CSV file and return a list of dictionaries mapping from old (entity, column) pairs
     to new (entity, column) pairs, filtering out invalid rows based on specified conditions.

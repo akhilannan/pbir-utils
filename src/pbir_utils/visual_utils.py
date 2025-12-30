@@ -4,7 +4,7 @@ Visual utilities for Power BI report sanitization.
 Contains functions for managing visuals in PBIR reports.
 """
 
-import os
+from pathlib import Path
 import shutil
 
 from .common import load_json, write_json, process_json_files
@@ -27,7 +27,7 @@ def remove_unused_custom_visuals(
     """
     console.print_action_heading("Removing unused custom visuals", dry_run)
 
-    report_json_path = os.path.join(report_path, "definition", "report.json")
+    report_json_path = Path(report_path) / "definition" / "report.json"
     report_data = load_json(report_json_path)
 
     custom_visuals = set(report_data.get("publicCustomVisuals", []))
@@ -42,7 +42,7 @@ def remove_unused_custom_visuals(
     used_visuals = set(
         result[1]
         for result in process_json_files(
-            directory=os.path.join(report_path, "definition", "pages"),
+            directory=Path(report_path) / "definition" / "pages",
             file_pattern="visual.json",
             func=_check_visual,
         )
@@ -101,7 +101,7 @@ def disable_show_items_with_no_data(
         return False
 
     visuals_modified = process_json_files(
-        os.path.join(report_path, "definition", "pages"),
+        Path(report_path) / "definition" / "pages",
         "visual.json",
         _remove_show_all,
         process=True,
@@ -130,7 +130,7 @@ def _get_hidden_visuals_info(
 
     def _find_hidden_visuals(visual_data: dict, file_path: str) -> tuple:
         visual_name = visual_data.get("name")
-        folder = os.path.dirname(file_path)
+        folder = str(Path(file_path).parent)
         visual_type = visual_data.get("visual", {}).get("visualType")
 
         # Check for default selection in visual.objects.general
@@ -163,7 +163,7 @@ def _get_hidden_visuals_info(
         return None
 
     hidden_visuals_results = process_json_files(
-        os.path.join(report_path, "definition", "pages"),
+        Path(report_path) / "definition" / "pages",
         "visual.json",
         _find_hidden_visuals,
     )
@@ -251,7 +251,7 @@ def _get_bookmark_visual_info(report_path: str) -> tuple[set, set, set]:
     shown_groups = set()
     filtered_visuals = set()
     for _, result in process_json_files(
-        os.path.join(report_path, "definition", "bookmarks"),
+        Path(report_path) / "definition" / "bookmarks",
         ".bookmark.json",
         _check_bookmark,
     ):
@@ -342,57 +342,56 @@ def remove_hidden_visuals_never_shown(
                 None,
             )
 
-        if folder and os.path.exists(folder):
-            # Remove visual interactions for the visual
-            page_json_path = os.path.join(
-                os.path.dirname(os.path.dirname(folder)), "page.json"
-            )
-            if os.path.exists(page_json_path):
-                page_data = load_json(page_json_path)
-                visual_interactions = page_data.get("visualInteractions", [])
-                new_interactions = []
-                for interaction in visual_interactions:
-                    if (
-                        interaction.get("source") != visual_name
-                        and interaction.get("target") != visual_name
-                    ):
-                        new_interactions.append(interaction)
-                if len(new_interactions) != len(visual_interactions):
-                    page_data["visualInteractions"] = new_interactions
-                    if not dry_run:
-                        write_json(page_json_path, page_data)
-                    if not summary:
-                        if dry_run:
-                            console.print_dry_run(
-                                f"Would remove visual interactions for {visual_name} from {page_json_path}"
-                            )
-                        else:
-                            console.print_success(
-                                f"Removed visual interactions for {visual_name} from {page_json_path}"
-                            )
-            # Remove the visual folder
-            if not dry_run:
-                shutil.rmtree(folder)
-            visual_type = visual_types.get(visual_name, "unknown")
+        if folder:
+            folder_path = Path(folder)
+            if folder_path.exists():
+                # Remove visual interactions for the visual
+                page_json_path = folder_path.parent.parent / "page.json"
+                if page_json_path.exists():
+                    page_data = load_json(page_json_path)
+                    visual_interactions = page_data.get("visualInteractions", [])
+                    new_interactions = []
+                    for interaction in visual_interactions:
+                        if (
+                            interaction.get("source") != visual_name
+                            and interaction.get("target") != visual_name
+                        ):
+                            new_interactions.append(interaction)
+                    if len(new_interactions) != len(visual_interactions):
+                        page_data["visualInteractions"] = new_interactions
+                        if not dry_run:
+                            write_json(page_json_path, page_data)
+                        if not summary:
+                            if dry_run:
+                                console.print_dry_run(
+                                    f"Would remove visual interactions for {visual_name} from {page_json_path}"
+                                )
+                            else:
+                                console.print_success(
+                                    f"Removed visual interactions for {visual_name} from {page_json_path}"
+                                )
+                # Remove the visual folder
+                if not dry_run:
+                    shutil.rmtree(folder_path)
+                visual_type = visual_types.get(visual_name, "unknown")
 
-            # Get page name
-            page_name = "Unknown Page"
-            if folder:
-                page_dir = os.path.dirname(os.path.dirname(folder))
-                page_json_path = os.path.join(page_dir, "page.json")
-                if os.path.exists(page_json_path):
+                # Get page name
+                page_name = "Unknown Page"
+                page_dir = folder_path.parent.parent
+                page_json_path = page_dir / "page.json"
+                if page_json_path.exists():
                     page_data = load_json(page_json_path)
                     page_name = page_data.get("displayName", "Unknown Page")
 
-            if not summary:
-                if dry_run:
-                    console.print_dry_run(
-                        f"Would remove '{visual_type}' visual in '{page_name}' page: {visual_name}"
-                    )
-                else:
-                    console.print_success(
-                        f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
-                    )
+                if not summary:
+                    if dry_run:
+                        console.print_dry_run(
+                            f"Would remove '{visual_type}' visual in '{page_name}' page: {visual_name}"
+                        )
+                    else:
+                        console.print_success(
+                            f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
+                        )
 
     # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
@@ -410,7 +409,7 @@ def remove_hidden_visuals_never_shown(
 
     # Update bookmarks to remove references to removed visuals
     bookmarks_updated = process_json_files(
-        os.path.join(report_path, "definition", "bookmarks"),
+        Path(report_path) / "definition" / "bookmarks",
         ".bookmark.json",
         _update_bookmark,
         process=True,

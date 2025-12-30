@@ -4,7 +4,7 @@ Page utilities for Power BI report sanitization.
 Contains functions for managing pages in PBIR reports.
 """
 
-import os
+from pathlib import Path
 import shutil
 
 from .common import load_json, write_json, process_json_files, iter_pages
@@ -42,7 +42,7 @@ def hide_pages_by_type(
         return None
 
     results = process_json_files(
-        os.path.join(report_path, "definition", "pages"), "page.json", _check_page
+        str(Path(report_path) / "definition" / "pages"), "page.json", _check_page
     )
 
     if not results:
@@ -84,9 +84,9 @@ def set_first_page_as_active(
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_action_heading("Setting the first non-hidden page as active", dry_run)
-    pages_dir = os.path.join(report_path, "definition", "pages")
-    pages_json_path = os.path.join(pages_dir, "pages.json")
-    pages_data = load_json(pages_json_path)
+    pages_dir = Path(report_path) / "definition" / "pages"
+    pages_json_path = pages_dir / "pages.json"
+    pages_data = load_json(str(pages_json_path))
 
     page_order = pages_data["pageOrder"]
     current_active_page = pages_data.get("activePageName")
@@ -127,7 +127,7 @@ def set_first_page_as_active(
     if first_non_hidden_page != current_active_page:
         pages_data["activePageName"] = first_non_hidden_page
         if not dry_run:
-            write_json(pages_json_path, pages_data)
+            write_json(str(pages_json_path), pages_data)
         if dry_run:
             console.print_dry_run(
                 f"Would set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
@@ -161,9 +161,9 @@ def remove_empty_pages(
     console.print_action_heading(
         "Removing empty pages and cleaning up rogue folders", dry_run
     )
-    pages_dir = os.path.join(report_path, "definition", "pages")
-    pages_json_path = os.path.join(pages_dir, "pages.json")
-    pages_data = load_json(pages_json_path)
+    pages_dir = Path(report_path) / "definition" / "pages"
+    pages_json_path = pages_dir / "pages.json"
+    pages_data = load_json(str(pages_json_path))
 
     page_order = pages_data.get("pageOrder", [])
     active_page_name = pages_data.get("activePageName")
@@ -174,17 +174,17 @@ def remove_empty_pages(
 
     for page_id, folder_path, page_data in iter_pages(report_path):
         page_id_to_folder[page_id] = folder_path
-        folder_name = os.path.basename(folder_path)
+        folder_name = Path(folder_path).name
         folder_to_page_id[folder_name] = page_id
 
     non_empty_pages = []
     for page_id in page_order:
         if page_id in page_id_to_folder:
             folder_path = page_id_to_folder[page_id]
-            visuals_dir = os.path.join(folder_path, "visuals")
+            visuals_dir = Path(folder_path) / "visuals"
 
             has_visuals = False
-            if os.path.exists(visuals_dir) and os.listdir(visuals_dir):
+            if visuals_dir.exists() and any(visuals_dir.iterdir()):
                 has_visuals = True
 
             if has_visuals:
@@ -204,12 +204,10 @@ def remove_empty_pages(
         )
 
     if not dry_run:
-        write_json(pages_json_path, pages_data)
+        write_json(str(pages_json_path), pages_data)
 
     folders_to_remove = []
-    existing_folders = [
-        f for f in os.listdir(pages_dir) if os.path.isdir(os.path.join(pages_dir, f))
-    ]
+    existing_folders = [f.name for f in pages_dir.iterdir() if f.is_dir()]
 
     for folder_name in existing_folders:
         page_id = folder_to_page_id.get(folder_name)
@@ -225,9 +223,9 @@ def remove_empty_pages(
                 f"Removing empty and rogue page folders: {', '.join(folders_to_remove)}"
             )
         for folder in folders_to_remove:
-            folder_path = os.path.join(pages_dir, folder)
+            folder_path = pages_dir / folder
             if not dry_run:
-                shutil.rmtree(folder_path)
+                shutil.rmtree(str(folder_path))
             if not summary:
                 if dry_run:
                     console.print_dry_run(f"Would remove folder: {folder}")
@@ -272,16 +270,16 @@ def set_page_size(
     """
     console.print_action_heading(f"Setting page size to {width}x{height}", dry_run)
 
-    pages_dir = os.path.join(report_path, "definition", "pages")
+    pages_dir = Path(report_path) / "definition" / "pages"
     modified_count = 0
 
-    if not os.path.exists(pages_dir):
+    if not pages_dir.exists():
         console.print_warning("No pages directory found.")
         return False
 
     for page_id, folder_path, page_data in iter_pages(report_path):
-        page_json_path = os.path.join(folder_path, "page.json")
-        folder_name = os.path.basename(folder_path)
+        page_json_path = Path(folder_path) / "page.json"
+        folder_name = Path(folder_path).name
 
         # Skip tooltip pages if configured
         if exclude_tooltip and page_data.get("type") == "Tooltip":
@@ -300,7 +298,7 @@ def set_page_size(
             page_data["height"] = height
 
             if not dry_run:
-                write_json(page_json_path, page_data)
+                write_json(str(page_json_path), page_data)
 
             modified_count += 1
             if not summary:
@@ -368,16 +366,16 @@ def set_page_display_option(
         f"Setting display option to {display_option}{page_filter_msg}", dry_run
     )
 
-    pages_dir = os.path.join(report_path, "definition", "pages")
+    pages_dir = Path(report_path) / "definition" / "pages"
     modified_count = 0
 
-    if not os.path.exists(pages_dir):
+    if not pages_dir.exists():
         console.print_warning("No pages directory found.")
         return False
 
     for page_id, folder_path, page_data in iter_pages(report_path):
-        page_json_path = os.path.join(folder_path, "page.json")
-        folder_name = os.path.basename(folder_path)
+        page_json_path = Path(folder_path) / "page.json"
+        folder_name = Path(folder_path).name
 
         # Check if this page matches the filter (by name or displayName)
         if page is not None:
@@ -393,7 +391,7 @@ def set_page_display_option(
             page_data["displayOption"] = display_option
 
             if not dry_run:
-                write_json(page_json_path, page_data)
+                write_json(str(page_json_path), page_data)
 
             modified_count += 1
             if not summary:

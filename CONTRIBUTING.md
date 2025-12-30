@@ -63,6 +63,27 @@ This section guides you through submitting an enhancement suggestion, including 
     pip install -e .[dev,docs]
     ```
 
+### Quick Reference
+
+Common commands for daily development:
+
+```bash
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=src/pbir_utils
+
+# Check linting
+ruff check .
+
+# Format code
+ruff format .
+
+# Serve documentation locally
+mkdocs serve
+```
+
 ## Code Style
 
 This project uses `black` for code formatting and `ruff` for linting.

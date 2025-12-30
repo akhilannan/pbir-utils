@@ -5,8 +5,8 @@ Contains functions for updating, sorting, and configuring filters
 in PBIR reports.
 """
 
-import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from .common import (
@@ -22,7 +22,97 @@ __all__ = [
     "sort_report_filters",
     "configure_filter_pane",
     "reset_filter_pane_width",
+    # Shared utilities (also used by filter_clear.py)
+    "get_target_from_field",
+    "parse_target_components",
 ]
+
+
+def get_target_from_field(field_data: dict) -> str:
+    """
+    Extract the target reference from a field definition.
+
+    Extracts the target (Table[Column/Measure/Level]) from the field definition
+    dictionary commonly found in Power BI filter configurations.
+
+    Args:
+        field_data: The field definition dictionary from a filter.
+
+    Returns:
+        Formatted string like "'TableName'[ColumnName]" or "Unknown" if parsing fails.
+
+    Examples:
+        >>> field = {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}}, "Property": "Amount"}}
+        >>> get_target_from_field(field)
+        "'Sales'[Amount]"
+    """
+    if not field_data:
+        return "Unknown"
+
+    if "Column" in field_data:
+        col = field_data["Column"]
+        entity = col.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
+        prop = col.get("Property", "Unknown")
+        return f"'{entity}'[{prop}]"
+
+    if "Measure" in field_data:
+        meas = field_data["Measure"]
+        entity = (
+            meas.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
+        )
+        prop = meas.get("Property", "Unknown")
+        return f"'{entity}'[{prop}]"
+
+    if "HierarchyLevel" in field_data:
+        hl = field_data["HierarchyLevel"]
+
+        # Try to drill down to find Entity
+        expr = hl.get("Expression", {})
+        hierarchy = expr.get("Hierarchy", {})
+
+        # This path can vary, trying a common traversal
+        entity = "Unknown"
+        if "Expression" in hierarchy:
+            var_source = hierarchy["Expression"].get("PropertyVariationSource", {})
+            entity = (
+                var_source.get("Expression", {})
+                .get("SourceRef", {})
+                .get("Entity", "Unknown")
+            )
+
+        level = hl.get("Level", "Unknown")
+        return f"'{entity}'[{level}]"
+
+    return "Unknown"
+
+
+def parse_target_components(target: str) -> tuple[str, str]:
+    """
+    Parse a target reference string into table and column components.
+
+    Args:
+        target: Target string like "'TableName'[ColumnName]".
+
+    Returns:
+        Tuple of (table_name, column_name). Empty strings if parsing fails.
+
+    Examples:
+        >>> parse_target_components("'Sales'[Amount]")
+        ('Sales', 'Amount')
+        >>> parse_target_components("[Amount]")
+        ('', 'Amount')
+    """
+    table_name = ""
+    column_name = ""
+    if target.startswith("'"):
+        try:
+            table_name = target.split("'")[1]
+            column_name = target.split("[")[1].rstrip("]")
+        except IndexError:
+            pass
+    elif target.startswith("["):
+        column_name = target.lstrip("[").rstrip("]")
+    return table_name, column_name
 
 
 def _format_date(date_str: str) -> str:
@@ -329,7 +419,7 @@ def update_report_filters(
             or "filters" not in data["filterConfig"]
         ):
             console.print_info(
-                f"No existing filters found in report: {os.path.basename(report_json_path)}"
+                f"No existing filters found in report: {Path(report_json_path).name}"
             )
             continue
 
@@ -384,11 +474,11 @@ def update_report_filters(
                     updated = True
                 else:
                     console.print_warning(
-                        f"Skipping filter update for {table}.{column} in report {os.path.basename(report_json_path)} - filter item not found"
+                        f"Skipping filter update for {table}.{column} in report {Path(report_json_path).name} - filter item not found"
                     )
             else:
                 console.print_warning(
-                    f"Skipping filter update for {table}.{column} in report {os.path.basename(report_json_path)} - entity or property not found"
+                    f"Skipping filter update for {table}.{column} in report {Path(report_json_path).name} - entity or property not found"
                 )
 
         if updated:
@@ -398,15 +488,15 @@ def update_report_filters(
             if not summary:
                 if dry_run:
                     console.print_dry_run(
-                        f"Would update filters in report: {os.path.basename(report_json_path)}"
+                        f"Would update filters in report: {Path(report_json_path).name}"
                     )
                 else:
                     console.print_success(
-                        f"Updated filters in report: {os.path.basename(report_json_path)}"
+                        f"Updated filters in report: {Path(report_json_path).name}"
                     )
         elif not summary:
             console.print_info(
-                f"No filters were updated in report: {os.path.basename(report_json_path)}"
+                f"No filters were updated in report: {Path(report_json_path).name}"
             )
 
     if summary:
@@ -459,7 +549,7 @@ def sort_report_filters(
             or "filters" not in data["filterConfig"]
         ):
             console.print_info(
-                f"No existing filters found in report: {os.path.basename(report_json_path)}"
+                f"No existing filters found in report: {Path(report_json_path).name}"
             )
             continue
 
@@ -575,7 +665,7 @@ def configure_filter_pane(
     state_desc = "hidden" if not visible else ("expanded" if expanded else "collapsed")
     console.print_action_heading(f"Configuring filter pane ({state_desc})", dry_run)
 
-    report_json_path = os.path.join(report_path, "definition", "report.json")
+    report_json_path = Path(report_path) / "definition" / "report.json"
     report_data = load_json(report_json_path)
 
     objects = report_data.get("objects", {})
@@ -647,7 +737,7 @@ def reset_filter_pane_width(
     """
     console.print_action_heading("Resetting filter pane width", dry_run)
 
-    pages_dir = os.path.join(report_path, "definition", "pages")
+    pages_dir = Path(report_path) / "definition" / "pages"
     pages_modified = 0
 
     def _remove_width_property(page_data: dict, file_path: str) -> bool:

@@ -1,5 +1,7 @@
 """Measure-related commands for PBIR Utils CLI."""
 
+__all__ = ["register", "handle_remove_measures", "handle_measure_dependencies"]
+
 import argparse
 import textwrap
 

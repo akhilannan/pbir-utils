@@ -1,5 +1,7 @@
 """Command modules for PBIR Utils CLI."""
 
+__all__ = ["register_all", "ALL_COMMANDS"]
+
 from . import (
     sanitize,
     extract_metadata,

@@ -5,7 +5,7 @@ Contains functions for viewing and clearing filters at report, page, visual,
 and slicer levels.
 """
 
-import os
+from pathlib import Path
 import re
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
@@ -17,6 +17,7 @@ from .common import (
     iter_visuals,
 )
 from .console_utils import console
+from .filter_utils import get_target_from_field, parse_target_components
 
 __all__ = ["clear_filters"]
 
@@ -49,68 +50,6 @@ def _print_filter_list(
             console.print_dry_run(f"{indent}{f}")
         else:
             console.print_cleared(f"{indent}{f}")
-
-
-def _get_target_from_field(field_data: dict) -> str:
-    """
-    Extracts the target (Table[Column/Measure/Level]) from the field definition.
-    """
-    if not field_data:
-        return "Unknown"
-
-    if "Column" in field_data:
-        col = field_data["Column"]
-        entity = col.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
-        prop = col.get("Property", "Unknown")
-        return f"'{entity}'[{prop}]"
-
-    if "Measure" in field_data:
-        meas = field_data["Measure"]
-        entity = (
-            meas.get("Expression", {}).get("SourceRef", {}).get("Entity", "Unknown")
-        )
-        prop = meas.get("Property", "Unknown")
-        return f"'{entity}'[{prop}]"
-
-    if "HierarchyLevel" in field_data:
-        hl = field_data["HierarchyLevel"]
-
-        # Try to drill down to find Entity
-        expr = hl.get("Expression", {})
-        hierarchy = expr.get("Hierarchy", {})
-
-        # This path can vary, trying a common traversal
-        entity = "Unknown"
-        if "Expression" in hierarchy:
-            var_source = hierarchy["Expression"].get("PropertyVariationSource", {})
-            entity = (
-                var_source.get("Expression", {})
-                .get("SourceRef", {})
-                .get("Entity", "Unknown")
-            )
-
-        level = hl.get("Level", "Unknown")
-        return f"'{entity}'[{level}]"
-
-    return "Unknown"
-
-
-def _parse_target_components(target: str) -> tuple[str, str]:
-    """
-    Parses target string like "'TableName'[ColumnName]".
-    Returns (table_name, column_name).
-    """
-    table_name = ""
-    column_name = ""
-    if target.startswith("'"):
-        try:
-            table_name = target.split("'")[1]
-            column_name = target.split("[")[1].rstrip("]")
-        except IndexError:
-            pass
-    elif target.startswith("["):
-        column_name = target.lstrip("[").rstrip("]")
-    return table_name, column_name
 
 
 def _filter_matches_criteria(
@@ -179,7 +118,7 @@ def _get_slicer_filter_data(vis_data: dict) -> tuple[dict, dict, str] | None:
 
         field_def = projections[0].get("field")
         filter_dict = props["filter"]["filter"]
-        target = _get_target_from_field(field_def)
+        target = get_target_from_field(field_def)
 
         return filter_dict, field_def, target
     except (IndexError, KeyError, AttributeError):
@@ -278,8 +217,8 @@ def _get_filter_strings(
         if "filter" not in f:
             continue
 
-        target = _get_target_from_field(f.get("field"))
-        table_name, column_name = _parse_target_components(target)
+        target = get_target_from_field(f.get("field"))
+        table_name, column_name = parse_target_components(target)
 
         # Check if filter matches the criteria
         if not _filter_matches_criteria(
@@ -338,8 +277,8 @@ def _clear_matching_filters(
         if "filter" not in f:
             continue  # No condition to clear
 
-        target = _get_target_from_field(f.get("field"))
-        table_name, column_name = _parse_target_components(target)
+        target = get_target_from_field(f.get("field"))
+        table_name, column_name = parse_target_components(target)
 
         # Check if this filter matches criteria
         # If no criteria specified, clear all (implicit --all behavior)
@@ -417,7 +356,7 @@ def _collect_page_data(
 
     if should_scan_visuals:
         for visual_id, visual_folder, vis_data in iter_visuals(page_path):
-            visual_json_path = os.path.join(visual_folder, "visual.json")
+            visual_json_path = Path(visual_folder) / "visual.json"
             vis_type = vis_data.get("visual", {}).get("visualType", "unknown")
             vis_name = vis_data.get("name", visual_id)
             is_slicer = "slicer" in vis_type.lower()
@@ -507,8 +446,8 @@ def clear_filters(
     found_any_filters = False
 
     # 1. Report Level Filters
-    report_json_path = os.path.join(report_path, "definition", "report.json")
-    if os.path.exists(report_json_path):
+    report_json_path = Path(report_path) / "definition" / "report.json"
+    if report_json_path.exists():
         data = load_json(report_json_path)
         report_filters = _get_filter_strings(
             data.get("filterConfig"), include_tables, include_columns, include_fields
@@ -533,7 +472,7 @@ def clear_filters(
                     _print_filter_list(cleared, "  ", dry_run, summary)
             else:
                 _print_filter_list(report_filters, "  ", dry_run, summary)
-    elif not os.path.basename(report_path).endswith(".Report"):
+    elif not Path(report_path).name.endswith(".Report"):
         console.print_warning(f"report.json not found at {report_json_path}")
 
     # Exit early if only report filters requested and nothing to do
@@ -590,7 +529,7 @@ def clear_filters(
                     clear_all,
                 )
                 if changed:
-                    write_json(os.path.join(page_path, "page.json"), page_data)
+                    write_json(Path(page_path) / "page.json", page_data)
                     _print_filter_list(cleared, "    ", dry_run, summary)
             else:
                 _print_filter_list(page_info["page_filters"], "    ", dry_run, summary)

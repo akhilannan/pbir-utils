@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import csv
 
 from .common import (
@@ -33,40 +33,35 @@ VISUAL_HEADER_FIELDS = [
 ]
 
 
-def _extract_report_name(json_file_path: str) -> str:
+def _extract_report_name(json_file_path: str | Path) -> str:
     """
     Extracts the report name from the JSON file path.
 
     Args:
-        json_file_path (str): The file path to the JSON file.
+        json_file_path (str | Path): The file path to the JSON file.
 
     Returns:
         str: The extracted report name if found, otherwise "NA".
     """
-    # Normalize path to handle both Windows and Unix separators
-    normalized_path = os.path.normpath(json_file_path)
-    return next(
-        (
-            component[:-7]
-            for component in reversed(normalized_path.split(os.sep))
-            if component.endswith(".Report")
-        ),
-        "NA",
-    )
+    path = Path(json_file_path)
+    for part in reversed(path.parts):
+        if part.endswith(".Report"):
+            return part[:-7]
+    return "NA"
 
 
-def _extract_active_section(bookmark_json_path: str) -> str:
+def _extract_active_section(bookmark_json_path: str | Path) -> str:
     """
     Extracts the active section from the bookmarks JSON file.
 
     Args:
-        bookmark_json_path (str): The file path to the bookmarks JSON file.
+        bookmark_json_path (str | Path): The file path to the bookmarks JSON file.
 
     Returns:
         str: The active section if found, otherwise an empty string.
     """
     # Check if the path is related to bookmarks
-    if "bookmarks" in bookmark_json_path:
+    if "bookmarks" in str(bookmark_json_path):
         return (
             load_json(bookmark_json_path)
             .get("explorationState", {})
@@ -74,9 +69,10 @@ def _extract_active_section(bookmark_json_path: str) -> str:
         )
 
     # Check if the path contains "pages" and extract the next part if it's a directory
-    parts = os.path.normpath(bookmark_json_path).split(os.sep)
+    path = Path(bookmark_json_path)
+    parts = path.parts
     try:
-        pages_index = parts.index("pages") + 1
+        pages_index = list(parts).index("pages") + 1
         if pages_index < len(parts) and not parts[pages_index].endswith(".json"):
             return parts[pages_index]
     except ValueError:
@@ -85,12 +81,12 @@ def _extract_active_section(bookmark_json_path: str) -> str:
     return None
 
 
-def _extract_page_info(json_path: str) -> tuple:
+def _extract_page_info(json_path: str | Path) -> tuple:
     """
     Extracts the page name and ID from the JSON file path.
 
     Args:
-        json_path (str): The file path to the JSON file.
+        json_path (str | Path): The file path to the JSON file.
 
     Returns:
         tuple: The extracted page name and ID if found, otherwise ("NA", "NA").
@@ -99,30 +95,29 @@ def _extract_page_info(json_path: str) -> tuple:
     if not active_section:
         return "NA", "NA"
 
-    page_data = load_json(
-        os.path.join(
-            json_path.split("definition")[0],
-            "definition",
-            "pages",
-            active_section,
-            "page.json",
-        )
+    # Split path at "definition" to get the base path
+    path_str = str(json_path)
+    base_path = path_str.split("definition")[0]
+    page_json_path = (
+        Path(base_path) / "definition" / "pages" / active_section / "page.json"
     )
+
+    page_data = load_json(page_json_path)
 
     return page_data.get("displayName", "NA"), page_data.get("name", "NA")
 
 
-def _get_page_order(report_path: str) -> list:
+def _get_page_order(report_path: str | Path) -> list:
     """
     Get the page order from the pages.json file.
 
     Args:
-        report_path (str): Path to the root folder of the report.
+        report_path (str | Path): Path to the root folder of the report.
 
     Returns:
         list: List of page IDs in the correct order.
     """
-    pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
+    pages_json_path = Path(report_path) / "definition" / "pages" / "pages.json"
     pages_data = load_json(pages_json_path)
     return pages_data.get("pageOrder", [])
 
@@ -146,12 +141,14 @@ def _apply_row_filters(row: dict, filters: dict) -> bool:
     return True
 
 
-def _extract_metadata_from_file(json_file_path: str, filters: dict = None) -> list:
+def _extract_metadata_from_file(
+    json_file_path: str | Path, filters: dict = None
+) -> list:
     """
     Extracts and formats attribute metadata from a single PBIR JSON file.
 
     Args:
-        json_file_path (str): The file path to the PBIR JSON file.
+        json_file_path (str | Path): The file path to the PBIR JSON file.
         filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
 
     Returns:
@@ -262,29 +259,27 @@ def _consolidate_metadata_from_directory(
 
     for report_dir in report_dirs:
         # Check report filter
-        report_name = _extract_report_name(os.path.join(report_dir, "dummy"))
+        report_name = _extract_report_name(Path(report_dir) / "dummy")
         if report_filter and report_name not in report_filter:
             continue
 
-        for root, _, files in os.walk(report_dir):
-            for file in files:
-                if file.endswith(".json"):
-                    json_file_path = os.path.join(root, file)
+        report_path = Path(report_dir)
+        for json_file_path in report_path.rglob("*.json"):
+            if json_file_path.is_file():
+                # Extract metadata from the JSON file
+                file_metadata = _extract_metadata_from_file(json_file_path, filters)
 
-                    # Extract metadata from the JSON file
-                    file_metadata = _extract_metadata_from_file(json_file_path, filters)
+                # Separate the extracted rows
+                rows_with_expression = [
+                    row for row in file_metadata if row["Expression"] is not None
+                ]
+                rows_without_expression = [
+                    row for row in file_metadata if row["Expression"] is None
+                ]
 
-                    # Separate the extracted rows
-                    rows_with_expression = [
-                        row for row in file_metadata if row["Expression"] is not None
-                    ]
-                    rows_without_expression = [
-                        row for row in file_metadata if row["Expression"] is None
-                    ]
-
-                    # Aggregate all rows with and without expressions
-                    all_rows_with_expression.extend(rows_with_expression)
-                    all_rows_without_expression.extend(rows_without_expression)
+                # Aggregate all rows with and without expressions
+                all_rows_with_expression.extend(rows_with_expression)
+                all_rows_without_expression.extend(rows_without_expression)
 
     # Build index for expression lookups
     expression_index = {
@@ -349,7 +344,7 @@ def export_pbir_metadata_to_csv(
     # Generate default output path if not provided
     if csv_output_path is None:
         default_filename = "visuals.csv" if visuals_only else "metadata.csv"
-        csv_output_path = os.path.join(directory_path, default_filename)
+        csv_output_path = str(Path(directory_path) / default_filename)
 
     if visuals_only:
         _export_visual_metadata(directory_path, csv_output_path, filters)
@@ -371,7 +366,7 @@ def _export_visual_metadata(
 
     for report_path in report_paths:
         # Construct a dummy path to use the existing extractor
-        dummy_file_path = os.path.join(report_path, "definition", "report.json")
+        dummy_file_path = Path(report_path) / "definition" / "report.json"
         report_name = _extract_report_name(dummy_file_path)
 
         # Apply report filter if specified
@@ -407,7 +402,7 @@ def _export_visual_metadata(
     # Build page order map for sorting
     report_page_orders = {}
     for r_path in report_paths:
-        r_name = _extract_report_name(os.path.join(r_path, "definition", "report.json"))
+        r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
         report_page_orders[r_name] = _get_page_order(r_path)
 
     metadata.sort(
@@ -444,7 +439,7 @@ def _export_attribute_metadata(
     all_report_paths = find_report_folders(directory_path)
     report_paths = {}
     for r_path in all_report_paths:
-        r_name = _extract_report_name(os.path.join(r_path, "definition", "report.json"))
+        r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
         report_paths[r_name] = r_path
 
     # Get page orders for each report

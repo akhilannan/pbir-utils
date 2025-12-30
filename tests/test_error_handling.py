@@ -44,12 +44,15 @@ class TestCommonErrorHandling:
     @patch("sys.exit")
     def test_resolve_report_path_error(self, mock_exit, mock_console):
         """Test resolve_report_path when no path provided and not in .Report folder."""
-        with patch("os.getcwd", return_value="C:\\NotAReport"):
-            # Mock os.path.isdir to return True for any path to avoid other errors
-            with patch("os.path.isdir", return_value=True):
-                resolve_report_path(None)
-                mock_console.print_error.assert_called()
-                mock_exit.assert_called_with(1)
+        from pathlib import Path
+        from unittest.mock import MagicMock
+
+        mock_path = MagicMock()
+        mock_path.name = "NotAReport"
+        with patch.object(Path, "cwd", return_value=mock_path):
+            resolve_report_path(None)
+            mock_console.print_error.assert_called()
+            mock_exit.assert_called_with(1)
 
     @patch("pbir_utils.common.console")
     def test_get_report_paths_not_found(self, mock_console, tmp_path):
@@ -80,22 +83,24 @@ class TestCommonErrorHandling:
         assert files == []
 
     def test_walk_json_files_traversal_prevention(self, tmp_path):
-        """Test walk_json_files path traversal logic."""
+        """Test walk_json_files only yields files within base directory."""
         base = tmp_path / "base"
         base.mkdir()
-        secret = tmp_path / "secret.json"
-        secret.write_text("{}")
 
-        # This is a bit tricky to mock os.walk to return a path outside base
-        with patch("os.walk") as mock_walk:
-            mock_walk.return_value = [
-                (str(base), [], ["file.json"]),
-                (str(tmp_path), [], ["secret.json"]),
-            ]
-            files = list(walk_json_files(str(base), ".json"))
-            # Only file.json should be yielded, secret.json is excluded by commonpath check
-            assert len(files) == 1
-            assert "file.json" in files[0]
+        # Create a file inside base
+        inside = base / "inside.json"
+        inside.write_text("{}")
+
+        # Create a file outside base (sibling directory)
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+        outside = outside_dir / "secret.json"
+        outside.write_text("{}")
+
+        files = list(walk_json_files(str(base), ".json"))
+        # Only inside.json should be yielded
+        assert len(files) == 1
+        assert "inside.json" in files[0]
 
     @patch("pbir_utils.common.console")
     @patch("builtins.open")

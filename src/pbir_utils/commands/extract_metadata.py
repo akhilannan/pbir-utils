@@ -1,5 +1,7 @@
 """Extract metadata command for PBIR Utils CLI."""
 
+__all__ = ["register", "handle"]
+
 import argparse
 import sys
 import textwrap

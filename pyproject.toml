@@ -50,6 +50,6 @@ docs = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-pbir_utils = ["defaults/*.yaml"]
+pbir_utils = ["defaults/*.yaml", "py.typed"]
 
 [tool.setuptools_scm]

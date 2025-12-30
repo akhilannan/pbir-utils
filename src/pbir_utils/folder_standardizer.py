@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import re
 from .common import load_json
 from .console_utils import console
@@ -32,25 +32,23 @@ def standardize_pbir_folders(
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_action_heading("Standardizing folder names", dry_run)
-    pages_dir = os.path.join(report_path, "definition", "pages")
-    if not os.path.exists(pages_dir):
+    pages_dir = Path(report_path) / "definition" / "pages"
+    if not pages_dir.exists():
         console.print_warning(f"Pages directory not found: {pages_dir}")
         return False
 
     # Iterate over page folders
     # We list directories first to avoid issues if we rename them while iterating
-    page_folders = [
-        f for f in os.listdir(pages_dir) if os.path.isdir(os.path.join(pages_dir, f))
-    ]
+    page_folders = [f for f in pages_dir.iterdir() if f.is_dir()]
 
     pages_renamed = 0
     visuals_renamed = 0
 
-    for page_folder_name in page_folders:
-        current_page_path = os.path.join(pages_dir, page_folder_name)
-        page_json_path = os.path.join(current_page_path, "page.json")
+    for page_folder_path in page_folders:
+        page_folder_name = page_folder_path.name
+        page_json_path = page_folder_path / "page.json"
 
-        if not os.path.exists(page_json_path):
+        if not page_json_path.exists():
             continue
 
         page_data = load_json(page_json_path)
@@ -64,8 +62,9 @@ def standardize_pbir_folders(
         new_page_folder_name = f"{sanitized_display_name}_{page_name}"
 
         # Rename page folder if needed
+        current_page_path = page_folder_path
         if page_folder_name != new_page_folder_name:
-            new_page_path = os.path.join(pages_dir, new_page_folder_name)
+            new_page_path = pages_dir / new_page_folder_name
             if dry_run:
                 pages_renamed += 1
                 if not summary:
@@ -74,7 +73,7 @@ def standardize_pbir_folders(
                     )
             else:
                 try:
-                    os.rename(current_page_path, new_page_path)
+                    page_folder_path.rename(new_page_path)
                     pages_renamed += 1
                     if not summary:
                         console.print_success(
@@ -90,19 +89,15 @@ def standardize_pbir_folders(
                     continue
 
         # Process visuals within the page
-        visuals_dir = os.path.join(current_page_path, "visuals")
-        if os.path.exists(visuals_dir):
-            visual_folders = [
-                f
-                for f in os.listdir(visuals_dir)
-                if os.path.isdir(os.path.join(visuals_dir, f))
-            ]
+        visuals_dir = current_page_path / "visuals"
+        if visuals_dir.exists():
+            visual_folders = [f for f in visuals_dir.iterdir() if f.is_dir()]
 
-            for visual_folder_name in visual_folders:
-                current_visual_path = os.path.join(visuals_dir, visual_folder_name)
-                visual_json_path = os.path.join(current_visual_path, "visual.json")
+            for visual_folder_path in visual_folders:
+                visual_folder_name = visual_folder_path.name
+                visual_json_path = visual_folder_path / "visual.json"
 
-                if not os.path.exists(visual_json_path):
+                if not visual_json_path.exists():
                     continue
 
                 visual_data = load_json(visual_json_path)
@@ -115,7 +110,7 @@ def standardize_pbir_folders(
                 new_visual_folder_name = f"{visual_type}_{visual_name}"
 
                 if visual_folder_name != new_visual_folder_name:
-                    new_visual_path = os.path.join(visuals_dir, new_visual_folder_name)
+                    new_visual_path = visuals_dir / new_visual_folder_name
                     if dry_run:
                         visuals_renamed += 1
                         if not summary:
@@ -124,7 +119,7 @@ def standardize_pbir_folders(
                             )
                     else:
                         try:
-                            os.rename(current_visual_path, new_visual_path)
+                            visual_folder_path.rename(new_visual_path)
                             visuals_renamed += 1
                             if not summary:
                                 console.print_success(

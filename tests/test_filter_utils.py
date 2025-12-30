@@ -14,13 +14,14 @@ from pbir_utils.filter_utils import (
     sort_report_filters,
     configure_filter_pane,
     reset_filter_pane_width,
+    # Shared utilities (now public)
+    get_target_from_field,
+    parse_target_components,
 )
 from pbir_utils.filter_clear import (
     clear_filters,
     _parse_condition,
-    _get_target_from_field,
     _get_filter_strings,
-    _parse_target_components,
     _filter_matches_criteria,
     _get_slicer_filter_data,
 )
@@ -84,21 +85,21 @@ def filter_config_two_tables():
 
 def test_parse_target_components_column():
     """Test parsing a column target."""
-    table, column = _parse_target_components("'Sales'[Amount]")
+    table, column = parse_target_components("'Sales'[Amount]")
     assert table == "Sales"
     assert column == "Amount"
 
 
 def test_parse_target_components_no_table():
     """Test parsing a target without table prefix."""
-    table, column = _parse_target_components("[Amount]")
+    table, column = parse_target_components("[Amount]")
     assert table == ""
     assert column == "Amount"
 
 
 def test_parse_target_components_empty():
     """Test parsing an empty target."""
-    table, column = _parse_target_components("")
+    table, column = parse_target_components("")
     assert table == ""
     assert column == ""
 
@@ -387,31 +388,36 @@ def test_validate_filters():
     assert len(ignored) == 3
 
 
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.write_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_update_report_filters(
-    mock_listdir, mock_exists, mock_write_json, mock_load_json
-):
-    mock_listdir.return_value = ["Report1.Report"]
-    mock_exists.return_value = True
+def test_update_report_filters(tmp_path):
+    """Test update_report_filters with a real temp directory."""
+    # Create report structure
+    report_dir = tmp_path / "Test.Report"
+    report_dir.mkdir()
+    def_dir = report_dir / "definition"
+    def_dir.mkdir()
 
-    # Mock report data
-    mock_load_json.return_value = {
-        "filterConfig": {
-            "filters": [
-                {
-                    "field": {
-                        "Column": {
-                            "Property": "Col1",
-                            "Expression": {"SourceRef": {"Entity": "Table1"}},
+    # Create report.json
+    import json
+
+    report_json = def_dir / "report.json"
+    report_json.write_text(
+        json.dumps(
+            {
+                "filterConfig": {
+                    "filters": [
+                        {
+                            "field": {
+                                "Column": {
+                                    "Property": "Col1",
+                                    "Expression": {"SourceRef": {"Entity": "Table1"}},
+                                }
+                            }
                         }
-                    }
+                    ]
                 }
-            ]
-        }
-    }
+            }
+        )
+    )
 
     filters = [
         {
@@ -422,96 +428,107 @@ def test_update_report_filters(
         }
     ]
 
-    update_report_filters("dummy_path", filters)
+    update_report_filters(str(report_dir), filters)
 
-    mock_write_json.assert_called_once()
-    # Verify that the filter was updated (checking if 'filter' key was added)
-    args, _ = mock_write_json.call_args
-    assert "filter" in args[1]["filterConfig"]["filters"][0]
-
-
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.write_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_sort_report_filters(
-    mock_listdir, mock_exists, mock_write_json, mock_load_json
-):
-    mock_listdir.return_value = ["Report1.Report"]
-    mock_exists.return_value = True
-
-    mock_load_json.return_value = {
-        "filterConfig": {
-            "filters": [
-                {"field": {"Column": {"Property": "B"}}},
-                {"field": {"Column": {"Property": "A"}}},
-            ]
-        }
-    }
-
-    sort_report_filters("dummy_path", sort_order="Ascending")
-
-    mock_write_json.assert_called_once()
-    args, _ = mock_write_json.call_args
-    filter_config = args[1]["filterConfig"]
-    assert filter_config["filterSortOrder"] == "Ascending"
+    # Verify the file was updated
+    result = load_json(str(report_json))
+    assert "filter" in result["filterConfig"]["filters"][0]
 
 
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.write_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_sort_report_filters_selected_top(
-    mock_listdir, mock_exists, mock_write_json, mock_load_json
-):
-    mock_listdir.return_value = ["Report1.Report"]
-    mock_exists.return_value = True
+def test_sort_report_filters(tmp_path):
+    """Test sort_report_filters with a real temp directory."""
+    import json
 
-    mock_load_json.return_value = {
-        "filterConfig": {
-            "filters": [
-                {"field": {"Column": {"Property": "B"}}},  # Unselected
-                {"field": {"Column": {"Property": "A"}}, "filter": {}},  # Selected
-            ]
-        }
-    }
+    # Create report structure
+    report_dir = tmp_path / "Test.Report"
+    report_dir.mkdir()
+    def_dir = report_dir / "definition"
+    def_dir.mkdir()
 
-    sort_report_filters("dummy_path", sort_order="SelectedFilterTop")
+    report_json = def_dir / "report.json"
+    report_json.write_text(
+        json.dumps(
+            {
+                "filterConfig": {
+                    "filters": [
+                        {"field": {"Column": {"Property": "B"}}},
+                        {"field": {"Column": {"Property": "A"}}},
+                    ]
+                }
+            }
+        )
+    )
 
-    mock_write_json.assert_called_once()
-    args, _ = mock_write_json.call_args
-    filter_config = args[1]["filterConfig"]
+    sort_report_filters(str(report_dir), sort_order="Ascending")
+
+    result = load_json(str(report_json))
+    assert result["filterConfig"]["filterSortOrder"] == "Ascending"
+
+
+def test_sort_report_filters_selected_top(tmp_path):
+    """Test sort_report_filters with SelectedFilterTop order."""
+    import json
+
+    report_dir = tmp_path / "Test.Report"
+    report_dir.mkdir()
+    def_dir = report_dir / "definition"
+    def_dir.mkdir()
+
+    report_json = def_dir / "report.json"
+    report_json.write_text(
+        json.dumps(
+            {
+                "filterConfig": {
+                    "filters": [
+                        {"field": {"Column": {"Property": "B"}}},  # Unselected
+                        {
+                            "field": {"Column": {"Property": "A"}},
+                            "filter": {},
+                        },  # Selected
+                    ]
+                }
+            }
+        )
+    )
+
+    sort_report_filters(str(report_dir), sort_order="SelectedFilterTop")
+
+    result = load_json(str(report_json))
+    filter_config = result["filterConfig"]
     assert filter_config["filterSortOrder"] == "Custom"
     # Selected (A) should be first, then Unselected (B)
     assert filter_config["filters"][0]["field"]["Column"]["Property"] == "A"
     assert filter_config["filters"][1]["field"]["Column"]["Property"] == "B"
 
 
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.write_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_sort_report_filters_custom(
-    mock_listdir, mock_exists, mock_write_json, mock_load_json
-):
-    mock_listdir.return_value = ["Report1.Report"]
-    mock_exists.return_value = True
+def test_sort_report_filters_custom(tmp_path):
+    """Test sort_report_filters with Custom order."""
+    import json
 
-    mock_load_json.return_value = {
-        "filterConfig": {
-            "filters": [
-                {"field": {"Column": {"Property": "C"}}},
-                {"field": {"Column": {"Property": "A"}}},
-                {"field": {"Column": {"Property": "B"}}},
-            ]
-        }
-    }
+    report_dir = tmp_path / "Test.Report"
+    report_dir.mkdir()
+    def_dir = report_dir / "definition"
+    def_dir.mkdir()
 
-    sort_report_filters("dummy_path", sort_order="Custom", custom_order=["B", "A"])
+    report_json = def_dir / "report.json"
+    report_json.write_text(
+        json.dumps(
+            {
+                "filterConfig": {
+                    "filters": [
+                        {"field": {"Column": {"Property": "C"}}},
+                        {"field": {"Column": {"Property": "A"}}},
+                        {"field": {"Column": {"Property": "B"}}},
+                    ]
+                }
+            }
+        )
+    )
 
-    mock_write_json.assert_called_once()
-    args, _ = mock_write_json.call_args
-    filter_config = args[1]["filterConfig"]
+    sort_report_filters(str(report_dir), sort_order="Custom", custom_order=["B", "A"])
+
+    result = load_json(str(report_json))
+    filter_config = result["filterConfig"]
     assert filter_config["filterSortOrder"] == "Custom"
     # B should be first, then A, then C (alphabetical among remaining)
     assert filter_config["filters"][0]["field"]["Column"]["Property"] == "B"
@@ -519,25 +536,27 @@ def test_sort_report_filters_custom(
     assert filter_config["filters"][2]["field"]["Column"]["Property"] == "C"
 
 
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.write_json")
-@patch("os.path.exists")
-@patch("os.listdir")
-def test_sort_report_filters_invalid(
-    mock_listdir, mock_exists, mock_write_json, mock_load_json
-):
-    mock_listdir.return_value = ["Report1.Report"]
-    mock_exists.return_value = True
+def test_sort_report_filters_invalid(tmp_path):
+    """Test sort_report_filters with invalid sort order."""
+    import json
 
-    mock_load_json.return_value = {
+    report_dir = tmp_path / "Test.Report"
+    report_dir.mkdir()
+    def_dir = report_dir / "definition"
+    def_dir.mkdir()
+
+    report_json = def_dir / "report.json"
+    original_data = {
         "filterConfig": {"filters": [{"field": {"Column": {"Property": "A"}}}]}
     }
+    report_json.write_text(json.dumps(original_data))
 
-    sort_report_filters("dummy_path", sort_order="InvalidOrder")
+    sort_report_filters(str(report_dir), sort_order="InvalidOrder")
 
-    sort_report_filters("dummy_path", sort_order="InvalidOrder")
-
-    mock_write_json.assert_not_called()
+    # File should be unchanged since invalid order doesn't modify
+    result = load_json(str(report_json))
+    # filterSortOrder should not be set for invalid order
+    assert "filterSortOrder" not in result.get("filterConfig", {})
 
 
 # --- Filter Extraction Tests ---
@@ -586,7 +605,7 @@ def test_get_target_from_field_column():
     field = {
         "Column": {"Expression": {"SourceRef": {"Entity": "Table"}}, "Property": "Col"}
     }
-    assert _get_target_from_field(field) == "'Table'[Col]"
+    assert get_target_from_field(field) == "'Table'[Col]"
 
 
 def test_get_target_from_field_measure():
@@ -596,13 +615,13 @@ def test_get_target_from_field_measure():
             "Property": "Meas",
         }
     }
-    assert _get_target_from_field(field) == "'Table'[Meas]"
+    assert get_target_from_field(field) == "'Table'[Meas]"
 
 
 @patch("pbir_utils.filter_clear.load_json")
 @patch("pbir_utils.filter_clear.console.print_dry_run")
 @patch("pbir_utils.filter_clear.console.print_info")
-@patch("os.path.exists")
+@patch("pathlib.Path.exists")
 def test_extract_report_filters(
     mock_exists, mock_print_info, mock_print_dry_run, mock_load_json
 ):
@@ -645,62 +664,61 @@ def test_extract_report_filters(
     assert found
 
 
-@patch("pbir_utils.common.load_json")
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_dry_run")
-@patch("pbir_utils.filter_utils.console.print_info")
-@patch("os.path.exists")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.iter_pages")
+@patch("pbir_utils.filter_clear.console.print_dry_run")
+@patch("pbir_utils.filter_clear.console.print_info")
 def test_extract_page_filters(
-    mock_isdir,
-    mock_listdir,
-    mock_exists,
     mock_print_info,
     mock_print_dry_run,
+    mock_iter_pages,
     mock_load_json,
-    mock_common_load_json,
 ):
-    mock_exists.return_value = True
-    mock_isdir.return_value = True
-    mock_listdir.return_value = ["Page1"]
+    """Test extracting page filters with mocked iter_pages."""
+    # Mock report.json as empty
+    mock_load_json.return_value = {}
 
-    # Needs side_effect for load_json to handle report.json and page.json
-    def load_json_side_effect(path):
-        if "report.json" in path:
-            return {}
-        if "page.json" in path:
-            return {
-                "displayName": "My Page",
-                "filterConfig": {
-                    "filters": [
-                        {
-                            "field": {
-                                "Measure": {
-                                    "Expression": {"SourceRef": {"Entity": "Sales"}},
-                                    "Property": "Total",
-                                }
-                            },
-                            "filter": {
-                                "Where": [
-                                    {
-                                        "Condition": {
-                                            "Comparison": {
-                                                "ComparisonKind": 1,
-                                                "Right": {"Literal": {"Value": "100L"}},
+    # Mock iter_pages to return a page with filters
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "Page1",
+                "path/Page1",
+                {
+                    "name": "Page1",
+                    "displayName": "My Page",
+                    "filterConfig": {
+                        "filters": [
+                            {
+                                "field": {
+                                    "Measure": {
+                                        "Expression": {
+                                            "SourceRef": {"Entity": "Sales"}
+                                        },
+                                        "Property": "Total",
+                                    }
+                                },
+                                "filter": {
+                                    "Where": [
+                                        {
+                                            "Condition": {
+                                                "Comparison": {
+                                                    "ComparisonKind": 1,
+                                                    "Right": {
+                                                        "Literal": {"Value": "100L"}
+                                                    },
+                                                }
                                             }
                                         }
-                                    }
-                                ]
-                            },
-                        }
-                    ]
+                                    ]
+                                },
+                            }
+                        ]
+                    },
                 },
-            }
-        return {}
-
-    mock_load_json.side_effect = load_json_side_effect
-    mock_common_load_json.side_effect = load_json_side_effect
+            )
+        ]
+    )
 
     clear_filters("dummy_path", show_page_filters=True)
 
@@ -723,32 +741,30 @@ def test_extract_page_filters(
     assert found_value
 
 
-@patch("pbir_utils.common.load_json")
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_info")
-@patch("os.path.exists")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.iter_pages")
+@patch("pbir_utils.filter_clear.console.print_info")
 def test_extract_page_filters_empty_target(
-    mock_isdir,
-    mock_listdir,
-    mock_exists,
     mock_print,
+    mock_iter_pages,
     mock_load_json,
-    mock_common_load_json,
 ):
     """Test extracting specific page filters when no filters exist."""
-    mock_exists.return_value = True
-    mock_isdir.return_value = True
-    mock_listdir.return_value = ["Page1"]
+    mock_load_json.return_value = {}
 
-    def load_json_side_effect(path):
-        if "page.json" in path:
-            return {"displayName": "My Page", "filterConfig": {}}  # No filters
-        return {}
-
-    mock_load_json.side_effect = load_json_side_effect
-    mock_common_load_json.side_effect = load_json_side_effect
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "Page1",
+                "path/Page1",
+                {
+                    "name": "Page1",
+                    "displayName": "My Page",
+                    "filterConfig": {},  # No filters
+                },
+            )
+        ]
+    )
 
     clear_filters("dummy", target_page="Page1")
 
@@ -763,65 +779,70 @@ def test_extract_page_filters_empty_target(
     assert has_none
 
 
-@patch("pbir_utils.common.load_json")
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_dry_run")
-@patch("pbir_utils.filter_utils.console.print_info")
-@patch("os.path.exists")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.iter_visuals")
+@patch("pbir_utils.filter_clear.iter_pages")
+@patch("pbir_utils.filter_clear.console.print_dry_run")
+@patch("pbir_utils.filter_clear.console.print_info")
 def test_extract_visual_shows_page_filters(
-    mock_isdir,
-    mock_listdir,
-    mock_exists,
     mock_print_info,
     mock_print_dry_run,
+    mock_iter_pages,
+    mock_iter_visuals,
     mock_load_json,
-    mock_common_load_json,
 ):
     """Test that targeting a visual automagically shows page filters (context)."""
-    mock_exists.return_value = True
-    mock_isdir.return_value = True
+    mock_load_json.return_value = {}
 
-    # Return "MyVisual" for both pages (as page_id) and visuals (as visual_id) for simplicity
-    # This ensures target_visual="MyVisual" matches the visual_id found.
-    mock_listdir.return_value = ["MyVisual"]
-
-    # Needs side_effect for load_json to handle report.json, page.json, and visual.json
-    def load_json_side_effect(path):
-        if "page.json" in path:
-            return {
-                "displayName": "My Page",
-                "filterConfig": {
-                    "filters": [
-                        {
-                            "field": {"Column": {"Property": "PageFilterProp"}},
-                            "filter": {
-                                "Where": [
-                                    {
-                                        "Condition": {
-                                            "Comparison": {
-                                                "ComparisonKind": 1,
-                                                "Right": {"Literal": {"Value": "10L"}},
+    # Mock iter_pages to return a page with filters
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "MyVisual",
+                "path/MyVisual",
+                {
+                    "name": "MyVisual",
+                    "displayName": "My Page",
+                    "filterConfig": {
+                        "filters": [
+                            {
+                                "field": {"Column": {"Property": "PageFilterProp"}},
+                                "filter": {
+                                    "Where": [
+                                        {
+                                            "Condition": {
+                                                "Comparison": {
+                                                    "ComparisonKind": 1,
+                                                    "Right": {
+                                                        "Literal": {"Value": "10L"}
+                                                    },
+                                                }
                                             }
                                         }
-                                    }
-                                ]
-                            },
-                        }
-                    ]
+                                    ]
+                                },
+                            }
+                        ]
+                    },
                 },
-            }
-        if "visual.json" in path:
-            return {
-                "name": "MyVisual",
-                "visual": {"visualType": "chart"},
-                "filterConfig": {},  # empty visual filter for simplicity, we focus on page filter appearance
-            }
-        return {}
+            )
+        ]
+    )
 
-    mock_load_json.side_effect = load_json_side_effect
-    mock_common_load_json.side_effect = load_json_side_effect
+    # Mock iter_visuals to return the visual
+    mock_iter_visuals.return_value = iter(
+        [
+            (
+                "MyVisual",
+                "path/MyVisual/visuals/MyVisual",
+                {
+                    "name": "MyVisual",
+                    "visual": {"visualType": "chart"},
+                    "filterConfig": {},
+                },
+            )
+        ]
+    )
 
     # Target specific visual, NOT explicitly asking for page filters
     clear_filters("dummy", target_visual="MyVisual")
@@ -867,89 +888,96 @@ def test_parse_condition_datespan():
     assert "Expression" not in result
 
 
-@patch("pbir_utils.common.load_json")
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_dry_run")
-@patch("pbir_utils.filter_utils.console.print_info")
-@patch("os.path.exists")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.iter_visuals")
+@patch("pbir_utils.filter_clear.iter_pages")
+@patch("pbir_utils.filter_clear.console.print_dry_run")
+@patch("pbir_utils.filter_clear.console.print_info")
 def test_extract_slicer_filters(
-    mock_isdir,
-    mock_listdir,
-    mock_exists,
     mock_print_info,
     mock_print_dry_run,
+    mock_iter_pages,
+    mock_iter_visuals,
     mock_load_json,
-    mock_common_load_json,
 ):
     """Test extracting filters from a Slicer visual."""
-    mock_exists.return_value = True
-    mock_isdir.return_value = True
-    mock_listdir.return_value = ["SlicerVisual"]
+    mock_load_json.return_value = {}
 
-    def load_json_side_effect(path):
-        if "visual.json" in path:
-            return {
-                "name": "MySlicer",
-                "visual": {
-                    "visualType": "slicer",
-                    "query": {
-                        "queryState": {
-                            "Values": {
-                                "projections": [
-                                    {
-                                        "field": {
-                                            "Column": {
-                                                "Expression": {
-                                                    "SourceRef": {"Entity": "User_TB"}
-                                                },
-                                                "Property": "user_type",
+    # Mock iter_pages
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "SlicerVisual",
+                "path/SlicerVisual",
+                {"name": "SlicerVisual", "displayName": "Page1", "filterConfig": {}},
+            )
+        ]
+    )
+
+    # Mock iter_visuals to return a slicer
+    mock_iter_visuals.return_value = iter(
+        [
+            (
+                "MySlicer",
+                "path/SlicerVisual/visuals/MySlicer",
+                {
+                    "name": "MySlicer",
+                    "visual": {
+                        "visualType": "slicer",
+                        "query": {
+                            "queryState": {
+                                "Values": {
+                                    "projections": [
+                                        {
+                                            "field": {
+                                                "Column": {
+                                                    "Expression": {
+                                                        "SourceRef": {
+                                                            "Entity": "User_TB"
+                                                        }
+                                                    },
+                                                    "Property": "user_type",
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "objects": {
+                            "general": [
+                                {
+                                    "properties": {
+                                        "filter": {
+                                            "filter": {
+                                                "Where": [
+                                                    {
+                                                        "Condition": {
+                                                            "In": {
+                                                                "Values": [
+                                                                    [
+                                                                        {
+                                                                            "Literal": {
+                                                                                "Value": "'driver'"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                ]
                                             }
                                         }
                                     }
-                                ]
-                            }
-                        }
-                    },
-                    "objects": {
-                        "general": [
-                            {
-                                "properties": {
-                                    "filter": {
-                                        "filter": {
-                                            "Where": [
-                                                {
-                                                    "Condition": {
-                                                        "In": {
-                                                            "Values": [
-                                                                [
-                                                                    {
-                                                                        "Literal": {
-                                                                            "Value": "'driver'"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        },
                     },
                 },
-            }
-        # Return minimal dicts for report/page to allow flow to reach visual
-        if "page.json" in path:
-            return {"displayName": "Page1", "filterConfig": {}}
-        return {}
-
-    mock_load_json.side_effect = load_json_side_effect
-    mock_common_load_json.side_effect = load_json_side_effect
+            )
+        ]
+    )
 
     # Use MySlicer to match the visual name in the mocked JSON
     clear_filters("dummy", target_visual="MySlicer")
@@ -974,120 +1002,126 @@ def test_extract_slicer_filters(
     assert found_slicer_filter
 
 
-@patch("pbir_utils.common.load_json")
-@patch("pbir_utils.filter_utils.load_json")
-@patch("pbir_utils.filter_utils.console.print_dry_run")
-@patch("pbir_utils.filter_utils.console.print_info")
-@patch("os.path.exists")
-@patch("os.listdir")
-@patch("os.path.isdir")
+@patch("pbir_utils.filter_clear.load_json")
+@patch("pbir_utils.filter_clear.iter_visuals")
+@patch("pbir_utils.filter_clear.iter_pages")
+@patch("pbir_utils.filter_clear.console.print_dry_run")
+@patch("pbir_utils.filter_clear.console.print_info")
 def test_extract_page_with_slicers_implicit(
-    mock_isdir,
-    mock_listdir,
-    mock_exists,
     mock_print_info,
     mock_print_dry_run,
+    mock_iter_pages,
+    mock_iter_visuals,
     mock_load_json,
-    mock_common_load_json,
 ):
     """Test that requesting a page also shows its slicers' filters implicitly."""
-    mock_exists.return_value = True
-    mock_isdir.return_value = True
+    mock_load_json.return_value = {}
 
-    # Setup mock returns
-    def listdir_side_effect(path):
-        if path.endswith("visuals"):
-            return ["MySlicer", "RegularVisual"]
-        if "pages" in path:
-            return ["PageWithSlicer"]
-        return []
+    # Mock iter_pages
+    mock_iter_pages.return_value = iter(
+        [
+            (
+                "PageWithSlicer",
+                "path/PageWithSlicer",
+                {
+                    "name": "PageWithSlicer",
+                    "displayName": "PageWithSlicer",
+                    "filterConfig": {},
+                },
+            )
+        ]
+    )
 
-    mock_listdir.side_effect = listdir_side_effect
-
-    def load_json_side_effect(path):
-        if "page.json" in path:
-            return {"displayName": "PageWithSlicer", "filterConfig": {}}
-        if "MySlicer" in path and "visual.json" in path:
-            return {
-                "name": "MySlicer",
-                "visual": {
-                    "visualType": "slicer",
-                    "query": {
-                        "queryState": {
-                            "Values": {
-                                "projections": [
-                                    {
-                                        "field": {
-                                            "Column": {
-                                                "Expression": {
-                                                    "SourceRef": {"Entity": "User"}
-                                                },
-                                                "Property": "UserType",
+    # Mock iter_visuals to return a slicer and a regular visual
+    mock_iter_visuals.return_value = iter(
+        [
+            (
+                "MySlicer",
+                "path/PageWithSlicer/visuals/MySlicer",
+                {
+                    "name": "MySlicer",
+                    "visual": {
+                        "visualType": "slicer",
+                        "query": {
+                            "queryState": {
+                                "Values": {
+                                    "projections": [
+                                        {
+                                            "field": {
+                                                "Column": {
+                                                    "Expression": {
+                                                        "SourceRef": {"Entity": "User"}
+                                                    },
+                                                    "Property": "UserType",
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "objects": {
+                            "general": [
+                                {
+                                    "properties": {
+                                        "filter": {
+                                            "filter": {
+                                                "Where": [
+                                                    {
+                                                        "Condition": {
+                                                            "In": {
+                                                                "Values": [
+                                                                    [
+                                                                        {
+                                                                            "Literal": {
+                                                                                "Value": "'Driver'"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                ]
                                             }
                                         }
                                     }
-                                ]
-                            }
-                        }
+                                }
+                            ]
+                        },
                     },
-                    "objects": {
-                        "general": [
+                },
+            ),
+            (
+                "RegularVisual",
+                "path/PageWithSlicer/visuals/RegularVisual",
+                {
+                    "name": "RegularVisual",
+                    "visual": {"visualType": "chart"},
+                    "filterConfig": {
+                        "filters": [
                             {
-                                "properties": {
-                                    "filter": {
-                                        "filter": {
-                                            "Where": [
-                                                {
-                                                    "Condition": {
-                                                        "In": {
-                                                            "Values": [
-                                                                [
-                                                                    {
-                                                                        "Literal": {
-                                                                            "Value": "'Driver'"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            ]
-                                                        }
+                                "field": {"Column": {"Property": "Sales"}},
+                                "filter": {
+                                    "Where": [
+                                        {
+                                            "Condition": {
+                                                "Comparison": {
+                                                    "Right": {
+                                                        "Literal": {"Value": "100L"}
                                                     }
                                                 }
-                                            ]
+                                            }
                                         }
-                                    }
-                                }
+                                    ]
+                                },
                             }
                         ]
                     },
                 },
-            }
-        if "RegularVisual" in path and "visual.json" in path:
-            return {
-                "name": "RegularVisual",
-                "visual": {"visualType": "chart"},
-                "filterConfig": {
-                    "filters": [
-                        {
-                            "field": {"Column": {"Property": "Sales"}},
-                            "filter": {
-                                "Where": [
-                                    {
-                                        "Condition": {
-                                            "Comparison": {
-                                                "Right": {"Literal": {"Value": "100L"}}
-                                            }
-                                        }
-                                    }
-                                ]
-                            },
-                        }
-                    ]
-                },
-            }
-        return {}
-
-    mock_load_json.side_effect = load_json_side_effect
-    mock_common_load_json.side_effect = load_json_side_effect
+            ),
+        ]
+    )
 
     # Call with target_page ONLY (no visual filters requested explicitly)
     clear_filters("dummy", target_page="PageWithSlicer")

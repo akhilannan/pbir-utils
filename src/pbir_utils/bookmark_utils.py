@@ -4,7 +4,7 @@ Bookmark utilities for Power BI report sanitization.
 Contains functions for managing bookmarks in PBIR reports.
 """
 
-import os
+from pathlib import Path
 import shutil
 
 from .common import load_json, write_json, process_json_files, iter_pages, iter_visuals
@@ -27,10 +27,10 @@ def remove_unused_bookmarks(
     """
     console.print_action_heading("Removing unused bookmarks", dry_run)
 
-    bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
-    bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
+    bookmarks_dir = Path(report_path) / "definition" / "bookmarks"
+    bookmarks_json_path = bookmarks_dir / "bookmarks.json"
 
-    if not os.path.exists(bookmarks_json_path):
+    if not bookmarks_json_path.exists():
         console.print_info("No bookmarks found.")
         return False
 
@@ -94,22 +94,22 @@ def remove_unused_bookmarks(
 
     removed_bookmarks = 0
     removed_bookmark_names = []
-    for filename in os.listdir(bookmarks_dir):
-        if filename.endswith(".bookmark.json"):
-            bookmark_file_data = load_json(os.path.join(bookmarks_dir, filename))
+    for file_path in bookmarks_dir.iterdir():
+        if file_path.suffix == ".json" and file_path.name.endswith(".bookmark.json"):
+            bookmark_file_data = load_json(file_path)
             if bookmark_file_data.get("name") not in used_bookmarks:
                 if not dry_run:
-                    os.remove(os.path.join(bookmarks_dir, filename))
+                    file_path.unlink()
                 removed_bookmarks += 1
-                removed_bookmark_names.append(filename)
+                removed_bookmark_names.append(file_path.name)
                 if not summary:
                     if dry_run:
                         console.print_dry_run(
-                            f"Would remove unused bookmark file: {filename}"
+                            f"Would remove unused bookmark file: {file_path.name}"
                         )
                     else:
                         console.print_success(
-                            f"Removed unused bookmark file: {filename}"
+                            f"Removed unused bookmark file: {file_path.name}"
                         )
 
     if not dry_run:
@@ -149,13 +149,13 @@ def cleanup_invalid_bookmarks(
     """
     console.print_action_heading("Cleaning up invalid bookmarks", dry_run)
 
-    bookmarks_dir = os.path.join(report_path, "definition", "bookmarks")
-    if not os.path.exists(bookmarks_dir):
+    bookmarks_dir = Path(report_path) / "definition" / "bookmarks"
+    if not bookmarks_dir.exists():
         console.print_info("No bookmarks directory found.")
         return False
 
     # Load pages.json to get valid page names
-    pages_json_path = os.path.join(report_path, "definition", "pages", "pages.json")
+    pages_json_path = Path(report_path) / "definition" / "pages" / "pages.json"
     pages_data = load_json(pages_json_path)
     valid_pages = set(pages_data.get("pageOrder", []))
 
@@ -163,7 +163,7 @@ def cleanup_invalid_bookmarks(
 
     valid_visuals_by_page = {}
     for page_id in valid_pages:
-        page_folder = os.path.join(report_path, "definition", "pages", page_id)
+        page_folder = str(Path(report_path) / "definition" / "pages" / page_id)
         valid_visuals_by_page[page_id] = {
             visual_id for visual_id, _, _ in iter_visuals(page_folder)
         }
@@ -180,7 +180,7 @@ def cleanup_invalid_bookmarks(
             stats["removed"] += 1
             stats["processed"] += 1
             if not dry_run:
-                os.remove(file_path)
+                Path(file_path).unlink()
             return False
 
         was_modified = False
@@ -233,7 +233,7 @@ def cleanup_invalid_bookmarks(
     )
 
     # Update bookmarks.json
-    bookmarks_json_path = os.path.join(bookmarks_dir, "bookmarks.json")
+    bookmarks_json_path = bookmarks_dir / "bookmarks.json"
     bookmarks_data = load_json(bookmarks_json_path)
 
     def _cleanup_bookmark_items(items: list) -> list:

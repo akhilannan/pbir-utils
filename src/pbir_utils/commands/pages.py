@@ -1,5 +1,7 @@
 """Page-related commands for PBIR Utils CLI."""
 
+__all__ = ["register", "handle_set_display_option"]
+
 import argparse
 import textwrap
 
