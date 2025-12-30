@@ -5,6 +5,7 @@ import textwrap
 
 from ..command_utils import (
     add_dry_run_arg,
+    add_summary_arg,
 )
 
 
@@ -43,6 +44,7 @@ def register(subparsers):
     )
     parser.add_argument("csv_path", help="Path to the Attribute_Mapping.csv file")
     add_dry_run_arg(parser)
+    add_summary_arg(parser)
     parser.set_defaults(func=handle)
 
 
@@ -53,4 +55,6 @@ def handle(args):
     from ..pbir_processor import batch_update_pbir_project
 
     directory_path = resolve_report_path(args.directory_path)
-    batch_update_pbir_project(directory_path, args.csv_path, dry_run=args.dry_run)
+    batch_update_pbir_project(
+        directory_path, args.csv_path, dry_run=args.dry_run, summary=args.summary
+    )

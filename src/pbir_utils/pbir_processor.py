@@ -222,7 +222,11 @@ def _update_property(data: dict, column_map: dict) -> bool:
 
 
 def _update_pbir_component(
-    file_path: str, table_map: dict, column_map: dict, dry_run: bool = False
+    file_path: str,
+    table_map: dict,
+    column_map: dict,
+    dry_run: bool = False,
+    summary: bool = False,
 ) -> bool:
     """
     Update a single component within a Power BI Enhanced Report Format (PBIR) structure.
@@ -234,6 +238,8 @@ def _update_pbir_component(
     - file_path: Path to the PBIR component JSON file.
     - table_map: A dictionary mapping old table names to new table names.
     - column_map: A dictionary mapping old (table, column) pairs to new column names.
+    - dry_run: Whether to perform a dry run.
+    - summary: Whether to show summary instead of detailed messages.
 
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
@@ -245,25 +251,25 @@ def _update_pbir_component(
 
     if table_map:
         entity_updated = _update_entity(data, table_map)
-        if entity_updated:
+        if entity_updated and not summary:
             console.print_success(f"Entity updated in file: {file_path}")
 
     if column_map:
         property_updated = _update_property(data, column_map)
-        if property_updated:
+        if property_updated and not summary:
             console.print_success(f"Property updated in file: {file_path}")
 
     if entity_updated or property_updated:
         if not dry_run:
             write_json(file_path, data)
-        else:
+        elif not summary:
             console.print_dry_run(f"Would update {file_path}")
         return True
     return False
 
 
 def batch_update_pbir_project(
-    directory_path: str, csv_path: str, dry_run: bool = False
+    directory_path: str, csv_path: str, dry_run: bool = False, summary: bool = False
 ) -> bool:
     """
     Perform a batch update on all components of a Power BI Enhanced Report Format (PBIR) project.
@@ -275,12 +281,15 @@ def batch_update_pbir_project(
     Parameters:
     - directory_path: Path to the root directory of the PBIR project (usually the 'definition' folder).
     - csv_path: Path to the CSV file with the mapping of old and new table/column names.
+    - dry_run: Whether to perform a dry run.
+    - summary: Whether to show summary instead of detailed messages.
 
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
     console.print_action_heading("Batch updating PBIR project", dry_run)
     any_changes = False
+    files_updated = 0
     error_occurred = False
     try:
         mappings = _load_csv_mapping(csv_path)
@@ -303,14 +312,20 @@ def batch_update_pbir_project(
 
         for file_path in walk_json_files(directory_path, ".json"):
             if _update_pbir_component(
-                file_path, table_map, column_map, dry_run=dry_run
+                file_path, table_map, column_map, dry_run=dry_run, summary=summary
             ):
                 any_changes = True
+                files_updated += 1
     except Exception as e:
         error_occurred = True
         console.print_error(f"An error occurred: {str(e)}")
 
-    if not any_changes and not error_occurred:
+    if summary and files_updated > 0:
+        if dry_run:
+            console.print_dry_run(f"Would update {files_updated} file(s)")
+        else:
+            console.print_success(f"Updated {files_updated} file(s)")
+    elif not any_changes and not error_occurred:
         console.print_info("No changes needed. All attributes are already up to date.")
 
     return any_changes

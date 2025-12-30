@@ -1,3 +1,6 @@
+### CLI Features
+- **batch-update**: Added `--summary` flag to display aggregated output instead of per-file messages
+
 ### Documentation
 - **UI Improvements**
     - Enhanced documentation site with instant navigation (SPA-like), sticky Table of Contents, and navigation tracking
