@@ -1,7 +1,5 @@
 import pytest
 import argparse
-import json
-from unittest.mock import MagicMock, patch
 from pbir_utils.command_utils import (
     parse_filters,
     parse_json_arg,
@@ -18,14 +16,6 @@ def test_parse_filters_none():
 
 
 def test_parse_filters_valid():
-    json_str = '[{"Table": "T", "Column": "C", "Values": ["V"]}]'
-    # parse_filters expects a dict structure not a list directly based on its code:
-    # return {k: set(v) if isinstance(v, list) else set([v]) for k, v in data.items()}
-    # Wait, looking at the code:
-    # data = json.loads(filters_str)
-    # if not isinstance(data, dict): raise ValueError
-    # So the input MUST be a JSON object (dict), not a list.
-
     valid_json = '{"Table1": ["Val1", "Val2"], "Table2": "Val3"}'
     result = parse_filters(valid_json)
     assert result["Table1"] == {"Val1", "Val2"}
