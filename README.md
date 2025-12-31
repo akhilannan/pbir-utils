@@ -42,7 +42,7 @@ pbir-utils visualize "C:\Reports\MyReport.Report"
 import pbir_utils as pbir
 
 # Sanitize a report
-pbir.sanitize_powerbi_report("C:\\Reports\\MyReport.Report", actions=["remove_unused_measures", "standardize_pbir_folders"])
+pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", actions=["remove_unused_measures", "standardize_pbir_folders"])
 ```
 
 

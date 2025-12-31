@@ -109,7 +109,7 @@ def main() -> None:
         print(f"--- {name} ---")
 
         results = sanitize_powerbi_report(str(report_path), dry_run=True, summary=True)
-        failed = [action for action, changed in results.items() if changed]
+        failed = [action for action, has_issues in results.items() if has_issues]
 
         if not failed:
             print("  OK")
