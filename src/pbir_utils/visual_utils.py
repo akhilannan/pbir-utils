@@ -297,15 +297,11 @@ def remove_hidden_visuals_never_shown(
         report_path
     )
 
-    # Determine visuals to remove
     visuals_to_remove = set()
-
-    # Add always-hidden groups and their children
     for group in set(hidden_groups) - shown_groups:
         visuals_to_remove.add(group)
         visuals_to_remove.update(group_children.get(group, set()))
 
-    # Add hidden visuals never shown (excluding children of shown groups)
     for visual in hidden_visuals:
         if visual not in shown_visuals and not any(
             visual in group_children.get(group, set()) for group in shown_groups
@@ -328,7 +324,6 @@ def remove_hidden_visuals_never_shown(
 
             visuals_to_remove.add(visual)
 
-    # Remove the visuals
     for visual_name in visuals_to_remove:
         # Get folder from hidden_groups or hidden_visuals_results
         folder = hidden_groups.get(visual_name)
@@ -345,7 +340,7 @@ def remove_hidden_visuals_never_shown(
         if folder:
             folder_path = Path(folder)
             if folder_path.exists():
-                # Remove visual interactions for the visual
+
                 page_json_path = folder_path.parent.parent / "page.json"
                 if page_json_path.exists():
                     page_data = load_json(page_json_path)
@@ -375,7 +370,6 @@ def remove_hidden_visuals_never_shown(
                     shutil.rmtree(folder_path)
                 visual_type = visual_types.get(visual_name, "unknown")
 
-                # Get page name
                 page_name = "Unknown Page"
                 page_dir = folder_path.parent.parent
                 page_json_path = page_dir / "page.json"
@@ -393,7 +387,6 @@ def remove_hidden_visuals_never_shown(
                             f"Removed '{visual_type}' visual in '{page_name}' page: {visual_name}"
                         )
 
-    # Update bookmarks
     def _update_bookmark(bookmark_data: dict, _: str) -> bool:
         updated = False
         for section in (
@@ -407,7 +400,6 @@ def remove_hidden_visuals_never_shown(
                         updated = True
         return updated
 
-    # Update bookmarks to remove references to removed visuals
     bookmarks_updated = process_json_files(
         Path(report_path) / "definition" / "bookmarks",
         ".bookmark.json",

@@ -22,7 +22,6 @@ __all__ = [
     "sort_report_filters",
     "configure_filter_pane",
     "reset_filter_pane_width",
-    # Shared utilities (also used by filter_clear.py)
     "get_target_from_field",
     "parse_target_components",
 ]
@@ -608,7 +607,6 @@ def sort_report_filters(
             )
             continue
 
-        # Check if any changes were made
         new_order = [f.get("ordinal", -1) for f in filters]
         new_sort_order = data["filterConfig"].get("filterSortOrder")
         has_changes = (
@@ -671,7 +669,6 @@ def configure_filter_pane(
     objects = report_data.get("objects", {})
     outspace_pane = objects.get("outspacePane", [])
 
-    # Get current values
     current_visible = "true"
     current_expanded = "true"
     if outspace_pane:
@@ -692,12 +689,10 @@ def configure_filter_pane(
     target_visible = "true" if visible else "false"
     target_expanded = "true" if expanded else "false"
 
-    # Check if changes are needed
     if current_visible == target_visible and current_expanded == target_expanded:
         console.print_info(f"Filter pane is already {state_desc}.")
         return False
 
-    # Ensure objects structure exists
     if "objects" not in report_data:
         report_data["objects"] = {}
     if "outspacePane" not in report_data["objects"]:
@@ -705,7 +700,6 @@ def configure_filter_pane(
     if "properties" not in report_data["objects"]["outspacePane"][0]:
         report_data["objects"]["outspacePane"][0]["properties"] = {}
 
-    # Set properties
     props = report_data["objects"]["outspacePane"][0]["properties"]
     props["visible"] = {"expr": {"Literal": {"Value": target_visible}}}
     props["expanded"] = {"expr": {"Literal": {"Value": target_expanded}}}
@@ -751,18 +745,14 @@ def reset_filter_pane_width(
         if "width" not in properties:
             return False
 
-        # Remove width property
         del properties["width"]
 
-        # If properties is now empty, remove it
         if not properties:
             del outspace_pane[0]["properties"]
 
-        # If outspacePane[0] is now empty, remove outspacePane
         if not outspace_pane[0]:
             del objects["outspacePane"]
 
-        # If objects is now empty, remove it
         if not objects:
             del page_data["objects"]
 

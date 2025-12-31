@@ -20,7 +20,7 @@ def _load_csv_mapping(csv_path: str) -> list[dict[str, str]]:
     with open(csv_path, "r", newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.DictReader(csvfile)
         expected_columns = ["old_tbl", "old_col", "new_tbl", "new_col"]
-        # Strip BOM from the column names if present
+
         fieldnames = [name.lstrip("\ufeff") for name in reader.fieldnames]
         if not all(col in fieldnames for col in expected_columns):
             raise ValueError(
@@ -79,7 +79,6 @@ def _update_dax_expression(
             table_part = match.group(1)
             column_name = match.group(2)
 
-            # Remove quotes from table name for lookup
             table_name = table_part.strip("'")
 
             if (table_name, column_name) in column_map:

@@ -36,14 +36,11 @@ def remove_unused_bookmarks(
 
     bookmarks_data = load_json(bookmarks_json_path)
 
-    # Pre-compute ALL bookmark references from visuals in a single pass
-
     all_used_bookmark_refs = set()
     for _, page_folder, _ in iter_pages(report_path):
         for _, _, visual_data in iter_visuals(page_folder):
             visual = visual_data.get("visual", {})
 
-            # From bookmarkNavigator visuals
             if visual.get("visualType") == "bookmarkNavigator":
                 for bookmark in visual.get("objects", {}).get("bookmarks", []):
                     val = (
@@ -56,7 +53,6 @@ def remove_unused_bookmarks(
                     if val:
                         all_used_bookmark_refs.add(val.strip("'"))
 
-            # From visualLink actions
             for link in visual.get("visualContainerObjects", {}).get("visualLink", []):
                 val = (
                     link.get("properties", {})
@@ -159,8 +155,6 @@ def cleanup_invalid_bookmarks(
     pages_data = load_json(pages_json_path)
     valid_pages = set(pages_data.get("pageOrder", []))
 
-    # Pre-compute valid visuals per page in a single pass
-
     valid_visuals_by_page = {}
     for page_id in valid_pages:
         page_folder = str(Path(report_path) / "definition" / "pages" / page_id)
@@ -168,7 +162,6 @@ def cleanup_invalid_bookmarks(
             visual_id for visual_id, _, _ in iter_visuals(page_folder)
         }
 
-    # Track bookmarks to remove globally
     bookmarks_to_remove = set()
     stats = {"processed": 0, "removed": 0, "cleaned": 0, "updated": 0}
 
@@ -197,7 +190,6 @@ def cleanup_invalid_bookmarks(
             # Use pre-computed valid visuals
             valid_visuals = valid_visuals_by_page.get(section_name, set())
 
-            # Clean up containers and groups
             for section_key in ["visualContainers", "visualContainerGroups"]:
                 containers = section_data.get(section_key, {})
                 invalid_items = [id for id in containers if id not in valid_visuals]
@@ -223,7 +215,6 @@ def cleanup_invalid_bookmarks(
 
         return was_modified
 
-    # Process all bookmark files
     process_json_files(
         bookmarks_dir,
         ".bookmark.json",
@@ -232,7 +223,6 @@ def cleanup_invalid_bookmarks(
         dry_run=dry_run,
     )
 
-    # Update bookmarks.json
     bookmarks_json_path = bookmarks_dir / "bookmarks.json"
     bookmarks_data = load_json(bookmarks_json_path)
 
@@ -254,7 +244,6 @@ def cleanup_invalid_bookmarks(
 
     bookmarks_data["items"] = _cleanup_bookmark_items(bookmarks_data["items"])
 
-    # Final cleanup and reporting
     if not bookmarks_data["items"]:
         if not dry_run:
             shutil.rmtree(bookmarks_dir)

@@ -91,12 +91,10 @@ def set_first_page_as_active(
     page_order = pages_data["pageOrder"]
     current_active_page = pages_data.get("activePageName")
 
-    # Map Page ID to (Folder Path, Page Data)
     page_map = {}
     for page_id, folder_path, page_data in iter_pages(report_path):
         page_map[page_id] = (folder_path, page_data)
 
-    # Find the first non-hidden page
     first_non_hidden_page = None
     first_non_hidden_page_display_name = None
 
@@ -110,7 +108,6 @@ def set_first_page_as_active(
                 )
                 break
 
-    # If all pages are hidden or no page.json exists, default to first page
     if first_non_hidden_page is None:
         first_non_hidden_page = page_order[0]
         if first_non_hidden_page in page_map:
@@ -168,7 +165,6 @@ def remove_empty_pages(
     page_order = pages_data.get("pageOrder", [])
     active_page_name = pages_data.get("activePageName")
 
-    # Map Page ID to Folder Path
     page_id_to_folder = {}
     folder_to_page_id = {}
 
@@ -281,7 +277,6 @@ def set_page_size(
         page_json_path = Path(folder_path) / "page.json"
         folder_name = Path(folder_path).name
 
-        # Skip tooltip pages if configured
         if exclude_tooltip and page_data.get("type") == "Tooltip":
             if not summary:
                 console.print_info(
@@ -292,7 +287,6 @@ def set_page_size(
         current_width = page_data.get("width")
         current_height = page_data.get("height")
 
-        # Check if modification is needed
         if current_width != width or current_height != height:
             page_data["width"] = width
             page_data["height"] = height
@@ -353,7 +347,6 @@ def set_page_display_option(
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    # Validate display option
     if display_option not in VALID_DISPLAY_OPTIONS:
         console.print_error(
             f"Invalid display option '{display_option}'. "
@@ -386,7 +379,6 @@ def set_page_display_option(
 
         current_option = page_data.get("displayOption")
 
-        # Check if modification is needed
         if current_option != display_option:
             page_data["displayOption"] = display_option
 

@@ -60,7 +60,6 @@ def _extract_active_section(bookmark_json_path: str | Path) -> str:
     Returns:
         str: The active section if found, otherwise an empty string.
     """
-    # Check if the path is related to bookmarks
     if "bookmarks" in str(bookmark_json_path):
         return (
             load_json(bookmark_json_path)
@@ -68,7 +67,6 @@ def _extract_active_section(bookmark_json_path: str | Path) -> str:
             .get("activeSection", "")
         )
 
-    # Check if the path contains "pages" and extract the next part if it's a directory
     path = Path(bookmark_json_path)
     parts = path.parts
     try:
@@ -95,7 +93,6 @@ def _extract_page_info(json_path: str | Path) -> tuple:
     if not active_section:
         return "NA", "NA"
 
-    # Split path at "definition" to get the base path
     path_str = str(json_path)
     base_path = path_str.split("definition")[0]
     page_json_path = (
@@ -250,7 +247,6 @@ def _consolidate_metadata_from_directory(
     all_rows_without_expression = []
     report_filter = filters.get("Report") if filters else None
 
-    # Find all report directories
     report_dirs = find_report_folders(directory_path)
 
     if not report_dirs:
@@ -258,7 +254,6 @@ def _consolidate_metadata_from_directory(
         return []
 
     for report_dir in report_dirs:
-        # Check report filter
         report_name = _extract_report_name(Path(report_dir) / "dummy")
         if report_filter and report_name not in report_filter:
             continue
@@ -266,10 +261,8 @@ def _consolidate_metadata_from_directory(
         report_path = Path(report_dir)
         for json_file_path in report_path.rglob("*.json"):
             if json_file_path.is_file():
-                # Extract metadata from the JSON file
                 file_metadata = _extract_metadata_from_file(json_file_path, filters)
 
-                # Separate the extracted rows
                 rows_with_expression = [
                     row for row in file_metadata if row["Expression"] is not None
                 ]
@@ -341,7 +334,7 @@ def export_pbir_metadata_to_csv(
     Returns:
         None
     """
-    # Generate default output path if not provided
+
     if csv_output_path is None:
         default_filename = "visuals.csv" if visuals_only else "metadata.csv"
         csv_output_path = str(Path(directory_path) / default_filename)
@@ -416,7 +409,6 @@ def _export_visual_metadata(
         )
     )
 
-    # Write to CSV
     try:
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=VISUAL_HEADER_FIELDS)
@@ -442,7 +434,6 @@ def _export_attribute_metadata(
         r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
         report_paths[r_name] = r_path
 
-    # Get page orders for each report
     report_page_orders = {
         report_name: _get_page_order(report_path)
         for report_name, report_path in report_paths.items()
@@ -460,7 +451,6 @@ def _export_attribute_metadata(
         )
     )
 
-    # Write to CSV
     try:
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
