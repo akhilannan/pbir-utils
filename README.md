@@ -3,6 +3,8 @@
 </div>
 
 [![PyPI version](https://img.shields.io/pypi/v/pbir-utils.svg)](https://pypi.org/project/pbir-utils/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://pypi.org/project/pbir-utils/)
+[![CI](https://github.com/akhilannan/pbir-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/akhilannan/pbir-utils/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **pbir-utils** is a Python library designed to streamline the tasks that Power BI developers typically handle manually in Power BI Desktop. This module offers a range of utility functions to efficiently manage and manipulate PBIR (Power BI Enhanced Report Format) metadata.
