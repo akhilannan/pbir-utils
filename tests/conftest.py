@@ -170,6 +170,15 @@ def complex_report(tmp_path):
 
 
 @pytest.fixture
+def temp_report_structure(tmp_path):
+    """Create a minimal report structure with just pages directory for folder tests."""
+    report_dir = tmp_path / "TestReport.Report"
+    pages_dir = report_dir / "definition" / "pages"
+    os.makedirs(pages_dir)
+    return report_dir
+
+
+@pytest.fixture
 def run_cli():
     def _run_cli(args, cwd=None):
         """Helper to run CLI commands."""

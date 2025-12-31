@@ -46,4 +46,4 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        pytest --cov=src --cov-fail-under=60
+        pytest --cov=src --cov-fail-under=80

@@ -234,7 +234,7 @@ Updates filters in the Power BI report level filter pane.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `directory_path` | str | Root directory containing reports |
+| `report_path` | str | Path to .Report folder or root directory containing reports |
 | `filters` | list | Filter configurations to apply |
 | `reports` | list | Specific reports to update (optional) |
 | `dry_run` | bool | Simulate changes without modifying files |
@@ -263,7 +263,7 @@ Updates filters in the Power BI report level filter pane.
 
 ```python
 pbir.update_report_filters(
-    directory_path=r"C:\DEV\MyReport.Report",
+    report_path=r"C:\DEV\MyReport.Report",
     filters=[
         # Inclusion filter
         {"Table": "Sales", "Column": "Region", "Condition": "In", "Values": ["North", "South"]},
@@ -290,7 +290,7 @@ Reorders filters in the report filter pane based on a sorting strategy.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `directory_path` | str | Root directory containing reports |
+| `report_path` | str | Path to .Report folder or root directory containing reports |
 | `reports` | list | Specific reports to update (optional) |
 | `sort_order` | str | Sorting strategy (see below) |
 | `custom_order` | list | Custom filter order (required for `Custom`) |
@@ -310,7 +310,7 @@ Reorders filters in the report filter pane based on a sorting strategy.
 
 ```python
 pbir.sort_report_filters(
-    directory_path=r"C:\DEV\MyReport.Report",
+    report_path=r"C:\DEV\MyReport.Report",
     sort_order="SelectedFilterTop",
     dry_run=True
 )
