@@ -1,0 +1,30 @@
+name: Deploy Documentation
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs
+        run: pip install mkdocs mkdocs-material requests
+
+      - name: Generate Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/generate_releases.py
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force
