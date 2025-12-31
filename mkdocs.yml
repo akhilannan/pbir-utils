@@ -32,6 +32,12 @@ theme:
     - search.highlight
     - content.code.copy
     - content.code.annotate
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+extra_css:
+  - stylesheets/extra.css
 
 extra:
   social:
