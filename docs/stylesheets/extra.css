@@ -43,3 +43,9 @@ a,
 .md-typeset pre>code {
     font-variant-ligatures: none;
 }
+
+/* 6. Table Polish */
+/* Prevent wrapping of code identifiers in the first column of tables */
+.md-typeset table td:first-child code {
+    white-space: nowrap;
+}

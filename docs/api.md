@@ -27,17 +27,7 @@ Performs a batch update on all components of a PBIR project by processing JSON f
 
 ### CSV Format
 
-The mapping CSV should have these columns:
-
-| old_tbl | old_col | new_tbl | new_col |
-|---------|---------|---------|---------|
-| Sale | sale_id | Sales | Sale Id |
-| Sale | order_date | Sales | OrderDate |
-| Date | | Dates | |
-| Product | product_name | | Product Name |
-
-- If a table name is unchanged, `new_tbl` is optional
-- If only the table name changes, `old_col` and `new_col` can be omitted
+Please refer to the [CLI Reference](cli.md#csv-format) for the required CSV format and column definitions.
 
 ### Example
 
@@ -240,24 +230,9 @@ Updates filters in the Power BI report level filter pane.
 | `dry_run` | bool | Simulate changes without modifying files |
 | `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
-### Condition Types
+### Condition Types & Filter Values
 
-| Category | Conditions | Expected Values |
-|----------|------------|------------------|
-| **Comparison** | `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual` | Single value |
-| **Range** | `Between`, `NotBetween` | Two values (start, end) |
-| **Inclusion** | `In`, `NotIn` | List of one or more values |
-| **Text Matching** | `Contains`, `StartsWith`, `EndsWith`, `NotContains`, `NotStartsWith`, `NotEndsWith` | Single string |
-| **Multi-Value Text** | `ContainsAnd`, `ContainsOr`, `StartsWithAnd`, `StartsWithOr`, `EndsWithAnd`, `EndsWithOr` | List of two or more strings |
-
-### Filter Values
-
-| Value Type | Format | Example |
-|------------|--------|---------|
-| **Date** | `DD-MMM-YYYY` string | `"15-Sep-2023"` |
-| **Numeric** | Integer or float | `100`, `99.5` |
-| **Text** | String | `"North"` |
-| **Clear Filter** | `None` | Removes existing filter on the column |
+Please refer to the [CLI Reference](cli.md#condition-types) for the full list of supported condition types and filter value formats.
 
 ### Example
 
@@ -587,18 +562,7 @@ A powerful utility to clean up and optimize Power BI reports.
 
 ### Available Actions
 
-| Action | Description |
-|--------|-------------|
-| `remove_unused_measures` | Remove measures not used in any visuals |
-| `remove_unused_bookmarks` | Remove bookmarks not activated through navigators/actions |
-| `remove_unused_custom_visuals` | Remove unused custom visuals |
-| `disable_show_items_with_no_data` | Disable "Show items with no data" for all visuals |
-| `hide_tooltip_pages` | Hide tooltip and drillthrough pages |
-| `set_first_page_as_active` | Set first page as default active page |
-| `remove_empty_pages` | Remove pages without visuals |
-| `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals |
-| `cleanup_invalid_bookmarks` | Remove bookmarks referencing non-existent pages/visuals |
-| `standardize_pbir_folders` | Standardize folder names to be descriptive |
+Please refer to the [CLI Reference](cli.md#available-actions) for the complete list of available sanitization actions and their descriptions.
 
 !!! tip "Additional Actions via YAML"
     More actions are available through YAML configuration, including `set_page_size_16_9`, `expand_filter_pane`, `collapse_filter_pane`, `hide_filter_pane`, `sort_filters_ascending`, `clear_all_report_filters`, and display option actions. See the [CLI Reference](cli.md#yaml-configuration) for configuration details.
