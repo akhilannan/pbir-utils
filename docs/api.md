@@ -86,7 +86,9 @@ pbir.export_pbir_metadata_to_csv(
 
 ## Display Report Wireframes
 
-Generates and displays interactive wireframes for a report using Dash and Plotly.
+Generates a static HTML wireframe of the report layout and opens it in the default web browser.
+
+This function creates a temporary HTML file containing the wireframe visualization. The output includes rich interactive features: dark mode toggle, zoom controls (25%-200%), visual count badges, dimension tooltips, search/filter, copy ID, and visual hide/unhide.
 
 ### Parameters
 
@@ -96,7 +98,7 @@ Generates and displays interactive wireframes for a report using Dash and Plotly
 | `pages` | list | Page names to include (empty = all pages) |
 | `visual_types` | list | Visual types to include (empty = all types) |
 | `visual_ids` | list | Visual IDs to include (empty = all visuals) |
-| `show_hidden` | bool | Show hidden visuals. Default: `True` |
+| `show_hidden` | bool | Include hidden visuals in the output. Default: `True` |
 
 !!! note "Filter Logic"
     The `pages`, `visual_types`, and `visual_ids` parameters use AND logic. Only visuals matching **all** specified criteria are shown.

@@ -32,10 +32,31 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv
 
 ## Visualize Wireframes
 
-Display report wireframes using Dash and Plotly. Visualizes the layout of pages and their visual components in an interactive web interface.
+Generate a static HTML wireframe of the report layout. This tool creates a lightweight, portable HTML file that visualizes the position and size of visuals across pages.
+
+The generated wireframe opens automatically in your default browser and includes rich interactive features:
+
+**Navigation & View Controls:**
+
+- **Page Tabs**: Switch between pages with visual count badges
+- **Dark Mode**: Toggle with 🌙 button (preference saved automatically)
+- **Zoom Controls**: Scale 25%-200% for large reports
+
+**Visual Interaction:**
+
+- **Left-click**: Copy visual ID to clipboard
+- **Right-click visual**: Temporarily hide visual (useful for overlapping elements)
+- **Right-click tab**: Temporarily hide page (click `+X pages` pill to restore)
+- **Undo/Reset**: Restore hidden items with ↩ and 🔄 buttons
+- **Search**: Filter visuals by ID, Type, or Page Name
+
+**Information Tooltips:**
+
+- **Page Tooltip** (hover over tabs): Page size, visual count, and type breakdown
+- **Visual Tooltip** (hover over visuals): Size (W×H), Position (X,Y), Parent group
 
 ```bash
-# Visualize all pages
+# Generate wireframe for all pages
 pbir-utils visualize "C:\Reports\MyReport.Report"
 
 # Filter by specific pages
@@ -44,7 +65,7 @@ pbir-utils visualize "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
 # Filter by visual type
 pbir-utils visualize "C:\Reports\MyReport.Report" --visual-types slicer card
 
-# Hide hidden visuals
+# Exclude hidden visuals from generation
 pbir-utils visualize "C:\Reports\MyReport.Report" --no-show-hidden
 ```
 
@@ -55,7 +76,7 @@ pbir-utils visualize "C:\Reports\MyReport.Report" --no-show-hidden
 | `--pages` | List of page names to include (uses AND logic with other filters) |
 | `--visual-types` | List of visual types to include (e.g., `slicer`, `card`, `table`) |
 | `--visual-ids` | List of specific visual IDs to include |
-| `--no-show-hidden` | Hide hidden visuals (default: show them) |
+| `--no-show-hidden` | Exclude hidden visuals from the generated HTML (default: include them) |
 
 !!! note "Filter Logic"
     The `--pages`, `--visual-types`, and `--visual-ids` options use AND logic—only visuals matching ALL specified criteria are shown.

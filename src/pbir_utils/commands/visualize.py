@@ -12,9 +12,10 @@ def register(subparsers):
     """Register the visualize command."""
     visualize_desc = textwrap.dedent(
         """
-        Display report wireframes using Dash and Plotly.
+        Display report wireframes in a static HTML file.
         
-        Visualizes the layout of pages and their visual components.
+        Generates a lightweight, portable HTML file with the report layout
+        and opens it in the default browser.
         
         Behavior:
         The `pages`, `visual_types`, and `visual_ids` parameters work with an AND logic, 

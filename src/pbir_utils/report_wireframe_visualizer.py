@@ -1,3 +1,10 @@
+import os
+import tempfile
+import webbrowser
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
 from .common import iter_pages, extract_visual_info
 from .metadata_extractor import _get_page_order
 from .console_utils import console
@@ -13,116 +20,60 @@ def _parse_coordinate(value) -> float:
     return float(value)
 
 
-def _get_visual_info_as_tuples(page_folder: str) -> dict:
+def _get_visual_objects(page_folder: str) -> list[dict]:
     """
-    Extract visual information as tuples for wireframe rendering.
-
-    Uses extract_visual_info from common.py and converts to tuple format.
+    Extract visual information as a list of dictionaries for the template.
 
     Args:
         page_folder (str): Path to the page folder.
 
     Returns:
-        dict: Visual IDs as keys, tuples of (x, y, width, height, visualType, parentGroupName, isHidden).
+        list[dict]: List of visual objects with properties.
     """
     visuals_info = extract_visual_info(page_folder)
-    return {
-        vid: (
-            _parse_coordinate(info["x"]),
-            _parse_coordinate(info["y"]),
-            _parse_coordinate(info["width"]),
-            _parse_coordinate(info["height"]),
-            info["visualType"],
-            info["parentGroupName"],
-            info["isHidden"],
+    visuals_list = []
+
+    for vid, info in visuals_info.items():
+        visuals_list.append(
+            {
+                "id": vid,
+                "x": _parse_coordinate(info["x"]),
+                "y": _parse_coordinate(info["y"]),
+                "width": _parse_coordinate(info["width"]),
+                "height": _parse_coordinate(info["height"]),
+                "visualType": info["visualType"],
+                "parentGroupName": info["parentGroupName"],
+                "isHidden": info["isHidden"],
+            }
         )
-        for vid, info in visuals_info.items()
-    }
+
+    return visuals_list
 
 
-def _adjust_visual_positions(visuals: dict) -> dict:
+def _adjust_visual_positions(visuals: list[dict]) -> list[dict]:
     """
-    Adjust visual positions based on parent-child relationships.
+    Adjust visual positions based on parent-child relationships (Groups).
 
-    Args:
-        visuals (dict): Dictionary with visual information.
-
-    Returns:
-        dict: Dictionary with adjusted visual positions.
+    This matches the logic from the previous Plotly implementation where children
+    coordinates are relative to their parent group.
     """
-    return {
-        vid: (
-            x + visuals[parent][0] if parent in visuals else x,
-            y + visuals[parent][1] if parent in visuals else y,
-            width,
-            height,
-            name,
-            parent,
-            is_hidden,
-        )
-        for vid, (x, y, width, height, name, parent, is_hidden) in visuals.items()
-    }
+    # Create a lookup for easy access by ID
+    visual_map = {v["id"]: v for v in visuals}
+    adjusted_visuals = []
 
+    for visual in visuals:
+        # Create a copy to modify
+        adj_visual = visual.copy()
 
-def _create_wireframe_figure(
-    page_width: int, page_height: int, visuals_info: dict, show_hidden: bool = True
-):
-    """
-    Create a Plotly figure for the wireframe of a page.
+        parent_id = visual.get("parentGroupName")
+        if parent_id and parent_id in visual_map:
+            parent = visual_map[parent_id]
+            adj_visual["x"] += parent["x"]
+            adj_visual["y"] += parent["y"]
 
-    Args:
-        page_width (int): Width of the page.
-        page_height (int): Height of the page.
-        visuals_info (dict): Dictionary with visual information.
-        show_hidden (bool): Flag to determine if hidden visuals should be shown. Defaults to True.
+        adjusted_visuals.append(adj_visual)
 
-    Returns:
-        go.Figure: Plotly figure object for the wireframe.
-    """
-    import plotly.graph_objects as go
-
-    fig = go.Figure()
-
-    adjusted_visuals = _adjust_visual_positions(visuals_info)
-    sorted_visuals = sorted(adjusted_visuals.items(), key=lambda x: (x[1][4], x[0]))
-
-    legend_labels = []
-    for visual_id, (x, y, width, height, name, _, is_hidden) in sorted_visuals:
-        if not show_hidden and is_hidden:
-            continue
-
-        line_style = "dot" if is_hidden else "solid"
-        center_x = x + width / 2
-        center_y = y + height / 2
-
-        if name != "Group":
-            label = f"{name} ({visual_id})"
-            legend_labels.append(label)
-            fig.add_trace(
-                go.Scatter(
-                    x=[x, x + width, x + width, x, x, None, center_x, None],
-                    y=[y, y, y + height, y + height, y, None, center_y, None],
-                    mode="lines+text",
-                    line=dict(color="black", dash=line_style),
-                    text=[None, None, None, None, None, None, name, None],
-                    textposition="middle center",
-                    hovertext=f"Visual ID: {visual_id}<br>Visual Type: {name}",
-                    hoverinfo="text",
-                    name=label,
-                    showlegend=True,
-                )
-            )
-
-    legend_width_pixel = max((len(label) for label in legend_labels), default=0) * 7
-    fig.update_layout(
-        width=page_width + legend_width_pixel,
-        height=page_height,
-        margin=dict(l=10, r=10, t=25, b=10),
-        xaxis=dict(range=[0, page_width], showticklabels=True),
-        yaxis=dict(range=[page_height, 0], showticklabels=True),
-    )
-
-    return fig
+    return adjusted_visuals
 
 
 def _apply_wireframe_filters(
@@ -133,46 +84,33 @@ def _apply_wireframe_filters(
 ) -> list:
     """
     Filter pages and visuals based on given criteria.
-
-    Args:
-        pages_info (list): List of tuples containing page information.
-        pages (list, optional): List of page names to include. Defaults to None.
-        visual_types (list, optional): List of visual types to include. Defaults to None.
-        visual_ids (list, optional): List of visual IDs to include. Defaults to None.
-
-    Returns:
-        list: Filtered list of tuples containing page information.
     """
     filtered_pages_info = []
-    for page_id, page_name, page_width, page_height, visuals_info in pages_info:
-        if pages and page_id not in pages:
+
+    for page_obj in pages_info:
+        # Filter Pages
+        if (
+            pages
+            and page_obj["id"] not in pages
+            and page_obj["display_name"] not in pages
+        ):
             continue
 
-        filtered_visuals_info = {
-            vid: vinfo
-            for vid, vinfo in visuals_info.items()
-            if (not visual_types or vinfo[4] in visual_types)
-            and (not visual_ids or vid in visual_ids)
-        }
+        visuals = page_obj["visuals"]
 
-        parents_to_add = {
-            parent_id: visuals_info[parent_id]
-            for _, vinfo in filtered_visuals_info.items()
-            if (parent_id := vinfo[5]) and parent_id not in filtered_visuals_info
-        }
+        # Filter Visuals
+        filtered_visuals = [
+            v
+            for v in visuals
+            if (not visual_types or v["visualType"] in visual_types)
+            and (not visual_ids or v["id"] in visual_ids)
+        ]
 
-        filtered_visuals_info.update(parents_to_add)
-
-        if filtered_visuals_info or (not visual_types and not visual_ids):
-            filtered_pages_info.append(
-                (
-                    page_id,
-                    page_name,
-                    page_width,
-                    page_height,
-                    filtered_visuals_info or visuals_info,
-                )
-            )
+        if filtered_visuals or (not visual_types and not visual_ids):
+            # Update the page object with filtered visuals
+            new_page_obj = page_obj.copy()
+            new_page_obj["visuals"] = filtered_visuals
+            filtered_pages_info.append(new_page_obj)
 
     return filtered_pages_info
 
@@ -185,74 +123,96 @@ def display_report_wireframes(
     show_hidden: bool = True,
 ) -> None:
     """
-    Generate and display wireframes for the report with optional filters.
+    Generate and display wireframes using static HTML.
 
     Args:
-        report_path (str): Path to the root folder of the report.
-        pages (list, optional): List of page IDs to include. Defaults to None.
-        visual_types (list, optional): List of visual types to include. Defaults to None.
-        visual_ids (list, optional): List of visual IDs to include. Defaults to None.
-        show_hidden (bool, optional): Flag to determine if hidden visuals should be shown. Defaults to True.
+        report_path (str): Path to the report root folder.
+        pages (list, optional): List of page IDs/Names to include.
+        visual_types (list, optional): List of visual types to include.
+        visual_ids (list, optional): List of visual IDs to include.
+        show_hidden (bool, optional): Show hidden visuals. Defaults to True.
     """
-    console.print_action_heading("Displaying report wireframes", False)
-    pages_info = []
+    console.print_action_heading("Generating report wireframes", False)
 
+    pages_data = []
+
+    # 1. Extract Data
     for page_id, page_folder_path, page_data in iter_pages(report_path):
         try:
             page_name = page_data.get("name")
             display_name = page_data.get("displayName")
             width = page_data.get("width")
             height = page_data.get("height")
+            is_hidden = page_data.get("visibility") == "HiddenInViewMode"
 
-            visuals_info = _get_visual_info_as_tuples(page_folder_path)
-            pages_info.append((page_name, display_name, width, height, visuals_info))
-        except Exception as e:
-            print(e)
+            # Get raw visuals
+            raw_visuals = _get_visual_objects(page_folder_path)
 
-    if not pages_info:
-        print("No pages found.")
-        return
+            # Adjust positions (handle groups)
+            # We do this BEFORE filtering so that children get correct absolute coordinates
+            adjusted_visuals = _adjust_visual_positions(raw_visuals)
 
-    filtered_pages_info = _apply_wireframe_filters(
-        pages_info, pages, visual_types, visual_ids
-    )
-    if not filtered_pages_info:
-        print("No pages match the given filters.")
-        return
-
-    page_order = _get_page_order(report_path)
-    sorted_pages_info = sorted(
-        filtered_pages_info, key=lambda x: page_order.index(x[0])
-    )
-
-    # Lazy import heavy dependencies
-    import dash
-    from dash import dcc, html, Input, Output
-
-    app = dash.Dash(__name__)
-    app.layout = html.Div(
-        [
-            dcc.Tabs(
-                id="tabs",
-                value=sorted_pages_info[0][0],
-                children=[
-                    dcc.Tab(label=page_name, value=page_id)
-                    for page_id, page_name, _, _, _ in sorted_pages_info
-                ],
-            ),
-            html.Div(id="tab-content"),
-        ]
-    )
-
-    @app.callback(Output("tab-content", "children"), Input("tabs", "value"))
-    def render_content(selected_tab: str):
-        for _, _, page_width, page_height, visuals_info in filter(
-            lambda item: item[0] == selected_tab, sorted_pages_info
-        ):
-            fig = _create_wireframe_figure(
-                page_width, page_height, visuals_info, show_hidden
+            pages_data.append(
+                {
+                    "id": page_name,
+                    "display_name": display_name,
+                    "width": width,
+                    "height": height,
+                    "is_hidden": is_hidden,
+                    "visuals": adjusted_visuals,
+                }
             )
-            return dcc.Graph(figure=fig)
-        return html.Div("Page not found")
+        except Exception as e:
+            console.print_error(f"Error processing page {page_id}: {e}")
 
-    app.run(debug=True, use_reloader=False)
+    if not pages_data:
+        console.print_warning("No pages found in report.")
+        return
+
+    # 2. Filter Data
+    filtered_pages = _apply_wireframe_filters(
+        pages_data, pages, visual_types, visual_ids
+    )
+
+    if not filtered_pages:
+        console.print_warning("No pages match the given filters.")
+        return
+
+    # 3. Sort Pages
+    try:
+        page_order = _get_page_order(report_path)
+        filtered_pages.sort(
+            key=lambda x: page_order.index(x["id"]) if x["id"] in page_order else 999
+        )
+    except Exception:
+        pass  # Fallback to extraction order
+
+    # 4. Handle Hidden Visuals for Final Output
+    if not show_hidden:
+        for page in filtered_pages:
+            page["visuals"] = [v for v in page["visuals"] if not v["isHidden"]]
+
+    # 5. Render Template
+    try:
+        template_dir = Path(__file__).parent / "templates"
+        env = Environment(loader=FileSystemLoader(template_dir))
+        template = env.get_template("wireframe.html.j2")
+
+        report_name = Path(report_path).name.replace(".Report", "")
+
+        html_content = template.render(report_name=report_name, pages=filtered_pages)
+
+        # 6. Save and Open
+        # We create a temporary file that persists so the browser can open it
+        # Using delete=False
+        fd, path = tempfile.mkstemp(
+            suffix=".html", prefix=f"pbir_wireframe_{report_name}_"
+        )
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        console.print_success(f"Wireframe generated: {path}")
+        webbrowser.open(f"file://{path}")
+
+    except Exception as e:
+        console.print_error(f"Failed to render wireframe: {e}")
