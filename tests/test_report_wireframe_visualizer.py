@@ -467,9 +467,6 @@ def test_adjust_visual_positions_no_parent():
 # Template Rendering Tests
 # =============================================================================
 
-from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
-
 
 @pytest.fixture
 def template_env():

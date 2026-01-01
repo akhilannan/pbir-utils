@@ -3,8 +3,6 @@ import tempfile
 import webbrowser
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
-
 from .common import iter_pages, extract_visual_info
 from .metadata_extractor import _get_page_order
 from .console_utils import console
@@ -54,8 +52,7 @@ def _adjust_visual_positions(visuals: list[dict]) -> list[dict]:
     """
     Adjust visual positions based on parent-child relationships (Groups).
 
-    This matches the logic from the previous Plotly implementation where children
-    coordinates are relative to their parent group.
+    Children coordinates are relative to their parent group.
     """
     # Create a lookup for easy access by ID
     visual_map = {v["id"]: v for v in visuals}
@@ -133,6 +130,7 @@ def display_report_wireframes(
         show_hidden (bool, optional): Show hidden visuals. Defaults to True.
     """
     console.print_action_heading("Generating report wireframes", False)
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
 
     pages_data = []
 
@@ -144,6 +142,10 @@ def display_report_wireframes(
             width = page_data.get("width")
             height = page_data.get("height")
             is_hidden = page_data.get("visibility") == "HiddenInViewMode"
+
+            # 1a. Early Page Filter
+            if pages and page_name not in pages and display_name not in pages:
+                continue
 
             # Get raw visuals
             raw_visuals = _get_visual_objects(page_folder_path)
@@ -181,10 +183,11 @@ def display_report_wireframes(
     # 3. Sort Pages
     try:
         page_order = _get_page_order(report_path)
-        filtered_pages.sort(
-            key=lambda x: page_order.index(x["id"]) if x["id"] in page_order else 999
-        )
-    except Exception:
+        # Create a map for O(1) lookup
+        order_map = {pid: idx for idx, pid in enumerate(page_order)}
+
+        filtered_pages.sort(key=lambda x: order_map.get(x["id"], 999))
+    except Exception:  # nosec B110
         pass  # Fallback to extraction order
 
     # 4. Handle Hidden Visuals for Final Output
@@ -195,7 +198,10 @@ def display_report_wireframes(
     # 5. Render Template
     try:
         template_dir = Path(__file__).parent / "templates"
-        env = Environment(loader=FileSystemLoader(template_dir))
+        env = Environment(
+            loader=FileSystemLoader(template_dir),
+            autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
+        )
         template = env.get_template("wireframe.html.j2")
 
         report_name = Path(report_path).name.replace(".Report", "")

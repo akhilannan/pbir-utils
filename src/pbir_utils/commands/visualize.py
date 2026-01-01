@@ -59,7 +59,7 @@ def register(subparsers):
 
 def handle(args):
     """Handle the visualize command."""
-    # Lazy import to avoid loading heavy dash/plotly dependencies at CLI startup
+    # Lazy import to avoid loading heavy dependencies at CLI startup
     from ..report_wireframe_visualizer import display_report_wireframes
 
     report_path = resolve_report_path(args.report_path)
