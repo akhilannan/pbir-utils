@@ -213,12 +213,15 @@ def _process_all_pages(
                 pages_updated += 1
 
     if summary:
-        if dry_run:
-            msg = f"Would update visual interactions in {pages_updated} pages"
-            console.print_dry_run(msg)
+        if any_changes:
+            if dry_run:
+                msg = f"Would update visual interactions in {pages_updated} pages"
+                console.print_dry_run(msg)
+            else:
+                msg = f"Updated visual interactions in {pages_updated} pages"
+                console.print_success(msg)
         else:
-            msg = f"Updated visual interactions in {pages_updated} pages"
-            console.print_success(msg)
+            console.print_info("No visual interactions were modified.")
     elif not any_changes:
         console.print_info("No visual interactions were modified.")
 

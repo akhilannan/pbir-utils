@@ -499,12 +499,23 @@ def update_report_filters(
             )
 
     if summary:
-        if dry_run:
-            msg = f"Would update filters in {len(report_json_paths)} reports"
-            console.print_dry_run(msg)
+        if any_changes:
+            count = len(report_json_paths)
+            printer = console.print_dry_run if dry_run else console.print_success
+            if count == 1:
+                printer(
+                    "Would update report filters"
+                    if dry_run
+                    else "Updated report filters"
+                )
+            else:
+                printer(
+                    f"Would update filters in {count} reports"
+                    if dry_run
+                    else f"Updated filters in {count} reports"
+                )
         else:
-            msg = f"Updated filters in {len(report_json_paths)} reports"
-            console.print_success(msg)
+            console.print_info("No filters were updated.")
 
     return any_changes
 
@@ -539,6 +550,7 @@ def sort_report_filters(
     console.print_action_heading("Sorting report filters", dry_run)
     report_json_paths = get_report_paths(report_path, reports)
     any_changes = False
+    filters_found = False
 
     for report_json_path in report_json_paths:
         data = load_json(report_json_path)
@@ -547,11 +559,13 @@ def sort_report_filters(
             or "filterConfig" not in data
             or "filters" not in data["filterConfig"]
         ):
-            console.print_info(
-                f"No existing filters found in report: {Path(report_json_path).name}"
-            )
+            if not summary:
+                console.print_info(
+                    f"No existing filters found in report: {Path(report_json_path).name}"
+                )
             continue
 
+        filters_found = True
         filters = data["filterConfig"]["filters"]
         original_order = [f.get("ordinal", -1) for f in filters]
         original_sort_order = data["filterConfig"].get("filterSortOrder")
@@ -630,12 +644,23 @@ def sort_report_filters(
             console.print_info(f"No changes needed for report: {report_json_path}")
 
     if summary:
-        if dry_run:
-            msg = f"Would sort filters in {len(report_json_paths)} reports"
-            console.print_dry_run(msg)
+        if any_changes:
+            count = len(report_json_paths)
+            printer = console.print_dry_run if dry_run else console.print_success
+            if count == 1:
+                printer(
+                    "Would sort report filters" if dry_run else "Sorted report filters"
+                )
+            else:
+                printer(
+                    f"Would sort filters in {count} reports"
+                    if dry_run
+                    else f"Sorted filters in {count} reports"
+                )
+        elif filters_found:
+            console.print_info("Filters are already sorted.")
         else:
-            msg = f"Sorted filters in {len(report_json_paths)} reports"
-            console.print_success(msg)
+            console.print_info("No report filters found.")
 
     return any_changes
 

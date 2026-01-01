@@ -1,16 +1,4 @@
-### CLI Features
-- **visualize**: Major overhaul to static HTML generation (removed Dash server)
-    - Lightweight, portable HTML output
-    - **Interactive Features**:
-        - Search/Filter visuals by ID, Type, or Page Name
-        - Copy Visual ID (left-click)
-        - Hide/Unhide visuals (right-click) with Undo/Reset
-        - Hide/Unhide pages (right-click tabs) with restore pill
-    - **UI Enhancements**:
-        - 🌙 Dark mode toggle with preference persistence
-        - 🔍 Zoom controls (25%-200%) for large reports
-        - 📊 Visual count badges on page tabs
-        - 📏 Dimension tooltips (page size, visual size/position)
-        - Page tooltips with visual type breakdown on hover
-        - Visual indicators for hidden pages/visuals
-        - Refined Fluent-like styling
+### Bug Fixes
+- **sanitize**: Improved summary mode messaging
+    - Fixed grammar for single-report scenarios
+    - Actions now show appropriate INFO messages when no changes are needed
