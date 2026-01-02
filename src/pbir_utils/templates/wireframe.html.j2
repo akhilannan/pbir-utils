@@ -417,6 +417,49 @@
             align-items: center;
             gap: 10px;
         }
+
+        .visibility-filter {
+            display: flex;
+            gap: 4px;
+        }
+
+        .filter-toggle {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-toggle.filter-hidden {
+            border-style: dashed;
+        }
+
+        .filter-toggle:hover {
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .filter-toggle.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .filter-toggle.filter-hidden.active {
+            border-style: solid;
+        }
+
+        .filter-toggle.active:hover {
+            background-color: var(--accent-color);
+            filter: brightness(1.1);
+        }
         
     </style>
 </head>
@@ -426,6 +469,22 @@
     <div style="display: flex; align-items: center; gap: 15px;">
         <h1>{{ report_name }}</h1>
         <input type="text" id="search-input" class="search-input" placeholder="Search visuals (ID, Type)..." oninput="filterVisuals()">
+        <div class="visibility-filter">
+            <button id="filter-hidden" class="filter-toggle filter-hidden" onclick="toggleVisibilityFilter('hidden')" title="Show only hidden visuals">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+                Hidden
+            </button>
+            <button id="filter-visible" class="filter-toggle" onclick="toggleVisibilityFilter('visible')" title="Show only visible visuals">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Visible
+            </button>
+        </div>
     </div>
     <div class="controls-group">
         <div class="zoom-controls">
@@ -742,6 +801,35 @@
         setVisualVisibility(visual, isMatch(visual, filter));
     }
 
+    var visibilityFilter = null; // null = all, 'hidden' = only hidden, 'visible' = only visible
+
+    function toggleVisibilityFilter(mode) {
+        var hiddenBtn = document.getElementById('filter-hidden');
+        var visibleBtn = document.getElementById('filter-visible');
+        
+        if (visibilityFilter === mode) {
+            // Clicking active filter deactivates it
+            visibilityFilter = null;
+            hiddenBtn.classList.remove('active');
+            visibleBtn.classList.remove('active');
+        } else {
+            // Activate the clicked filter, deactivate the other
+            visibilityFilter = mode;
+            hiddenBtn.classList.toggle('active', mode === 'hidden');
+            visibleBtn.classList.toggle('active', mode === 'visible');
+        }
+        
+        filterVisuals();
+    }
+
+    function matchesVisibilityFilter(visual) {
+        if (visibilityFilter === null) return true;
+        var isHidden = visual.classList.contains('hidden');
+        if (visibilityFilter === 'hidden') return isHidden;
+        if (visibilityFilter === 'visible') return !isHidden;
+        return true;
+    }
+
     function filterVisuals() {
         var filter = document.getElementById('search-input').value.toLowerCase();
         var visuals = document.getElementsByClassName('visual-box');
@@ -754,7 +842,10 @@
             // Skip if manually hidden
             if (visual.dataset.manuallyHidden === "true") continue;
 
-            var match = isMatch(visual, filter);
+            var matchesSearch = isMatch(visual, filter);
+            var matchesVis = matchesVisibilityFilter(visual);
+            var match = matchesSearch && matchesVis;
+            
             setVisualVisibility(visual, match);
             
             if (match) {
@@ -764,15 +855,17 @@
 
         // 2. Filter Tabs
         var tabs = document.getElementsByClassName('tab-button');
+        var noFiltersActive = !filter && visibilityFilter === null;
         
         for (var i = 0; i < tabs.length; i++) {
             var tab = tabs[i];
             var pageName = tab.dataset.pageName.toLowerCase();
             var pageId = tab.id.replace("tab-", "");
             
-            var matchesName = pageName.includes(filter);
+            // Only check page name match if there's actual search text
+            var matchesName = filter && pageName.includes(filter);
             
-            if (!filter || matchesName || pagesWithMatchingVisuals.has(pageId)) {
+            if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
                 tab.style.display = "";
             } else {
                 tab.style.display = "none";
