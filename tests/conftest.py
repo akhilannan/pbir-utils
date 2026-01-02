@@ -45,8 +45,18 @@ def simple_report(tmp_path):
     )
     create_dummy_file(
         report_dir,
-        "definition/pages/Page1/visuals/visual1.json",
-        {"name": "visual1", "type": "slicer"},
+        "definition/pages/Page1/visuals/visual1/visual.json",
+        {"name": "visual1", "visual": {"visualType": "slicer"}},
+    )
+    create_dummy_file(
+        report_dir,
+        "definition/pages/Page1/visuals/visual2/visual.json",
+        {"name": "visual2", "visual": {"visualType": "columnChart"}},
+    )
+    create_dummy_file(
+        report_dir,
+        "definition/pages/pages.json",
+        {"pageOrder": ["Page1"]},
     )
 
     return str(report_dir)
@@ -117,14 +127,25 @@ def complex_report(tmp_path):
         },
     )
 
-    # Visual 1 (Uses Measure1)
+    # Visual 1 (Uses Measure1 - with proper Entity/Property format)
     create_dummy_file(
         report_dir,
         "definition/pages/Page1/visuals/Visual1/visual.json",
         {
             "name": "Visual1",
             "visual": {"visualType": "columnChart", "objects": {}},
-            "singleVisual": {"projections": {"Y": [{"queryRef": "Measure1"}]}},
+            "singleVisual": {
+                "projections": {
+                    "Y": [
+                        {
+                            "Measure": {
+                                "Expression": {"SourceRef": {"Entity": "Table1"}},
+                                "Property": "Measure1",
+                            }
+                        }
+                    ]
+                }
+            },
         },
     )
 
