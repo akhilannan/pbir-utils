@@ -12,3 +12,7 @@
 - **sanitize**: Improved summary mode messaging
     - Fixed grammar for single-report scenarios
     - Actions now show appropriate INFO messages when no changes are needed
+- **extract-metadata**: Fixed duplicate rows and missing table names in metadata extraction
+    - Skip redundant `queryRef`, `nativeQueryRef`, `metadata`, and `Subquery` keys
+    - Prevents duplicate entries from qualified name references
+    - Prevents orphan rows from filter subqueries with unresolved table aliases

@@ -312,13 +312,27 @@ class TestTraversePbirJson:
             "visual": {
                 "visualType": "card",
                 "singleVisual": {
-                    "projections": {"Values": [{"queryRef": "Sales.Total"}]}
+                    "projections": {
+                        "Values": [
+                            {
+                                "field": {
+                                    "Column": {
+                                        "Expression": {
+                                            "SourceRef": {"Entity": "Sales"}
+                                        },
+                                        "Property": "Total",
+                                    }
+                                }
+                            }
+                        ]
+                    }
                 },
             }
         }
         results = list(traverse_pbir_json(data))
-        # Should yield queryRef with visual type as context
-        assert any(r[1] == "Sales.Total" and r[2] == "card" for r in results)
+        # Should yield Entity and Property separately with visual type as context
+        assert any(r[0] == "Sales" and r[2] == "card" for r in results)
+        assert any(r[1] == "Total" and r[2] == "card" for r in results)
 
     def test_traverse_measures(self):
         """Test traversing entities with measures."""
@@ -336,11 +350,13 @@ class TestTraversePbirJson:
         assert any(r[0] == "Sales" and r[1] == "TotalSales" for r in results)
         assert any(r[3] == "SUM(Sales[Amount])" for r in results)
 
-    def test_traverse_queryref(self):
-        """Test traversing data with queryRef."""
-        data = {"queryRef": "Sales.Amount"}
+    def test_traverse_queryref_skipped(self):
+        """Test that queryRef values are skipped (they duplicate Entity/Property info)."""
+        data = {"queryRef": "Sales.Amount", "nativeQueryRef": "Amount"}
         results = list(traverse_pbir_json(data))
-        assert any(r[1] == "Sales.Amount" for r in results)
+        # queryRef values should not be yielded as they are redundant
+        assert not any(r[1] == "Sales.Amount" for r in results)
+        assert not any(r[1] == "Amount" for r in results)
 
     def test_traverse_list(self):
         """Test traversing list data."""

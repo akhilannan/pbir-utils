@@ -169,7 +169,16 @@ class TestExtractMetadataFromFile:
             },
             "singleVisual": {
                 "projections": {
-                    "Y": [{"queryRef": "Sales.Amount"}],
+                    "Y": [
+                        {
+                            "field": {
+                                "Column": {
+                                    "Expression": {"SourceRef": {"Entity": "Sales"}},
+                                    "Property": "Amount",
+                                }
+                            }
+                        }
+                    ],
                 }
             },
         }
