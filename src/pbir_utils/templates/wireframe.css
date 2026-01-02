@@ -1,0 +1,761 @@
+        :root {
+            --bg-color: #f3f2f1;
+            --card-bg: #ffffff;
+            --border-color: #e1dfdd;
+            --text-primary: #323130;
+            --text-secondary: #605e5c;
+            --accent-color: #0078d4;
+            --visual-bg: #e6f0ff;
+            --visual-border: #0078d4;
+            --hidden-visual-bg: #f9f9f9;
+            --hidden-visual-border: #a19f9d;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1b1a19;
+            --card-bg: #252423;
+            --border-color: #484644;
+            --text-primary: #f3f2f1;
+            --text-secondary: #a19f9d;
+            --accent-color: #4da3ff;
+            --visual-bg: rgba(77, 163, 255, 0.15);
+            --visual-border: #4da3ff;
+            --hidden-visual-bg: rgba(161, 159, 157, 0.1);
+            --hidden-visual-border: #605e5c;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.3s;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 10px;
+            transition: background-color 0.3s;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            background-color: var(--bg-color);
+            color: var(--accent-color);
+        }
+
+        .tab-button.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .visual-count {
+            background-color: var(--text-secondary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .tab-button.active .visual-count {
+            background-color: var(--accent-color);
+        }
+
+        .tab-button.hidden-page .visual-count {
+            background-color: var(--hidden-visual-border);
+        }
+
+        /* Active state takes precedence over hidden-page state */
+        .tab-button.hidden-page.active .visual-count {
+            background-color: var(--accent-color);
+        }
+
+        .tab-button:hover .visual-count {
+            background-color: var(--accent-color);
+        }
+
+        /* Hidden pages indicator */
+        .hidden-pages-pill {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            margin-left: 8px;
+            background-color: var(--text-secondary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .hidden-pages-pill:hover {
+            background-color: var(--accent-color);
+        }
+
+        .hidden-pages-pill.visible {
+            display: flex;
+        }
+
+        .page-tooltip {
+            position: fixed;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            z-index: 1001;
+            min-width: 180px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .page-tooltip h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+
+        .page-tooltip .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 11px;
+        }
+
+        .page-tooltip .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .page-tooltip .stat-value {
+            font-weight: 600;
+        }
+
+        .icon-button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .icon-button:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            background-color: var(--bg-color);
+        }
+
+        .icon-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .page-container {
+            display: none;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transform-origin: top center;
+            transition: transform 0.2s, background-color 0.3s;
+        }
+
+        .page-container.active {
+            display: block;
+        }
+
+        .visual-box {
+            position: absolute;
+            border: 2px solid var(--visual-border);
+            background-color: var(--visual-bg);
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--accent-color);
+            overflow: hidden;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .visual-box:hover {
+            background-color: rgba(0, 120, 212, 0.2);
+            z-index: 10;
+        }
+
+        [data-theme="dark"] .visual-box:hover {
+            background-color: rgba(77, 163, 255, 0.3);
+        }
+
+        .visual-box.hidden {
+            border-style: dashed;
+            border-color: var(--hidden-visual-border);
+            background-color: var(--hidden-visual-bg);
+        }
+
+        .visual-box.hidden .visual-label {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .visual-label {
+            padding: 4px;
+            text-align: center;
+            pointer-events: none;
+            font-weight: 500;
+        }
+
+        .tooltip {
+            position: fixed;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .action-button {
+            padding: 6px 12px;
+            font-size: 13px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .action-button:hover:not(:disabled) {
+            background-color: var(--bg-color);
+            border-color: var(--accent-color);
+        }
+
+        .search-input {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            width: 200px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .action-button:disabled {
+            background-color: var(--bg-color);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .tab-button.hidden-page {
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .toast {
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            transition: background-color 0.3s;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-primary);
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background-color: var(--bg-color);
+        }
+
+        .zoom-level {
+            font-size: 12px;
+            min-width: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .theme-toggle {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent-color);
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .visibility-filter {
+            display: flex;
+            gap: 4px;
+        }
+
+        .filter-toggle {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-toggle.filter-hidden {
+            border-style: dashed;
+        }
+
+        .filter-toggle:hover {
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .filter-toggle.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .filter-toggle.filter-hidden.active {
+            border-style: solid;
+        }
+
+        .filter-toggle.active:hover {
+            background-color: var(--accent-color);
+            filter: brightness(1.1);
+        }
+
+        /* Main Content Wrapper for Fields Pane Layout */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Fields Pane Styles */
+        .fields-pane {
+            width: 280px;
+            background-color: var(--card-bg);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s, opacity 0.3s;
+            overflow: hidden;
+        }
+
+        .fields-pane.collapsed {
+            width: 0;
+            opacity: 0;
+            border-left: none;
+        }
+
+        .fields-pane-header {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .fields-pane-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .fields-search {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+        }
+
+        .fields-search:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .fields-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .table-item {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            gap: 6px;
+        }
+
+        .table-header:hover {
+            background-color: var(--bg-color);
+        }
+
+        .table-expand-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .table-item.expanded .table-expand-icon {
+            transform: rotate(90deg);
+        }
+
+        .table-icon {
+            color: var(--accent-color);
+        }
+
+        .table-header-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .table-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .table-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background-color: var(--bg-color);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .table-fields {
+            display: none;
+            padding-left: 24px;
+        }
+
+        .table-item.expanded .table-fields {
+            display: block;
+        }
+
+        .field-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            cursor: pointer;
+            gap: 6px;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .field-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .field-item.selected {
+            background-color: rgba(0, 120, 212, 0.15);
+        }
+
+        .field-icon {
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .field-icon.column-icon {
+            color: var(--text-secondary);
+        }
+
+        .field-icon.measure-icon {
+            color: #d83b01;
+        }
+
+        [data-theme="dark"] .field-icon.measure-icon {
+            color: #ff8c00;
+        }
+
+        .field-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .field-count {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .fields-pane-footer {
+            padding: 8px 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-fields-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .clear-fields-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+        }
+
+        .clear-fields-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .selected-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .field-tooltip {
+            position: fixed;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            display: none;
+            z-index: 1001;
+            max-width: 250px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .field-tooltip h5 {
+            margin: 0 0 6px 0;
+            font-size: 12px;
+        }
+
+        .field-tooltip .page-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .field-tooltip .page-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Fields Pane Edge Toggle Button */
+        .fields-pane-toggle {
+            position: absolute;
+            right: 280px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 48px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: right 0.3s, background-color 0.2s, color 0.2s, box-shadow 0.2s;
+            z-index: 100;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .fields-pane-toggle:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* When pane is collapsed, move toggle to edge and make it prominent */
+        .fields-pane-toggle.pane-collapsed {
+            right: 0;
+            border-right: 1px solid var(--border-color);
+            border-radius: 6px 0 0 6px;
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+        }
+
+        .fields-pane-toggle.pane-collapsed:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* Icon visibility based on button state */
+        /* When expanded (no pane-collapsed class): show right arrow (collapse) */
+        .fields-pane-toggle .toggle-icon-expand {
+            display: none;
+        }
+        .fields-pane-toggle .toggle-icon-collapse {
+            display: block;
+        }
+        /* When collapsed (pane-collapsed class): show left arrow (expand) */
+        .fields-pane-toggle.pane-collapsed .toggle-icon-expand {
+            display: block;
+        }
+        .fields-pane-toggle.pane-collapsed .toggle-icon-collapse {
+            display: none;
+        }
+        

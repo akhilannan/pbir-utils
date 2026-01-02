@@ -5,7 +5,6 @@ import pytest
 from jinja2 import Environment, FileSystemLoader
 
 from pbir_utils.report_wireframe_visualizer import (
-    _get_visual_objects,
     _adjust_visual_positions,
     _apply_wireframe_filters,
     display_report_wireframes,
@@ -23,8 +22,8 @@ def display_wireframes_mocks():
     with (
         patch("pbir_utils.report_wireframe_visualizer.iter_pages") as mock_iter_pages,
         patch(
-            "pbir_utils.report_wireframe_visualizer._get_visual_objects"
-        ) as mock_get_visual_objects,
+            "pbir_utils.report_wireframe_visualizer.extract_visual_info"
+        ) as mock_extract_visual_info,
         patch(
             "pbir_utils.report_wireframe_visualizer._get_page_order"
         ) as mock_get_order,
@@ -39,7 +38,7 @@ def display_wireframes_mocks():
 
         yield {
             "iter_pages": mock_iter_pages,
-            "get_visual_objects": mock_get_visual_objects,
+            "extract_visual_info": mock_extract_visual_info,
             "get_order": mock_get_order,
             "fdopen": mock_fdopen,
             "mkstemp": mock_mkstemp,
@@ -49,102 +48,8 @@ def display_wireframes_mocks():
 
 
 # =============================================================================
-# _get_visual_objects Tests
+# Shared Fixtures
 # =============================================================================
-
-
-@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
-def test_get_visual_objects(mock_extract_visual_info):
-    """Test basic visual extraction from page folder."""
-    mock_extract_visual_info.return_value = {
-        "visual1": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 200,
-            "visualType": "columnChart",
-            "parentGroupName": None,
-            "isHidden": False,
-        },
-        "visual2": {
-            "x": 10,
-            "y": 10,
-            "width": 50,
-            "height": 50,
-            "visualType": "card",
-            "parentGroupName": "visual_group",
-            "isHidden": True,
-        },
-    }
-
-    visuals = _get_visual_objects("dummy/page")
-    assert len(visuals) == 2
-
-    v1 = next(v for v in visuals if v["id"] == "visual1")
-    assert v1["visualType"] == "columnChart"
-
-    v2 = next(v for v in visuals if v["id"] == "visual2")
-    assert v2["isHidden"] is True
-
-
-@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
-def test_get_visual_objects_renamed_folders(mock_extract_visual_info):
-    """Test visual extraction when folder name differs from visual ID."""
-    mock_extract_visual_info.return_value = {
-        "Visual1": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 200,
-            "visualType": "columnChart",
-            "parentGroupName": None,
-            "isHidden": False,
-        },
-    }
-
-    visuals = _get_visual_objects("dummy/page")
-
-    assert len(visuals) == 1
-    assert visuals[0]["id"] == "Visual1"
-
-
-@patch("pbir_utils.report_wireframe_visualizer.extract_visual_info")
-def test_get_visual_objects_string_and_prefixed_coordinates(
-    mock_extract_visual_info,
-):
-    """Test that string coordinates and @@__PRESERVE_FLOAT__@@ prefixes are parsed correctly."""
-    mock_extract_visual_info.return_value = {
-        "visual1": {
-            "x": "100",
-            "y": "200",
-            "width": "50",
-            "height": "60",
-            "visualType": "chart",
-            "parentGroupName": None,
-            "isHidden": False,
-        },
-        "visual2": {
-            "x": "@@__PRESERVE_FLOAT__@@123.456",
-            "y": "@@__PRESERVE_FLOAT__@@78.9",
-            "width": 100,
-            "height": 100,
-            "visualType": "card",
-            "parentGroupName": None,
-            "isHidden": False,
-        },
-    }
-
-    visuals = _get_visual_objects("dummy/page")
-
-    assert len(visuals) == 2
-
-    v1 = next(v for v in visuals if v["id"] == "visual1")
-    assert v1["x"] == 100.0
-    assert v1["y"] == 200.0
-
-    v2 = next(v for v in visuals if v["id"] == "visual2")
-    assert v2["x"] == pytest.approx(123.456)
-    assert v2["y"] == pytest.approx(78.9)
 
 
 def test_adjust_positions_for_groups():
@@ -262,7 +167,7 @@ def test_display_report_wireframes(display_wireframes_mocks):
             )
         ]
     )
-    mocks["get_visual_objects"].return_value = []
+    mocks["extract_visual_info"].return_value = {}
     mocks["get_order"].return_value = ["p1"]
 
     display_report_wireframes("dummy/report.Report")
@@ -300,7 +205,7 @@ def test_display_report_wireframes_no_matching_filters(display_wireframes_mocks)
             )
         ]
     )
-    mocks["get_visual_objects"].return_value = []
+    mocks["extract_visual_info"].return_value = {}
     mocks["get_order"].return_value = ["p1"]
 
     # Filter for a page that doesn't exist
@@ -324,9 +229,8 @@ def test_display_report_wireframes_show_hidden_false(display_wireframes_mocks):
             )
         ]
     )
-    mocks["get_visual_objects"].return_value = [
-        {
-            "id": "v1",
+    mocks["extract_visual_info"].return_value = {
+        "v1": {
             "x": 0,
             "y": 0,
             "width": 50,
@@ -334,9 +238,9 @@ def test_display_report_wireframes_show_hidden_false(display_wireframes_mocks):
             "visualType": "chart",
             "parentGroupName": None,
             "isHidden": True,
+            "fields": {},
         },
-        {
-            "id": "v2",
+        "v2": {
             "x": 0,
             "y": 0,
             "width": 50,
@@ -344,8 +248,9 @@ def test_display_report_wireframes_show_hidden_false(display_wireframes_mocks):
             "visualType": "card",
             "parentGroupName": None,
             "isHidden": False,
+            "fields": {},
         },
-    ]
+    }
     mocks["get_order"].return_value = ["p1"]
 
     display_report_wireframes("dummy/report.Report", show_hidden=False)
@@ -370,7 +275,7 @@ def test_display_report_wireframes_page_order_fallback(display_wireframes_mocks)
             )
         ]
     )
-    mocks["get_visual_objects"].return_value = []
+    mocks["extract_visual_info"].return_value = {}
     mocks["get_order"].side_effect = Exception("Order error")
 
     # Should not raise, should gracefully fallback
@@ -495,6 +400,7 @@ def sample_pages_data():
                     "visualType": "columnChart",
                     "parentGroupName": None,
                     "isHidden": False,
+                    "fields": {"Sales": {"columns": ["Amount"], "measures": []}},
                 },
                 {
                     "id": "visual2",
@@ -505,6 +411,7 @@ def sample_pages_data():
                     "visualType": "card",
                     "parentGroupName": "group1",
                     "isHidden": True,
+                    "fields": {},
                 },
             ],
         },
@@ -522,7 +429,10 @@ def sample_pages_data():
 def test_template_renders_report_name(template_env):
     """Test that report name is rendered in title and header."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Sales Report", pages=[])
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Sales Report", pages=[], fields_index=fields_index
+    )
 
     assert "<title>PBIR Wireframe - Sales Report</title>" in html
     assert "<h1>Sales Report</h1>" in html
@@ -531,7 +441,10 @@ def test_template_renders_report_name(template_env):
 def test_template_renders_page_tabs(template_env, sample_pages_data):
     """Test that page tabs are rendered with correct attributes."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test", pages=sample_pages_data)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+    )
 
     # Check first page tab (should be active)
     assert 'id="tab-page1"' in html
@@ -547,7 +460,10 @@ def test_template_renders_page_tabs(template_env, sample_pages_data):
 def test_template_renders_visual_boxes(template_env, sample_pages_data):
     """Test that visual boxes are rendered with correct positioning and attributes."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test", pages=sample_pages_data)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+    )
 
     # Check visual1 attributes
     assert 'id="visual-visual1"' in html
@@ -568,7 +484,10 @@ def test_template_renders_visual_boxes(template_env, sample_pages_data):
 def test_template_renders_hidden_visuals(template_env, sample_pages_data):
     """Test that hidden visuals have the 'hidden' class."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test", pages=sample_pages_data)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+    )
 
     # visual2 is hidden, should have 'hidden' class
     # Find the visual2 div and check it has hidden class
@@ -578,7 +497,10 @@ def test_template_renders_hidden_visuals(template_env, sample_pages_data):
 def test_template_renders_parent_group(template_env, sample_pages_data):
     """Test that parent group name is rendered as data attribute."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test", pages=sample_pages_data)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+    )
 
     assert 'data-parent-group="group1"' in html
 
@@ -586,7 +508,10 @@ def test_template_renders_parent_group(template_env, sample_pages_data):
 def test_template_first_page_active(template_env, sample_pages_data):
     """Test that the first page and tab are marked as active."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test", pages=sample_pages_data)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+    )
 
     # First tab should have 'active' class
     # Note: We need to check that page1 tab has active but page2 does not
@@ -599,7 +524,10 @@ def test_template_first_page_active(template_env, sample_pages_data):
 def test_template_empty_pages(template_env):
     """Test that template handles empty pages list gracefully."""
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Empty Report", pages=[])
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Empty Report", pages=[], fields_index=fields_index
+    )
 
     # Should still render valid HTML structure
     assert "<title>PBIR Wireframe - Empty Report</title>" in html
@@ -627,12 +555,16 @@ def test_template_special_characters_in_names(template_env):
                     "visualType": "tableEx",
                     "parentGroupName": None,
                     "isHidden": False,
+                    "fields": {},
                 },
             ],
         },
     ]
     template = template_env.get_template("wireframe.html.j2")
-    html = template.render(report_name="Test & Demo", pages=pages)
+    fields_index = {"tables": {}, "fieldToVisuals": {}}
+    html = template.render(
+        report_name="Test & Demo", pages=pages, fields_index=fields_index
+    )
 
     # Jinja2 auto-escapes by default, so special chars should be escaped
     assert "Sales &amp; Revenue" in html or "Sales & Revenue" in html

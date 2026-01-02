@@ -38,6 +38,7 @@ The generated wireframe opens automatically in your default browser and includes
 
 **Navigation & View Controls:**
 
+- **Fields Pane**: Sidebar to explore data model and filter visuals by data usage (Tables, Columns, Measures). Includes field usage from **Visuals**, **Bookmarks**, and **Filters** (Page-level and Report-level).
 - **Page Tabs**: Switch between pages with visual count badges
 - **Dark Mode**: Toggle with 🌙 button (preference saved automatically)
 - **Zoom Controls**: Scale 25%-200% for large reports
@@ -47,8 +48,10 @@ The generated wireframe opens automatically in your default browser and includes
 - **Left-click**: Copy visual ID to clipboard
 - **Right-click visual**: Temporarily hide visual (useful for overlapping elements)
 - **Right-click tab**: Temporarily hide page (click `+X pages` pill to restore)
-- **Undo/Reset**: Restore hidden items with ↩ and 🔄 buttons
-- **Search**: Filter visuals by ID, Type, or Page Name
+- **Fields Pane**: Expandable sidebar to browse and filter visuals by tables, columns, and measures. Tracks field usage across **Visuals**, **Bookmarks**, and **Filters**.
+- **Universal Reset**: Clear all filters (Search, Fields, Visibility) with 🔄 button
+- **Undo**: Revert last action (Filter, Selection, Hide) with ↩ button
+- **Search**: Filter visuals by ID, Type, or Page Name (and Fields via the pane)
 
 **Information Tooltips:**
 

@@ -172,6 +172,7 @@ def _extract_metadata_from_file(
             used_in,
             expression,
             used_in_detail,
+            attribute_type,  # Unpacked but not currently used in CSV output
         ) in traverse_pbir_json(data):
             row = dict(
                 zip(

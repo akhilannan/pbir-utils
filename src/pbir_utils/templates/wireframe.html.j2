@@ -5,462 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PBIR Wireframe - {{ report_name }}</title>
     <style>
-        :root {
-            --bg-color: #f3f2f1;
-            --card-bg: #ffffff;
-            --border-color: #e1dfdd;
-            --text-primary: #323130;
-            --text-secondary: #605e5c;
-            --accent-color: #0078d4;
-            --visual-bg: #e6f0ff;
-            --visual-border: #0078d4;
-            --hidden-visual-bg: #f9f9f9;
-            --hidden-visual-border: #a19f9d;
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #1b1a19;
-            --card-bg: #252423;
-            --border-color: #484644;
-            --text-primary: #f3f2f1;
-            --text-secondary: #a19f9d;
-            --accent-color: #4da3ff;
-            --visual-bg: rgba(77, 163, 255, 0.15);
-            --visual-border: #4da3ff;
-            --hidden-visual-bg: rgba(161, 159, 157, 0.1);
-            --hidden-visual-border: #605e5c;
-        }
-
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        header {
-            background-color: var(--card-bg);
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background-color 0.3s;
-        }
-
-        h1 {
-            font-size: 18px;
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .tabs {
-            display: flex;
-            overflow-x: auto;
-            background-color: var(--card-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 10px;
-            transition: background-color 0.3s;
-        }
-
-        .tab-button {
-            background: none;
-            border: none;
-            padding: 12px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab-button:hover {
-            background-color: var(--bg-color);
-            color: var(--accent-color);
-        }
-
-        .tab-button.active {
-            color: var(--accent-color);
-            border-bottom-color: var(--accent-color);
-            font-weight: 600;
-        }
-
-        .visual-count {
-            background-color: var(--text-secondary);
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 10px;
-            min-width: 18px;
-            text-align: center;
-            transition: background-color 0.2s;
-        }
-
-        .tab-button.active .visual-count {
-            background-color: var(--accent-color);
-        }
-
-        .tab-button.hidden-page .visual-count {
-            background-color: var(--hidden-visual-border);
-        }
-
-        /* Active state takes precedence over hidden-page state */
-        .tab-button.hidden-page.active .visual-count {
-            background-color: var(--accent-color);
-        }
-
-        .tab-button:hover .visual-count {
-            background-color: var(--accent-color);
-        }
-
-        /* Hidden pages indicator */
-        .hidden-pages-pill {
-            display: none;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            margin-left: 8px;
-            background-color: var(--text-secondary);
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .hidden-pages-pill:hover {
-            background-color: var(--accent-color);
-        }
-
-        .hidden-pages-pill.visible {
-            display: flex;
-        }
-
-        .page-tooltip {
-            position: fixed;
-            background-color: var(--card-bg);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 12px;
-            pointer-events: none;
-            display: none;
-            z-index: 1001;
-            min-width: 180px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-            border: 1px solid var(--border-color);
-        }
-
-        .page-tooltip h4 {
-            margin: 0 0 8px 0;
-            font-size: 13px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
-        }
-
-        .page-tooltip .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-            font-size: 11px;
-        }
-
-        .page-tooltip .stat-label {
-            color: var(--text-secondary);
-        }
-
-        .page-tooltip .stat-value {
-            font-weight: 600;
-        }
-
-        .icon-button {
-            width: 32px;
-            height: 32px;
-            border: 1px solid var(--border-color);
-            background-color: var(--card-bg);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            color: var(--text-primary);
-        }
-
-        .icon-button:hover:not(:disabled) {
-            border-color: var(--accent-color);
-            background-color: var(--bg-color);
-        }
-
-        .icon-button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .content-area {
-            flex: 1;
-            overflow: auto;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        .page-container {
-            display: none;
-            background-color: var(--card-bg);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            position: relative;
-            transform-origin: top center;
-            transition: transform 0.2s, background-color 0.3s;
-        }
-
-        .page-container.active {
-            display: block;
-        }
-
-        .visual-box {
-            position: absolute;
-            border: 2px solid var(--visual-border);
-            background-color: var(--visual-bg);
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: var(--accent-color);
-            overflow: hidden;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .visual-box:hover {
-            background-color: rgba(0, 120, 212, 0.2);
-            z-index: 10;
-        }
-
-        [data-theme="dark"] .visual-box:hover {
-            background-color: rgba(77, 163, 255, 0.3);
-        }
-
-        .visual-box.hidden {
-            border-style: dashed;
-            border-color: var(--hidden-visual-border);
-            background-color: var(--hidden-visual-bg);
-        }
-
-        .visual-box.hidden .visual-label {
-            font-style: italic;
-            color: var(--text-secondary);
-        }
-
-        .visual-label {
-            padding: 4px;
-            text-align: center;
-            pointer-events: none;
-            font-weight: 500;
-        }
-
-        .tooltip {
-            position: fixed;
-            background-color: var(--card-bg);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 12px;
-            pointer-events: none;
-            display: none;
-            z-index: 1000;
-            max-width: 300px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-            border: 1px solid var(--border-color);
-        }
-
-        .action-button {
-            padding: 6px 12px;
-            font-size: 13px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            cursor: pointer;
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .action-button:hover:not(:disabled) {
-            background-color: var(--bg-color);
-            border-color: var(--accent-color);
-        }
-
-        .search-input {
-            padding: 6px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 13px;
-            width: 200px;
-            background-color: var(--card-bg);
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent-color);
-            outline: none;
-        }
-
-        .action-button:disabled {
-            background-color: var(--bg-color);
-            color: var(--text-secondary);
-            border-color: var(--border-color);
-            cursor: not-allowed;
-        }
-
-        .tab-button.hidden-page {
-            font-style: italic;
-            opacity: 0.7;
-        }
-
-        .toast {
-            visibility: hidden;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 13px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        footer {
-            text-align: center;
-            padding: 10px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            background-color: var(--card-bg);
-            border-top: 1px solid var(--border-color);
-            transition: background-color 0.3s;
-        }
-
-        .zoom-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 2px;
-        }
-
-        .zoom-btn {
-            width: 28px;
-            height: 28px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--text-primary);
-            border-radius: 3px;
-            transition: background-color 0.2s;
-        }
-
-        .zoom-btn:hover {
-            background-color: var(--bg-color);
-        }
-
-        .zoom-level {
-            font-size: 12px;
-            min-width: 40px;
-            text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .theme-toggle {
-            width: 32px;
-            height: 32px;
-            border: 1px solid var(--border-color);
-            background-color: var(--card-bg);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .theme-toggle:hover {
-            border-color: var(--accent-color);
-        }
-
-        .controls-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .visibility-filter {
-            display: flex;
-            gap: 4px;
-        }
-
-        .filter-toggle {
-            padding: 5px 10px;
-            font-size: 12px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .filter-toggle.filter-hidden {
-            border-style: dashed;
-        }
-
-        .filter-toggle:hover {
-            border-color: var(--accent-color);
-            color: var(--text-primary);
-        }
-
-        .filter-toggle.active {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            color: white;
-        }
-
-        .filter-toggle.filter-hidden.active {
-            border-style: solid;
-        }
-
-        .filter-toggle.active:hover {
-            background-color: var(--accent-color);
-            filter: brightness(1.1);
-        }
-        
+        {% include 'wireframe.css' %}
     </style>
 </head>
 <body>
@@ -493,8 +38,8 @@
             <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
             <button class="zoom-btn" onclick="resetZoom()" title="Reset Zoom">↻</button>
         </div>
-        <button id="undo-btn" class="icon-button" onclick="undoHideVisual()" title="Undo Hide" disabled>↩</button>
-        <button id="reset-btn" class="icon-button" onclick="resetHiddenVisuals()" title="Reset Hidden Visuals" disabled>🔄</button>
+        <button id="undo-btn" class="icon-button" onclick="undoLastAction()" title="Undo Last Action" disabled>↩</button>
+        <button id="reset-btn" class="icon-button" onclick="resetAllFilters()" title="Reset All Filters" disabled>🔄</button>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode" id="theme-btn">🌙</button>
         <span id="toast" class="toast">ID Copied!</span>
     </div>
@@ -524,6 +69,7 @@
     <span class="hidden-pages-pill" id="hidden-pages-pill" onclick="resetHiddenPages()" title="Click to restore hidden pages"></span>
 </div>
 
+<div class="main-content">
 <div class="content-area">
     {%- for page in pages %}
     <div id="{{ page.id }}" class="page-container {% if loop.first %}active{% endif %}" 
@@ -531,7 +77,16 @@
          style="width: {{ page.width }}px; height: {{ page.height }}px;">
         
         {%- for visual in page.visuals %}
-            
+            {#- Build a list of field keys for this visual -#}
+            {%- set field_keys = [] %}
+            {%- for table_name, table_data in visual.fields.items() %}
+                {%- for col in table_data.columns %}
+                    {%- set _ = field_keys.append(table_name ~ '.' ~ col) %}
+                {%- endfor %}
+                {%- for meas in table_data.measures %}
+                    {%- set _ = field_keys.append(table_name ~ '.' ~ meas) %}
+                {%- endfor %}
+            {%- endfor %}
         <div class="visual-box {% if visual.isHidden %}hidden{% endif %}"
              id="visual-{{ visual.id }}"
              data-id="{{ visual.id }}"
@@ -541,6 +96,7 @@
              data-x="{{ visual.x }}"
              data-y="{{ visual.y }}"
              data-parent-group="{{ visual.parentGroupName }}"
+             data-fields='{{ field_keys | tojson }}'
              style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px;"
              onmousemove="showTooltip(event, this)"
              onmouseout="hideTooltip()"
@@ -559,408 +115,45 @@
     {%- endfor %}
 </div>
 
+<div class="fields-pane collapsed" id="fields-pane">
+    <div class="fields-pane-header">
+        <div class="fields-pane-title">
+            <span>Fields</span>
+        </div>
+        <input type="text" id="fields-search" class="fields-search" placeholder="Search tables, columns..." oninput="searchFields()">
+    </div>
+    <div class="fields-list" id="fields-list">
+        <!-- Populated by JavaScript -->
+    </div>
+    <div class="fields-pane-footer">
+        <span class="selected-count" id="selected-count">0 selected</span>
+        <button class="clear-fields-btn" id="clear-fields-btn" onclick="clearFieldFilters()" disabled>Clear All</button>
+    </div>
+</div>
+
+<!-- Fields Pane Toggle Button (Edge) -->
+<button class="fields-pane-toggle pane-collapsed" id="fields-pane-btn" onclick="toggleFieldsPane()" title="Toggle Fields Pane">
+    <svg class="toggle-icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+    <svg class="toggle-icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</button>
+</div>
+
+
 <div id="tooltip" class="tooltip"></div>
 <div id="page-tooltip" class="page-tooltip"></div>
+<div id="field-tooltip" class="field-tooltip"></div>
 
 <footer>
     Generated by PBIR-Utils
 </footer>
 
 <script>
-    var currentZoom = 1;
-    var minZoom = 0.25;
-    var maxZoom = 2;
-    var zoomStep = 0.25;
-
-    function openPage(pageId) {
-        document.querySelectorAll('.page-container.active, .tab-button.active').forEach(function(el) {
-            el.classList.remove('active');
-        });
-
-        var page = document.getElementById(pageId);
-        if (page) page.classList.add("active");
-        
-        var tab = document.getElementById('tab-' + pageId);
-        if (tab) tab.classList.add("active");
-        
-        applyZoom();
-    }
-
-    /* Zoom Controls */
-    function zoomIn() {
-        if (currentZoom < maxZoom) {
-            currentZoom = Math.min(maxZoom, currentZoom + zoomStep);
-            applyZoom();
-        }
-    }
-
-    function zoomOut() {
-        if (currentZoom > minZoom) {
-            currentZoom = Math.max(minZoom, currentZoom - zoomStep);
-            applyZoom();
-        }
-    }
-
-    function resetZoom() {
-        currentZoom = 1;
-        applyZoom();
-    }
-
-    function applyZoom() {
-        var activePage = document.querySelector('.page-container.active');
-        if (activePage) {
-            activePage.style.transform = 'scale(' + currentZoom + ')';
-        }
-        document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
-    }
-
-    /* Theme Toggle */
-    function toggleTheme() {
-        var body = document.body;
-        var btn = document.getElementById('theme-btn');
-        if (body.getAttribute('data-theme') === 'dark') {
-            body.removeAttribute('data-theme');
-            btn.textContent = '🌙';
-            localStorage.setItem('wireframe-theme', 'light');
-        } else {
-            body.setAttribute('data-theme', 'dark');
-            btn.textContent = '☀️';
-            localStorage.setItem('wireframe-theme', 'dark');
-        }
-    }
-
-    // Load saved theme on page load
-    (function() {
-        var savedTheme = localStorage.getItem('wireframe-theme');
-        if (savedTheme === 'dark') {
-            document.body.setAttribute('data-theme', 'dark');
-            document.getElementById('theme-btn').textContent = '☀️';
-        }
-    })();
-
-    /* Interactivity Functions */
-    
-    var hiddenStack = [];
-    var hiddenPagesStack = [];
-
-    function updateButtons() {
-        var hasHiddenItems = hiddenStack.length > 0 || hiddenPagesStack.length > 0;
-        document.getElementById('undo-btn').disabled = hiddenStack.length === 0;
-        document.getElementById('reset-btn').disabled = !hasHiddenItems;
-        
-        // Update hidden pages pill
-        var pill = document.getElementById('hidden-pages-pill');
-        if (hiddenPagesStack.length > 0) {
-            pill.textContent = '+' + hiddenPagesStack.length + ' page' + (hiddenPagesStack.length > 1 ? 's' : '');
-            pill.classList.add('visible');
-        } else {
-            pill.classList.remove('visible');
-        }
-    }
-
-    function hidePage(event, pageId) {
-        event.preventDefault();
-        hidePageTooltip();
-        
-        // Count visible tabs
-        var tabs = document.querySelectorAll('.tab-button');
-        var visibleCount = 0;
-        tabs.forEach(function(tab) {
-            if (tab.style.display !== 'none') visibleCount++;
-        });
-        
-        // Don't hide if it's the last visible page
-        if (visibleCount <= 1) {
-            return;
-        }
-        
-        var tab = document.getElementById('tab-' + pageId);
-        var pageContainer = document.getElementById(pageId);
-        
-        // If hiding active page, switch to next visible one first
-        if (tab && tab.classList.contains('active')) {
-            var nextTab = null;
-            var foundCurrent = false;
-            tabs.forEach(function(t) {
-                if (t === tab) {
-                    foundCurrent = true;
-                } else if (foundCurrent && !nextTab && t.style.display !== 'none') {
-                    nextTab = t;
-                }
-            });
-            // If no next tab, find previous
-            if (!nextTab) {
-                tabs.forEach(function(t) {
-                    if (t !== tab && t.style.display !== 'none') {
-                        nextTab = t;
-                    }
-                });
-            }
-            if (nextTab) {
-                nextTab.click();
-            }
-        }
-        
-        // Hide the tab
-        if (tab) {
-            tab.style.display = 'none';
-            hiddenPagesStack.push(pageId);
-        }
-        
-        updateButtons();
-    }
-
-    function resetHiddenPages() {
-        hiddenPagesStack.forEach(function(pageId) {
-            var tab = document.getElementById('tab-' + pageId);
-            if (tab) {
-                tab.style.display = '';
-            }
-        });
-        hiddenPagesStack = [];
-        updateButtons();
-    }
-
-    function copyVisualId(visualId) {
-        navigator.clipboard.writeText(visualId).then(function() {
-            showToast();
-        }, function(err) {
-            console.error('Async: Could not copy text: ', err);
-        });
-    }
-
-    function showToast() {
-        var toast = document.getElementById("toast");
-        toast.className = "toast show";
-        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 2000);
-    }
-
-    function hideVisual(event, visualId) {
-        event.preventDefault();
-        var el = document.getElementById("visual-" + visualId);
-        if (el) {
-            el.style.opacity = "0";
-            el.style.pointerEvents = "none"; 
-            el.dataset.manuallyHidden = "true";
-            
-            hiddenStack.push(visualId);
-            updateButtons();
-        }
-        hideTooltip(); 
-    }
-
-    function undoHideVisual() {
-        if (hiddenStack.length === 0) return;
-        
-        var visualId = hiddenStack.pop();
-        var el = document.getElementById("visual-" + visualId);
-        if (el) {
-            checkVisualFilterState(el);
-            el.style.pointerEvents = "auto";
-            el.dataset.manuallyHidden = "false";
-        }
-        updateButtons();
-    }
-
-    function resetHiddenVisuals() {
-        var hiddenElements = document.querySelectorAll('[data-manually-hidden="true"]');
-        hiddenElements.forEach(function(el) {
-            checkVisualFilterState(el);
-            el.style.pointerEvents = "auto";
-            el.dataset.manuallyHidden = "false";
-        });
-        hiddenStack = [];
-        
-        // Also reset hidden pages
-        resetHiddenPages();
-        
-        updateButtons();
-    }
-
-    function setVisualVisibility(visual, isVisible) {
-        if (isVisible) {
-            visual.style.opacity = "1";
-            visual.style.pointerEvents = "auto";
-        } else {
-            visual.style.opacity = "0.1";
-            visual.style.pointerEvents = "none";
-        }
-    }
-
-    function isMatch(visual, filter) {
-        if (!filter) return true;
-        var ds = visual.dataset;
-        var pageName = visual.parentElement.dataset.pageName || "";
-        return ds.id.toLowerCase().includes(filter) || 
-               ds.type.toLowerCase().includes(filter) || 
-               pageName.includes(filter);
-    }
-
-    function checkVisualFilterState(visual) {
-        var filter = document.getElementById('search-input').value.toLowerCase();
-        setVisualVisibility(visual, isMatch(visual, filter));
-    }
-
-    var visibilityFilter = null; // null = all, 'hidden' = only hidden, 'visible' = only visible
-
-    function toggleVisibilityFilter(mode) {
-        var hiddenBtn = document.getElementById('filter-hidden');
-        var visibleBtn = document.getElementById('filter-visible');
-        
-        if (visibilityFilter === mode) {
-            // Clicking active filter deactivates it
-            visibilityFilter = null;
-            hiddenBtn.classList.remove('active');
-            visibleBtn.classList.remove('active');
-        } else {
-            // Activate the clicked filter, deactivate the other
-            visibilityFilter = mode;
-            hiddenBtn.classList.toggle('active', mode === 'hidden');
-            visibleBtn.classList.toggle('active', mode === 'visible');
-        }
-        
-        filterVisuals();
-    }
-
-    function matchesVisibilityFilter(visual) {
-        if (visibilityFilter === null) return true;
-        var isHidden = visual.classList.contains('hidden');
-        if (visibilityFilter === 'hidden') return isHidden;
-        if (visibilityFilter === 'visible') return !isHidden;
-        return true;
-    }
-
-    function filterVisuals() {
-        var filter = document.getElementById('search-input').value.toLowerCase();
-        var visuals = document.getElementsByClassName('visual-box');
-        var pagesWithMatchingVisuals = new Set();
-
-        // 1. Filter Visuals & Track Matching Pages
-        for (var i = 0; i < visuals.length; i++) {
-            var visual = visuals[i];
-            
-            // Skip if manually hidden
-            if (visual.dataset.manuallyHidden === "true") continue;
-
-            var matchesSearch = isMatch(visual, filter);
-            var matchesVis = matchesVisibilityFilter(visual);
-            var match = matchesSearch && matchesVis;
-            
-            setVisualVisibility(visual, match);
-            
-            if (match) {
-                pagesWithMatchingVisuals.add(visual.parentElement.id);
-            }
-        }
-
-        // 2. Filter Tabs
-        var tabs = document.getElementsByClassName('tab-button');
-        var noFiltersActive = !filter && visibilityFilter === null;
-        
-        for (var i = 0; i < tabs.length; i++) {
-            var tab = tabs[i];
-            var pageName = tab.dataset.pageName.toLowerCase();
-            var pageId = tab.id.replace("tab-", "");
-            
-            // Only check page name match if there's actual search text
-            var matchesName = filter && pageName.includes(filter);
-            
-            if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
-                tab.style.display = "";
-            } else {
-                tab.style.display = "none";
-            }
-        }
-    }
-
-    var tooltip = document.getElementById('tooltip');
-
-
-    function showTooltip(e, visualElement) {
-        var type = visualElement.dataset.type;
-        var id = visualElement.dataset.id;
-        var width = Math.round(parseFloat(visualElement.dataset.width));
-        var height = Math.round(parseFloat(visualElement.dataset.height));
-        var x = Math.round(parseFloat(visualElement.dataset.x));
-        var y = Math.round(parseFloat(visualElement.dataset.y));
-        var parent = visualElement.dataset.parentGroup || '';
-        var isHidden = visualElement.classList.contains('hidden');
-        
-        let content = `<strong>${type}</strong>${isHidden ? ' <span style="color:var(--hidden-visual-border)">(Hidden)</span>' : ''}<br>ID: ${id}`;
-        content += `<br><span style='color:var(--text-secondary)'>Size:</span> ${width} × ${height} px`;
-        content += `<br><span style='color:var(--text-secondary)'>Position:</span> X: ${x}, Y: ${y}`;
-        if (parent && parent !== 'None' && parent !== '') {
-            content += `<br><span style='color:var(--text-secondary)'>Parent:</span> ${parent}`;
-        }
-        content += `<br><span style='font-size:10px; color:#aaa'>Left click to copy ID · Right click to hide</span>`;
-        tooltip.innerHTML = content;
-        tooltip.style.display = 'block';
-        moveTooltip(e);
-    }
-
-    function moveTooltip(e) {
-        const xOffset = 15;
-        const yOffset = 15;
-        tooltip.style.left = (e.clientX + xOffset) + 'px';
-        tooltip.style.top = (e.clientY + yOffset) + 'px';
-    }
-
-    function hideTooltip() {
-        tooltip.style.display = 'none';
-    }
-
-    /* Page Tooltip Functions */
-    var pageTooltip = document.getElementById('page-tooltip');
-
-    function showPageTooltip(e, tabElement) {
-        var pageName = tabElement.dataset.pageName;
-        var visualCount = tabElement.dataset.visualCount;
-        var isHidden = tabElement.dataset.isHidden === 'True';
-        var visualTypes = {};
-        
-        try {
-            visualTypes = JSON.parse(tabElement.dataset.visualTypes || '{}');
-        } catch(err) {
-            visualTypes = {};
-        }
-
-        var content = '<h4>' + pageName + (isHidden ? ' <span style="color:var(--hidden-visual-border)">(Hidden)</span>' : '') + '</h4>';
-        content += '<div class="stat-row"><span class="stat-label">Page Size:</span><span class="stat-value">' + tabElement.dataset.pageWidth + ' × ' + tabElement.dataset.pageHeight + ' px</span></div>';
-        content += '<div class="stat-row"><span class="stat-label">Total Visuals:</span><span class="stat-value">' + visualCount + '</span></div>';
-        
-        // Sort visual types by count (descending)
-        var sortedTypes = Object.entries(visualTypes).sort((a, b) => b[1] - a[1]);
-        
-        if (sortedTypes.length > 0) {
-            content += '<div style="margin-top:8px; border-top:1px solid var(--border-color); padding-top:6px;">';
-            content += '<div style="font-weight:600; margin-bottom:4px; font-size:11px; color:var(--text-secondary);">By Type:</div>';
-            
-            // Show top 8 types to avoid overcrowding
-            var displayTypes = sortedTypes.slice(0, 8);
-            displayTypes.forEach(function(item) {
-                content += '<div class="stat-row"><span class="stat-label">' + item[0] + '</span><span class="stat-value">' + item[1] + '</span></div>';
-            });
-            
-            if (sortedTypes.length > 8) {
-                content += '<div class="stat-row" style="color:var(--text-secondary); font-style:italic;"><span>...and ' + (sortedTypes.length - 8) + ' more types</span></div>';
-            }
-            content += '</div>';
-        }
-
-        content += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border-color); font-size:10px; color:#aaa">Right click to hide</div>';
-
-        pageTooltip.innerHTML = content;
-        pageTooltip.style.display = 'block';
-        
-        // Position below the tab
-        var rect = tabElement.getBoundingClientRect();
-        pageTooltip.style.left = rect.left + 'px';
-        pageTooltip.style.top = (rect.bottom + 8) + 'px';
-    }
-
-    function hidePageTooltip() {
-        pageTooltip.style.display = 'none';
-    }
+    var fieldsIndex = {{ fields_index | tojson }};
+    {% include 'wireframe.js' %}
 </script>
 
 </body>

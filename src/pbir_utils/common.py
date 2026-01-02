@@ -218,21 +218,23 @@ def iter_visuals(
         yield visual_id, str(folder_path), visual_data
 
 
-def extract_visual_info(page_folder: str | Path) -> dict:
+def extract_visual_info(page_folder: str | Path, include_fields: bool = False) -> dict:
     """
     Extract visual information from all visuals in a page folder.
 
     Args:
         page_folder: Path to the page folder containing a 'visuals' subdirectory.
+        include_fields: If True, extract field usage for each visual.
 
     Returns:
         dict: A dictionary with visual IDs as keys and dicts of visual info as values.
               Each dict contains: x, y, width, height, visualType, parentGroupName, isHidden.
+              If include_fields is True, also contains "fields" dict.
     """
     visuals = {}
     for visual_id, _, visual_data in iter_visuals(page_folder):
         position = visual_data.get("position", {})
-        visuals[visual_id] = {
+        info = {
             "x": position.get("x"),
             "y": position.get("y"),
             "width": position.get("width"),
@@ -241,6 +243,58 @@ def extract_visual_info(page_folder: str | Path) -> dict:
             "parentGroupName": visual_data.get("parentGroupName"),
             "isHidden": visual_data.get("isHidden", False),
         }
+
+        if include_fields:
+            fields = {}
+            pending_table = None
+            pending_attr_type = None
+
+            for (
+                table,
+                field,
+                used_in,
+                expression,
+                used_in_detail,
+                attr_type,
+            ) in traverse_pbir_json(visual_data, info["visualType"]):
+                # Case 1: Complete pair
+                if table and field:
+                    if table not in fields:
+                        fields[table] = {"columns": set(), "measures": set()}
+                    if attr_type == "Measure" or expression:
+                        fields[table]["measures"].add(field)
+                    else:
+                        fields[table]["columns"].add(field)
+                    pending_table = None
+
+                # Case 2: Entity only (store for next Property)
+                elif table and not field:
+                    pending_table = table
+                    pending_attr_type = attr_type
+
+                # Case 3: Property only (use stored Entity)
+                elif field and not table and pending_table:
+                    if pending_table not in fields:
+                        fields[pending_table] = {"columns": set(), "measures": set()}
+
+                    # Resolve attribute type
+                    final_attr = attr_type or pending_attr_type
+
+                    if final_attr == "Measure" or expression:
+                        fields[pending_table]["measures"].add(field)
+                    else:
+                        fields[pending_table]["columns"].add(field)
+
+                    pending_table = None
+
+            # Convert sets to sorted lists
+            for table in fields:
+                fields[table]["columns"] = sorted(fields[table]["columns"])
+                fields[table]["measures"] = sorted(fields[table]["measures"])
+
+            info["fields"] = fields
+
+        visuals[visual_id] = info
     return visuals
 
 
@@ -312,8 +366,11 @@ def process_json_files(
 
 
 def traverse_pbir_json(
-    data: dict | list, usage_context: str = None, usage_detail: str = None
-) -> Generator[tuple[Any, Any, Any, Any, Any], None, None]:
+    data: dict | list,
+    usage_context: str = None,
+    usage_detail: str = None,
+    attribute_type: str = None,
+) -> Generator[tuple[Any, Any, Any, Any, Any, Any], None, None]:
     """
     Recursively traverses the Power BI Enhanced Report Format (PBIR) JSON structure to extract specific metadata.
 
@@ -324,27 +381,50 @@ def traverse_pbir_json(
         data (dict or list): The PBIR JSON data to traverse.
         usage_context (str, optional): The current context within the PBIR structure (e.g., visual type, filter, bookmark, etc)
         usage_detail (str, optional): The detailed context inside a usage_context (e.g., tooltip, legend, Category, etc.)
+        attribute_type (str, optional): The type of field reference - "Column" or "Measure". Set when inside a Column/Measure wrapper.
 
     Yields:
-        tuple: Extracted metadata in the form of (table, column, used_in, expression, used_in_detail).
+        tuple: Extracted metadata in the form of (table, column, used_in, expression, used_in_detail, attribute_type).
                - table: The name of the table (if applicable)
                - column: The name of the column or measure
                - used_in: The broader context in which the element is used (e.g., visual type, filter, bookmark)
                - expression: The DAX expression for measures (if applicable)
                - used_in_detail: The specific setting where "Entity" and "Property" appear within the context
+               - attribute_type: The type of field - "Column", "Measure", or None if unknown
 
     Examples:
         >>> data = {"visual": {"visualType": "columnChart", "Data": [{"Entity": "Sales", "Property": "Amount"}]}}
         >>> list(traverse_pbir_json(data))
-        [('Sales', None, 'columnChart', None, 'Data'), (None, 'Amount', 'columnChart', None, 'Data')]
+        [('Sales', None, 'columnChart', None, 'Data', 'Column'), (None, 'Amount', 'columnChart', None, 'Data', 'Column')]
     """
     if isinstance(data, dict):
         for key, value in data.items():
             new_usage_detail = usage_detail or usage_context
             if key == "Entity":
-                yield (value, None, usage_context, None, usage_detail)
+                # Default to "Column" if attribute_type not set (i.e., not inside a Measure wrapper)
+                yield (
+                    value,
+                    None,
+                    usage_context,
+                    None,
+                    usage_detail,
+                    attribute_type or "Column",
+                )
             elif key == "Property":
-                yield (None, value, usage_context, None, usage_detail)
+                # Default to "Column" if attribute_type not set
+                yield (
+                    None,
+                    value,
+                    usage_context,
+                    None,
+                    usage_detail,
+                    attribute_type or "Column",
+                )
+            elif key == "Measure":
+                # Measure wrapper: recurse with attribute_type="Measure"
+                yield from traverse_pbir_json(
+                    value, usage_context, usage_detail, "Measure"
+                )
             elif key in [
                 "backColor",
                 "Category",
@@ -368,24 +448,35 @@ def traverse_pbir_json(
                 "Y",
                 "Y2",
             ]:
-                yield from traverse_pbir_json(value, usage_context, key)
+                yield from traverse_pbir_json(value, usage_context, key, attribute_type)
             elif key == "queryRef":
-                yield (None, value, usage_context, None, usage_detail)
+                yield (None, value, usage_context, None, usage_detail, attribute_type)
             elif key in ["filters", "filter", "parameters"]:
-                yield from traverse_pbir_json(value, usage_context, "filter")
+                yield from traverse_pbir_json(
+                    value, usage_context, "filter", attribute_type
+                )
             elif key == "visual":
                 visual_type = "visual"
                 if isinstance(value, dict):
                     visual_type = value.get("visualType", "visual")
-                yield from traverse_pbir_json(value, visual_type, new_usage_detail)
+                yield from traverse_pbir_json(
+                    value, visual_type, new_usage_detail, attribute_type
+                )
             elif key == "pageBinding":
                 yield from traverse_pbir_json(
-                    value, value.get("type", "Drillthrough"), new_usage_detail
+                    value,
+                    value.get("type", "Drillthrough"),
+                    new_usage_detail,
+                    attribute_type,
                 )
             elif key == "filterConfig":
-                yield from traverse_pbir_json(value, "Filters", new_usage_detail)
+                yield from traverse_pbir_json(
+                    value, "Filters", new_usage_detail, attribute_type
+                )
             elif key == "explorationState":
-                yield from traverse_pbir_json(value, "Bookmarks", new_usage_detail)
+                yield from traverse_pbir_json(
+                    value, "Bookmarks", new_usage_detail, attribute_type
+                )
             elif key == "entities":
                 for entity in value:
                     table_name = entity.get("name")
@@ -396,9 +487,14 @@ def traverse_pbir_json(
                             usage_context,
                             measure.get("expression", None),
                             new_usage_detail,
+                            "Measure",  # Entities with expressions are always measures
                         )
             else:
-                yield from traverse_pbir_json(value, usage_context, new_usage_detail)
+                yield from traverse_pbir_json(
+                    value, usage_context, new_usage_detail, attribute_type
+                )
     elif isinstance(data, list):
         for item in data:
-            yield from traverse_pbir_json(item, usage_context, usage_detail)
+            yield from traverse_pbir_json(
+                item, usage_context, usage_detail, attribute_type
+            )

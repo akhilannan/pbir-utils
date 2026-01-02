@@ -349,6 +349,48 @@ class TestTraversePbirJson:
         assert any(r[0] == "Table1" for r in results)
         assert any(r[0] == "Table2" for r in results)
 
+    def test_traverse_column_measure_references(self):
+        """Test traversing Column and Measure reference structures used in visual.json."""
+        data = {
+            "visual": {
+                "visualType": "columnChart",
+                "prototypeQuery": {
+                    "Select": [
+                        {
+                            "Column": {
+                                "Expression": {"SourceRef": {"Entity": "Sales"}},
+                                "Property": "Amount",
+                            }
+                        },
+                        {
+                            "Measure": {
+                                "Expression": {"SourceRef": {"Entity": "Sales"}},
+                                "Property": "TotalRevenue",
+                            }
+                        },
+                    ]
+                },
+            }
+        }
+        results = list(traverse_pbir_json(data))
+
+        # Entity and Property are yielded separately
+        # For Column reference (default when no Measure wrapper):
+        assert any(
+            r[0] == "Sales" and r[5] == "Column" for r in results
+        ), "Should yield Entity 'Sales' with attribute_type='Column'"
+        assert any(
+            r[1] == "Amount" and r[5] == "Column" for r in results
+        ), "Should yield Property 'Amount' with attribute_type='Column'"
+
+        # For Measure reference (inside Measure wrapper):
+        assert any(
+            r[0] == "Sales" and r[5] == "Measure" for r in results
+        ), "Should yield Entity 'Sales' with attribute_type='Measure'"
+        assert any(
+            r[1] == "TotalRevenue" and r[5] == "Measure" for r in results
+        ), "Should yield Property 'TotalRevenue' with attribute_type='Measure'"
+
 
 class TestResolveReportPath:
     """Tests for resolve_report_path function."""

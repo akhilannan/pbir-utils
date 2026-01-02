@@ -3,7 +3,13 @@ import tempfile
 import webbrowser
 from pathlib import Path
 
-from .common import iter_pages, extract_visual_info
+from .common import (
+    iter_pages,
+    iter_visuals,
+    load_json,
+    traverse_pbir_json,
+    extract_visual_info,
+)
 from .metadata_extractor import _get_page_order
 from .console_utils import console
 
@@ -18,34 +24,55 @@ def _parse_coordinate(value) -> float:
     return float(value)
 
 
-def _get_visual_objects(page_folder: str) -> list[dict]:
+def _extract_field_usage(data: dict, context: str, field_usage: dict) -> None:
     """
-    Extract visual information as a list of dictionaries for the template.
+    Extract field usage from a JSON structure and update the field_usage dict.
 
     Args:
-        page_folder (str): Path to the page folder.
-
-    Returns:
-        list[dict]: List of visual objects with properties.
+        data: The JSON data to traverse (bookmark or filterConfig).
+        context: The context type ("Bookmarks" or "Filters").
+        field_usage: Dict to update with field usage counts.
     """
-    visuals_info = extract_visual_info(page_folder)
-    visuals_list = []
+    pending_table = None
+    pending_attr_type = None
 
-    for vid, info in visuals_info.items():
-        visuals_list.append(
-            {
-                "id": vid,
-                "x": _parse_coordinate(info["x"]),
-                "y": _parse_coordinate(info["y"]),
-                "width": _parse_coordinate(info["width"]),
-                "height": _parse_coordinate(info["height"]),
-                "visualType": info["visualType"],
-                "parentGroupName": info["parentGroupName"],
-                "isHidden": info["isHidden"],
-            }
-        )
-
-    return visuals_list
+    for (
+        table,
+        field,
+        used_in,
+        expression,
+        used_in_detail,
+        attr_type,
+    ) in traverse_pbir_json(data, context):
+        if table and field:
+            field_key = f"{table}.{field}"
+            if field_key not in field_usage:
+                field_usage[field_key] = {
+                    "bookmark_count": 0,
+                    "filter_count": 0,
+                    "attr_type": attr_type,
+                }
+            if context == "Bookmarks":
+                field_usage[field_key]["bookmark_count"] += 1
+            elif context == "Filters":
+                field_usage[field_key]["filter_count"] += 1
+            pending_table = None
+        elif table and not field:
+            pending_table = table
+            pending_attr_type = attr_type
+        elif field and not table and pending_table:
+            field_key = f"{pending_table}.{field}"
+            if field_key not in field_usage:
+                field_usage[field_key] = {
+                    "bookmark_count": 0,
+                    "filter_count": 0,
+                    "attr_type": attr_type or pending_attr_type,
+                }
+            if context == "Bookmarks":
+                field_usage[field_key]["bookmark_count"] += 1
+            elif context == "Filters":
+                field_usage[field_key]["filter_count"] += 1
+            pending_table = None
 
 
 def _adjust_visual_positions(visuals: list[dict]) -> list[dict]:
@@ -112,6 +139,96 @@ def _apply_wireframe_filters(
     return filtered_pages_info
 
 
+def _build_fields_index(
+    pages_data: list[dict], field_usage: dict[str, dict] = None
+) -> dict:
+    """
+    Build a consolidated fields index for the Fields Pane.
+
+    Aggregates visual fields from pages_data and merges with pre-extracted
+    field usage from bookmarks/filters.
+
+    Args:
+        pages_data: List of page objects with visuals containing field info.
+        field_usage: Pre-extracted field usage counts from bookmarks/filters.
+
+    Returns:
+        dict: Fields index with tables, fieldToVisuals, and fieldUsage.
+    """
+    tables: dict[str, dict] = {}
+    field_to_visuals: dict[str, list[str]] = {}
+    field_usage = field_usage or {}
+
+    # Process visual fields from pages_data
+    for page in pages_data:
+        page_name = page["display_name"]
+
+        for visual in page["visuals"]:
+            visual_id = visual["id"]
+            visual_fields = visual.get("fields", {})
+
+            for table_name, table_data in visual_fields.items():
+                if table_name not in tables:
+                    tables[table_name] = {
+                        "columns": set(),
+                        "measures": set(),
+                        "visualIds": set(),
+                        "pageBreakdown": {},
+                    }
+
+                table_entry = tables[table_name]
+
+                for col in table_data.get("columns", []):
+                    table_entry["columns"].add(col)
+                    field_key = f"{table_name}.{col}"
+                    if field_key not in field_to_visuals:
+                        field_to_visuals[field_key] = []
+                    field_to_visuals[field_key].append(visual_id)
+
+                for measure in table_data.get("measures", []):
+                    table_entry["measures"].add(measure)
+                    field_key = f"{table_name}.{measure}"
+                    if field_key not in field_to_visuals:
+                        field_to_visuals[field_key] = []
+                    field_to_visuals[field_key].append(visual_id)
+
+                table_entry["visualIds"].add(visual_id)
+                table_entry["pageBreakdown"][page_name] = (
+                    table_entry["pageBreakdown"].get(page_name, 0) + 1
+                )
+
+    # Add fields from bookmarks/filters that aren't in any visual
+    for field_key, usage in field_usage.items():
+        table_name, field_name = field_key.split(".", 1)
+        if table_name not in tables:
+            tables[table_name] = {
+                "columns": set(),
+                "measures": set(),
+                "visualIds": set(),
+                "pageBreakdown": {},
+            }
+        # Use attr_type if available, default to column
+        if usage.get("attr_type") == "Measure":
+            tables[table_name]["measures"].add(field_name)
+        else:
+            tables[table_name]["columns"].add(field_name)
+
+    # Convert sets to sorted lists for JSON serialization
+    for table_name, table_data in tables.items():
+        tables[table_name] = {
+            "columns": sorted(table_data["columns"]),
+            "measures": sorted(table_data["measures"]),
+            "visualCount": len(table_data["visualIds"]),
+            "pageBreakdown": table_data["pageBreakdown"],
+        }
+
+    return {
+        "tables": tables,
+        "fieldToVisuals": field_to_visuals,
+        "fieldUsage": field_usage,
+    }
+
+
 def display_report_wireframes(
     report_path: str,
     pages: list = None,
@@ -135,6 +252,31 @@ def display_report_wireframes(
     pages_data = []
 
     # 1. Extract Data
+    field_usage: dict[str, dict] = {}
+    definition_path = Path(report_path) / "definition"
+
+    # 1a. Extract fields from bookmarks
+    bookmarks_folder = definition_path / "bookmarks"
+    if bookmarks_folder.exists():
+        for bookmark_file in bookmarks_folder.glob("*.bookmark.json"):
+            try:
+                bookmark_data = load_json(str(bookmark_file))
+                _extract_field_usage(bookmark_data, "Bookmarks", field_usage)
+            except Exception:
+                pass
+
+    # 1b. Extract fields from report-level filters
+    report_json = definition_path / "report.json"
+    if report_json.exists():
+        try:
+            report_data = load_json(str(report_json))
+            filter_config = report_data.get("filterConfig", {})
+            if filter_config:
+                _extract_field_usage(filter_config, "Filters", field_usage)
+        except Exception:
+            pass
+
+    # 1c. Extract fields from page filters and page visuals
     for page_id, page_folder_path, page_data in iter_pages(report_path):
         try:
             page_name = page_data.get("name")
@@ -143,12 +285,28 @@ def display_report_wireframes(
             height = page_data.get("height")
             is_hidden = page_data.get("visibility") == "HiddenInViewMode"
 
-            # 1a. Early Page Filter
+            # Extract fields from page-level filters
+            filter_config = page_data.get("filterConfig", {})
+            if filter_config:
+                _extract_field_usage(filter_config, "Filters", field_usage)
+
+            # Early Page Filter (skips visual processing if page filtered out)
             if pages and page_name not in pages and display_name not in pages:
                 continue
 
-            # Get raw visuals
-            raw_visuals = _get_visual_objects(page_folder_path)
+            # Get raw visuals using common function
+            visuals_map = extract_visual_info(page_folder_path, include_fields=True)
+
+            # Convert dictionary to list format expected by template and position processing
+            # Also parse coordinates since they come raw from load_json
+            raw_visuals = []
+            for vid, vdata in visuals_map.items():
+                vdata["id"] = vid
+                vdata["x"] = _parse_coordinate(vdata.get("x", 0))
+                vdata["y"] = _parse_coordinate(vdata.get("y", 0))
+                vdata["width"] = _parse_coordinate(vdata.get("width", 0))
+                vdata["height"] = _parse_coordinate(vdata.get("height", 0))
+                raw_visuals.append(vdata)
 
             # Adjust positions (handle groups)
             # We do this BEFORE filtering so that children get correct absolute coordinates
@@ -195,7 +353,11 @@ def display_report_wireframes(
         for page in filtered_pages:
             page["visuals"] = [v for v in page["visuals"] if not v["isHidden"]]
 
-    # 5. Render Template
+    # 5. Build Fields Index for the Fields Pane
+    # Includes fields from visuals, bookmarks, and page filters
+    fields_index = _build_fields_index(filtered_pages, field_usage)
+
+    # 6. Render Template
     try:
         template_dir = Path(__file__).parent / "templates"
         env = Environment(
@@ -206,7 +368,9 @@ def display_report_wireframes(
 
         report_name = Path(report_path).name.replace(".Report", "")
 
-        html_content = template.render(report_name=report_name, pages=filtered_pages)
+        html_content = template.render(
+            report_name=report_name, pages=filtered_pages, fields_index=fields_index
+        )
 
         # 6. Save and Open
         # We create a temporary file that persists so the browser can open it
