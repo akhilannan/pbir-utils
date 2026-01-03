@@ -76,7 +76,7 @@
 <div class="content-area">
     {%- for page in pages %}
     <div id="{{ page.id }}" class="page-container {% if page.id == active_page_id %}active{% endif %}" 
-         data-page-name="{{ page.display_name | lower }}"
+         data-page-name="{{ page.display_name }}"
          style="width: {{ page.width }}px; height: {{ page.height }}px;">
         
         {%- for visual in page.visuals %}

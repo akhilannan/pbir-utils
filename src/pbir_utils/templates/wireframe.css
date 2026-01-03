@@ -286,6 +286,7 @@
         .stat-value {
             font-weight: 600;
             font-variant-numeric: tabular-nums;
+            margin-left: 12px;
         }
 
         .field-tooltip .page-breakdown {
@@ -435,6 +436,8 @@
             align-items: flex-start;
             background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
             background-size: 20px 20px;
+            z-index: 1;
+            position: relative;
         }
 
         /* Page Container */
@@ -629,9 +632,7 @@
             flex: 1;
             font-size: 13px;
             font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            word-break: break-word;
         }
 
         .table-count {

@@ -571,8 +571,6 @@ function hideTooltip() {
 }
 
 /* Page Tooltip Functions */
-var pageTooltip = document.getElementById('page-tooltip');
-
 function showPageTooltip(e, tabElement) {
     var pageName = tabElement.dataset.pageName;
     var visualCount = tabElement.dataset.visualCount;
@@ -1026,7 +1024,7 @@ function showTableTooltip(e, tableName) {
     content += '<div class="stat-row"><span class="stat-label">Columns:</span><span class="stat-value">' + tableData.columns.length + '</span></div>';
     content += '<div class="stat-row"><span class="stat-label">Measures:</span><span class="stat-value">' + tableData.measures.length + '</span></div>';
     content += '<div class="stat-row"><span class="stat-label">Total Fields:</span><span class="stat-value">' + totalFields + '</span></div>';
-    content += '<div class="stat-row"><span class="stat-label">Visuals Using:</span><span class="stat-value">' + tableData.visualCount + '</span></div>';
+    content += '<div class="stat-row"><span class="stat-label">Visuals:</span><span class="stat-value">' + tableData.visualCount + '</span></div>';
 
     // Page breakdown
     var pageBreakdown = tableData.pageBreakdown || {};
@@ -1034,7 +1032,7 @@ function showTableTooltip(e, tableName) {
 
     if (sortedPages.length > 0) {
         content += '<div style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px;">';
-        content += '<div style="font-weight: 600; margin-bottom: 4px; font-size: 10px; color: var(--text-secondary);">By Page:</div>';
+        content += '<div style="font-weight: 600; margin-bottom: 4px; font-size: 10px; color: var(--text-secondary);">Visuals by Page:</div>';
 
         var displayPages = sortedPages.slice(0, 5);
         displayPages.forEach(function (entry) {
