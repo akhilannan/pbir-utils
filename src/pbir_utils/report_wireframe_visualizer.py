@@ -5,7 +5,6 @@ from pathlib import Path
 
 from .common import (
     iter_pages,
-    iter_visuals,
     load_json,
     iter_merged_fields,
     extract_visual_info,
@@ -235,7 +234,7 @@ def display_report_wireframes(
             try:
                 bookmark_data = load_json(str(bookmark_file))
                 _extract_field_usage(bookmark_data, "Bookmarks", field_usage)
-            except Exception:
+            except Exception:  # nosec B110
                 pass
 
     # 1b. Extract fields from report-level filters
@@ -246,7 +245,7 @@ def display_report_wireframes(
             filter_config = report_data.get("filterConfig", {})
             if filter_config:
                 _extract_field_usage(filter_config, "Filters", field_usage)
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     # 1c. Extract fields from page filters and page visuals
