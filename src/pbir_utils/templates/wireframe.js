@@ -5,6 +5,31 @@ var zoomStep = 0.25;
 
 var initialPageLoaded = false;
 
+/* Performance: Cached DOM References */
+var cachedVisuals = null;
+var cachedTabs = null;
+var escapeDiv = document.createElement('div');
+
+function getCachedVisuals() {
+    if (!cachedVisuals) {
+        cachedVisuals = Array.from(document.getElementsByClassName('visual-box'));
+    }
+    return cachedVisuals;
+}
+
+function getCachedTabs() {
+    if (!cachedTabs) {
+        cachedTabs = Array.from(document.getElementsByClassName('tab-button'));
+    }
+    return cachedTabs;
+}
+
+/* Global UI Elements */
+var tooltip = document.getElementById('tooltip');
+var pageTooltip = document.getElementById('page-tooltip');
+var fieldTooltip = document.getElementById('field-tooltip');
+var tableTooltip = document.getElementById('table-tooltip');
+
 function openPage(pageId, skipTracking) {
     // Get current page before switching (for undo tracking)
     var currentActivePage = document.querySelector('.page-container.active');
@@ -432,9 +457,7 @@ function matchesVisibilityFilter(visual) {
 
 /* Helper function to update tab visibility based on matching pages */
 function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFilter) {
-    var tabs = document.getElementsByClassName('tab-button');
-    for (var i = 0; i < tabs.length; i++) {
-        var tab = tabs[i];
+    getCachedTabs().forEach(function (tab) {
         var pageName = tab.dataset.pageName.toLowerCase();
         var pageId = tab.id.replace("tab-", "");
         // Only check page name match if there's actual search text
@@ -444,7 +467,7 @@ function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFi
         } else {
             tab.style.display = "none";
         }
-    }
+    });
 }
 
 /* Helper function to check if visual matches field filters */
@@ -473,15 +496,14 @@ function checkFieldMatch(visual, matchingVisualIds, matchingFieldKeys) {
 
 function filterVisualsBase() {
     var filter = document.getElementById('search-input').value.toLowerCase();
-    var visuals = document.getElementsByClassName('visual-box');
+    var visuals = getCachedVisuals();
     var pagesWithMatchingVisuals = new Set();
     var noFiltersActive = !filter && visibilityFilter === null;
 
     // Filter Visuals & Track Matching Pages
-    for (var i = 0; i < visuals.length; i++) {
-        var visual = visuals[i];
+    visuals.forEach(function (visual) {
         // Skip if manually hidden
-        if (visual.dataset.manuallyHidden === "true") continue;
+        if (visual.dataset.manuallyHidden === "true") return;
 
         var matchesSearch = isMatch(visual, filter);
         var matchesVis = matchesVisibilityFilter(visual);
@@ -492,7 +514,7 @@ function filterVisualsBase() {
         if (match) {
             pagesWithMatchingVisuals.add(visual.parentElement.id);
         }
-    }
+    });
 
     // Update tab visibility using helper
     updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, filter);
@@ -514,9 +536,6 @@ function filterVisuals() {
         filterVisualsBase();
     }
 }
-
-var tooltip = document.getElementById('tooltip');
-
 
 function showTooltip(e, visualElement) {
     var type = visualElement.dataset.type;
@@ -605,10 +624,8 @@ function hidePageTooltip() {
 }
 
 /* Fields Pane Functions */
-/* var fieldsIndex is defined in wireframe.html.j2 */
 var selectedFields = new Set();
 var searchDebounceTimer = null;
-var fieldTooltip = document.getElementById('field-tooltip');
 
 function toggleFieldsPane() {
     var pane = document.getElementById('fields-pane');
@@ -684,9 +701,8 @@ function initFieldsPane() {
 }
 
 function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    escapeDiv.textContent = text;
+    return escapeDiv.innerHTML;
 }
 
 function toggleTable(tableName) {
@@ -840,14 +856,13 @@ function searchFields() {
 
 function applySearchFieldFilter(matchingFieldKeys) {
     // Filter visuals to only show those using matching fields
-    var allVisuals = document.getElementsByClassName('visual-box');
+    var visuals = getCachedVisuals();
     var pagesWithMatchingVisuals = new Set();
     var searchFilter = document.getElementById('search-input').value.toLowerCase();
 
-    for (var i = 0; i < allVisuals.length; i++) {
-        var visual = allVisuals[i];
+    visuals.forEach(function (visual) {
         // Skip if manually hidden
-        if (visual.dataset.manuallyHidden === "true") continue;
+        if (visual.dataset.manuallyHidden === "true") return;
 
         // Use helper for field matching
         var matchesFields = checkFieldMatch(visual, null, matchingFieldKeys);
@@ -860,7 +875,7 @@ function applySearchFieldFilter(matchingFieldKeys) {
         if (isVisible) {
             pagesWithMatchingVisuals.add(visual.parentElement.id);
         }
-    }
+    });
 
     // Update tab visibility using helper (no name matching for field search)
     updateTabVisibility(pagesWithMatchingVisuals, false, null);
@@ -869,8 +884,15 @@ function applySearchFieldFilter(matchingFieldKeys) {
 
 function applyFieldFilters() {
     if (selectedFields.size === 0) {
-        // No field filters, reset to show all (respecting other filters)
-        filterVisualsBase();
+        // No field selection - check if there's an active field search
+        var fieldSearchQuery = document.getElementById('fields-search').value.trim();
+        if (fieldSearchQuery) {
+            // Re-trigger field search filtering
+            searchFields();
+        } else {
+            // No field filters at all, reset to show all (respecting other filters)
+            filterVisualsBase();
+        }
         return;
     }
 
@@ -884,14 +906,13 @@ function applyFieldFilters() {
     });
 
     // Apply filter to visuals
-    var allVisuals = document.getElementsByClassName('visual-box');
+    var visuals = getCachedVisuals();
     var pagesWithMatchingVisuals = new Set();
     var searchFilter = document.getElementById('search-input').value.toLowerCase();
 
-    for (var i = 0; i < allVisuals.length; i++) {
-        var visual = allVisuals[i];
+    visuals.forEach(function (visual) {
         // Skip if manually hidden
-        if (visual.dataset.manuallyHidden === "true") continue;
+        if (visual.dataset.manuallyHidden === "true") return;
 
         // Use helper for field matching
         var matchesField = checkFieldMatch(visual, matchingVisualIds, null);
@@ -904,7 +925,7 @@ function applyFieldFilters() {
         if (isVisible) {
             pagesWithMatchingVisuals.add(visual.parentElement.id);
         }
-    }
+    });
 
     // Update tab visibility using helper
     updateTabVisibility(pagesWithMatchingVisuals, false, null);
@@ -921,8 +942,8 @@ function switchToFirstVisiblePage(pagesWithMatchingVisuals) {
     // If current page has matching visuals, no need to switch
     if (pagesWithMatchingVisuals.has(currentPageId)) return;
 
-    // Find and switch to first visible page
-    var tabs = document.getElementsByClassName('tab-button');
+    // Find and switch to first visible page using cached tabs
+    var tabs = getCachedTabs();
     for (var i = 0; i < tabs.length; i++) {
         var tab = tabs[i];
         if (tab.style.display !== 'none') {
@@ -966,7 +987,7 @@ function showFieldTooltip(e, tableName, fieldName) {
     var visualIds = fieldsIndex.fieldToVisuals[fieldKey] || [];
     var pageCount = {};
 
-    document.querySelectorAll('.visual-box').forEach(function (visual) {
+    getCachedVisuals().forEach(function (visual) {
         if (visualIds.includes(visual.dataset.id)) {
             var pageName = visual.closest('.page-container').dataset.pageName;
             pageCount[pageName] = (pageCount[pageName] || 0) + 1;
@@ -994,9 +1015,6 @@ function showFieldTooltip(e, tableName, fieldName) {
 function hideFieldTooltip() {
     fieldTooltip.style.display = 'none';
 }
-
-/* Table Tooltip Functions */
-var tableTooltip = document.getElementById('table-tooltip');
 
 function showTableTooltip(e, tableName) {
     var tableData = fieldsIndex.tables[tableName];
@@ -1041,3 +1059,43 @@ function hideTableTooltip() {
 
 // Initialize Fields Pane on load
 initFieldsPane();
+
+// Event Delegation for Visual Boxes (performance optimization)
+(function setupVisualEventDelegation() {
+    var contentArea = document.querySelector('.content-area');
+    if (!contentArea) return;
+
+    // Delegated click handler
+    contentArea.addEventListener('click', function (e) {
+        var visual = e.target.closest('.visual-box');
+        if (visual && visual.dataset.manuallyHidden !== 'true') {
+            copyVisualId(visual.dataset.id);
+        }
+    });
+
+    // Delegated right-click (context menu) handler
+    contentArea.addEventListener('contextmenu', function (e) {
+        var visual = e.target.closest('.visual-box');
+        if (visual) {
+            hideVisual(e, visual.dataset.id);
+        }
+    });
+
+    // Delegated mousemove for tooltip
+    contentArea.addEventListener('mousemove', function (e) {
+        var visual = e.target.closest('.visual-box');
+        if (visual) {
+            showTooltip(e, visual);
+        }
+    });
+
+    // Delegated mouseout for tooltip
+    contentArea.addEventListener('mouseout', function (e) {
+        var visual = e.target.closest('.visual-box');
+        var relatedTarget = e.relatedTarget;
+        // Only hide tooltip if leaving visual entirely
+        if (visual && (!relatedTarget || !visual.contains(relatedTarget))) {
+            hideTooltip();
+        }
+    });
+})();

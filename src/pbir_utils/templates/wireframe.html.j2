@@ -97,11 +97,7 @@
              data-y="{{ visual.y }}"
              data-parent-group="{{ visual.parentGroupName }}"
              data-fields='{{ field_keys | tojson }}'
-             style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px;"
-             onmousemove="showTooltip(event, this)"
-             onmouseout="hideTooltip()"
-             onclick="copyVisualId('{{ visual.id }}')"
-             oncontextmenu="hideVisual(event, '{{ visual.id }}')">
+             style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px;">
              {#-
                 Note: Keeping inner formatting simple for readability, 
                 but reducing outer whitespace.
