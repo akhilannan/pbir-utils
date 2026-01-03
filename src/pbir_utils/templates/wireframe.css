@@ -758,4 +758,41 @@
         .fields-pane-toggle.pane-collapsed .toggle-icon-collapse {
             display: none;
         }
+
+        /* Table Tooltip */
+        .table-tooltip {
+            position: fixed;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            display: none;
+            z-index: 1001;
+            max-width: 280px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .table-tooltip h5 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+
+        .table-tooltip .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+
+        .table-tooltip .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .table-tooltip .stat-value {
+            font-weight: 600;
+        }
         

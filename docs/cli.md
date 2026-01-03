@@ -57,6 +57,10 @@ The generated wireframe opens automatically in your default browser and includes
 
 - **Page Tooltip** (hover over tabs): Page size, visual count, and type breakdown
 - **Visual Tooltip** (hover over visuals): Size (W×H), Position (X,Y), Parent group
+- **Table Tooltip** (hover over table headers in Fields Pane): Column/measure counts, visual usage, page breakdown
+
+!!! note "Active Page"
+    The wireframe opens on the report's active page instead of the first page. Page changes are tracked for undo/reset.
 
 ```bash
 # Generate wireframe for all pages

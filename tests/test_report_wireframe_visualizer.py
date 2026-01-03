@@ -505,20 +505,25 @@ def test_template_renders_parent_group(template_env, sample_pages_data):
     assert 'data-parent-group="group1"' in html
 
 
-def test_template_first_page_active(template_env, sample_pages_data):
-    """Test that the first page and tab are marked as active."""
+def test_template_active_page(template_env, sample_pages_data):
+    """Test that the specified active page and tab are marked as active."""
     template = template_env.get_template("wireframe.html.j2")
     fields_index = {"tables": {}, "fieldToVisuals": {}}
+
+    # Set page2 as active instead of first page
     html = template.render(
-        report_name="Test", pages=sample_pages_data, fields_index=fields_index
+        report_name="Test",
+        pages=sample_pages_data,
+        fields_index=fields_index,
+        active_page_id="page2",
     )
 
-    # First tab should have 'active' class
-    # Note: We need to check that page1 tab has active but page2 does not
-    assert 'class="tab-button active' in html  # First tab is active
-    assert (
-        'id="page1" class="page-container active' in html
-    )  # First page container is active
+    # page2 should have 'active' class, not page1
+    assert 'id="page2" class="page-container active' in html
+    assert 'id="tab-page2"' in html
+    assert 'class="tab-button active' in html  # The active tab is page2
+    # page1 should NOT have active class on its page-container
+    assert 'id="page1" class="page-container active' not in html
 
 
 def test_template_empty_pages(template_env):

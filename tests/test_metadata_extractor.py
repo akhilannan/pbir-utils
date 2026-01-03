@@ -113,6 +113,29 @@ class TestGetPageOrder:
         result = _get_page_order(str(tmp_path))
         assert result == []
 
+    def test_get_page_order_with_active_page(self, tmp_path):
+        """Test getting page order with active page name."""
+        pages_data = {
+            "pageOrder": ["Page1", "Page2", "Page3"],
+            "activePageName": "Page2",
+        }
+        create_dummy_file(tmp_path, "definition/pages/pages.json", pages_data)
+        page_order, active_page = _get_page_order(
+            str(tmp_path), include_active_page=True
+        )
+        assert page_order == ["Page1", "Page2", "Page3"]
+        assert active_page == "Page2"
+
+    def test_get_page_order_with_active_page_missing(self, tmp_path):
+        """Test getting page order when activePageName is missing."""
+        pages_data = {"pageOrder": ["Page1", "Page2"]}
+        create_dummy_file(tmp_path, "definition/pages/pages.json", pages_data)
+        page_order, active_page = _get_page_order(
+            str(tmp_path), include_active_page=True
+        )
+        assert page_order == ["Page1", "Page2"]
+        assert active_page is None
+
 
 class TestApplyFilters:
     """Tests for _apply_row_filters function."""

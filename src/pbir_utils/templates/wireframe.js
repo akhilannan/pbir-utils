@@ -3,7 +3,13 @@ var minZoom = 0.25;
 var maxZoom = 2;
 var zoomStep = 0.25;
 
-function openPage(pageId) {
+var initialPageLoaded = false;
+
+function openPage(pageId, skipTracking) {
+    // Get current page before switching (for undo tracking)
+    var currentActivePage = document.querySelector('.page-container.active');
+    var previousPageId = currentActivePage ? currentActivePage.id : null;
+
     document.querySelectorAll('.page-container.active, .tab-button.active').forEach(function (el) {
         el.classList.remove('active');
     });
@@ -15,6 +21,13 @@ function openPage(pageId) {
     if (tab) tab.classList.add("active");
 
     applyZoom();
+
+    // Track page change for undo (skip on initial load and when undoing/resetting)
+    if (initialPageLoaded && !skipTracking && previousPageId && previousPageId !== pageId) {
+        trackAction('pageChange', { previousPageId: previousPageId });
+    }
+
+    initialPageLoaded = true;
 }
 
 /* Zoom Controls */
@@ -275,6 +288,9 @@ function undoLastAction() {
             updateFieldsFooter();
             applyFieldFilters();
             break;
+        case 'pageChange':
+            openPage(lastAction.data.previousPageId, true);
+            break;
     }
 
     updateResetButtonState();
@@ -318,17 +334,28 @@ function resetAllFilters() {
     // 8. Apply filters (will show all)
     filterVisuals();
 
+    // 9. Reset to initial active page
+    if (typeof activePageId !== 'undefined' && activePageId) {
+        openPage(activePageId, true);
+    }
+
     updateResetButtonState();
 }
 
 function updateResetButtonState() {
+    // Check if current page differs from initial active page
+    var currentPage = document.querySelector('.page-container.active');
+    var currentPageId = currentPage ? currentPage.id : null;
+    var pageChanged = typeof activePageId !== 'undefined' && activePageId && currentPageId !== activePageId;
+
     var hasFilters =
         document.getElementById('search-input').value !== '' ||
         document.getElementById('fields-search').value !== '' ||
         visibilityFilter !== null ||
         selectedFields.size > 0 ||
         hiddenStack.length > 0 ||
-        hiddenPagesStack.length > 0;
+        hiddenPagesStack.length > 0 ||
+        pageChanged;
 
     document.getElementById('reset-btn').disabled = !hasFilters;
     document.getElementById('undo-btn').disabled = actionStack.length === 0 && hiddenStack.length === 0;
@@ -559,7 +586,7 @@ function initFieldsPane() {
         html += '<div class="table-item" data-table="' + escapeHtml(tableName) + '">';
         html += '<div class="table-header">';
         html += '<span class="table-expand-icon" onclick="event.stopPropagation(); toggleTable(\'' + escapeHtml(tableName) + '\')">▶</span>';
-        html += '<div class="table-header-content" onclick="toggleTableSelection(\'' + escapeHtml(tableName) + '\')">';
+        html += '<div class="table-header-content" onclick="toggleTableSelection(\'' + escapeHtml(tableName) + '\')" onmouseenter="showTableTooltip(event, \'' + escapeHtml(tableName) + '\')" onmouseleave="hideTableTooltip()">';
         html += '<svg class="table-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="9" y2="21" stroke="currentColor" stroke-width="2"/></svg>';
         html += '<span class="table-name">' + escapeHtml(tableName) + '</span>';
         html += '<span class="table-count">' + tableData.visualCount + '</span>';
@@ -942,6 +969,50 @@ function showFieldTooltip(e, tableName, fieldName) {
 
 function hideFieldTooltip() {
     fieldTooltip.style.display = 'none';
+}
+
+/* Table Tooltip Functions */
+var tableTooltip = document.getElementById('table-tooltip');
+
+function showTableTooltip(e, tableName) {
+    var tableData = fieldsIndex.tables[tableName];
+    if (!tableData) return;
+
+    var totalFields = tableData.columns.length + tableData.measures.length;
+
+    var content = '<h5>' + escapeHtml(tableName) + '</h5>';
+    content += '<div class="stat-row"><span class="stat-label">Columns:</span><span class="stat-value">' + tableData.columns.length + '</span></div>';
+    content += '<div class="stat-row"><span class="stat-label">Measures:</span><span class="stat-value">' + tableData.measures.length + '</span></div>';
+    content += '<div class="stat-row"><span class="stat-label">Total Fields:</span><span class="stat-value">' + totalFields + '</span></div>';
+    content += '<div class="stat-row"><span class="stat-label">Visuals Using:</span><span class="stat-value">' + tableData.visualCount + '</span></div>';
+
+    // Page breakdown
+    var pageBreakdown = tableData.pageBreakdown || {};
+    var sortedPages = Object.entries(pageBreakdown).sort((a, b) => b[1] - a[1]);
+
+    if (sortedPages.length > 0) {
+        content += '<div style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px;">';
+        content += '<div style="font-weight: 600; margin-bottom: 4px; font-size: 10px; color: var(--text-secondary);">By Page:</div>';
+
+        var displayPages = sortedPages.slice(0, 5);
+        displayPages.forEach(function (entry) {
+            content += '<div class="stat-row"><span class="stat-label">' + escapeHtml(entry[0]) + '</span><span class="stat-value">' + entry[1] + '</span></div>';
+        });
+
+        if (sortedPages.length > 5) {
+            content += '<div class="stat-row" style="color: var(--text-secondary); font-style: italic;"><span>...and ' + (sortedPages.length - 5) + ' more</span></div>';
+        }
+        content += '</div>';
+    }
+
+    tableTooltip.innerHTML = content;
+    tableTooltip.style.display = 'block';
+    tableTooltip.style.left = (e.clientX + 15) + 'px';
+    tableTooltip.style.top = (e.clientY + 10) + 'px';
+}
+
+function hideTableTooltip() {
+    tableTooltip.style.display = 'none';
 }
 
 // Override filterVisuals to include field filtering

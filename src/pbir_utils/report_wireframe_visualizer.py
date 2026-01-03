@@ -311,9 +311,12 @@ def display_report_wireframes(
         console.print_warning("No pages match the given filters.")
         return
 
-    # 3. Sort Pages
+    # 3. Sort Pages and Get Active Page
+    active_page_id = None
     try:
-        page_order = _get_page_order(report_path)
+        page_order, active_page_id = _get_page_order(
+            report_path, include_active_page=True
+        )
         # Create a map for O(1) lookup
         order_map = {pid: idx for idx, pid in enumerate(page_order)}
 
@@ -330,6 +333,11 @@ def display_report_wireframes(
     # Includes fields from visuals, bookmarks, and page filters
     fields_index = _build_fields_index(filtered_pages, field_usage)
 
+    # Fallback active page to first page if not found or not in filtered pages
+    page_ids = [p["id"] for p in filtered_pages]
+    if not active_page_id or active_page_id not in page_ids:
+        active_page_id = page_ids[0] if page_ids else None
+
     # 6. Render Template
     try:
         template_dir = Path(__file__).parent / "templates"
@@ -342,7 +350,10 @@ def display_report_wireframes(
         report_name = Path(report_path).name.replace(".Report", "")
 
         html_content = template.render(
-            report_name=report_name, pages=filtered_pages, fields_index=fields_index
+            report_name=report_name,
+            pages=filtered_pages,
+            fields_index=fields_index,
+            active_page_id=active_page_id,
         )
 
         # 6. Save and Open

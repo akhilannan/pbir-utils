@@ -104,19 +104,29 @@ def _extract_page_info(json_path: str | Path) -> tuple:
     return page_data.get("displayName", "NA"), page_data.get("name", "NA")
 
 
-def _get_page_order(report_path: str | Path) -> list:
+def _get_page_order(
+    report_path: str | Path, include_active_page: bool = False
+) -> list | tuple[list, str | None]:
     """
     Get the page order from the pages.json file.
 
     Args:
         report_path (str | Path): Path to the root folder of the report.
+        include_active_page (bool): If True, also return the active page name.
 
     Returns:
-        list: List of page IDs in the correct order.
+        list: List of page IDs in the correct order (when include_active_page=False).
+        tuple[list, str | None]: Page order and active page name (when include_active_page=True).
     """
     pages_json_path = Path(report_path) / "definition" / "pages" / "pages.json"
     pages_data = load_json(pages_json_path)
-    return pages_data.get("pageOrder", [])
+    page_order = pages_data.get("pageOrder", [])
+
+    if include_active_page:
+        active_page = pages_data.get("activePageName")
+        return page_order, active_page
+
+    return page_order
 
 
 def _apply_row_filters(row: dict, filters: dict) -> bool:

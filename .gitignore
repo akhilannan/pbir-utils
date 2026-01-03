@@ -57,6 +57,7 @@ coverage.xml
 env/
 venv/
 ENV/
+uv.lock
 
 # IDE settings
 .vscode/
