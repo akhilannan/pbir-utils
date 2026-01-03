@@ -188,6 +188,8 @@ function hideVisual(event, visualId) {
         el.dataset.manuallyHidden = "true";
 
         hiddenStack.push(visualId);
+        // Track in actionStack so undo respects the order of all actions
+        trackAction('hideVisual', { visualId: visualId });
         updateButtons();
     }
     hideTooltip();
@@ -240,7 +242,20 @@ function undoLastAction() {
 
     switch (lastAction.type) {
         case 'hideVisual':
-            undoHideVisual();
+            // Use the specific visualId from the action, not blindly pop from hiddenStack
+            var visualId = lastAction.data.visualId;
+            var el = document.getElementById("visual-" + visualId);
+            if (el) {
+                checkVisualFilterState(el);
+                el.style.pointerEvents = "auto";
+                el.dataset.manuallyHidden = "false";
+            }
+            // Remove from hiddenStack by value
+            var idx = hiddenStack.indexOf(visualId);
+            if (idx > -1) {
+                hiddenStack.splice(idx, 1);
+            }
+            updateButtons();
             break;
         case 'search':
             document.getElementById('search-input').value = lastAction.data.previousValue || '';
@@ -415,15 +430,56 @@ function matchesVisibilityFilter(visual) {
     return true;
 }
 
-function filterVisuals() {
+/* Helper function to update tab visibility based on matching pages */
+function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFilter) {
+    var tabs = document.getElementsByClassName('tab-button');
+    for (var i = 0; i < tabs.length; i++) {
+        var tab = tabs[i];
+        var pageName = tab.dataset.pageName.toLowerCase();
+        var pageId = tab.id.replace("tab-", "");
+        // Only check page name match if there's actual search text
+        var matchesName = searchFilter && pageName.includes(searchFilter);
+        if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
+            tab.style.display = "";
+        } else {
+            tab.style.display = "none";
+        }
+    }
+}
+
+/* Helper function to check if visual matches field filters */
+function checkFieldMatch(visual, matchingVisualIds, matchingFieldKeys) {
+    // If no field filters active, always match
+    if (!matchingVisualIds && !matchingFieldKeys) return true;
+
+    // Check by visual ID (from selected fields)
+    if (matchingVisualIds && matchingVisualIds.has(visual.dataset.id)) {
+        return true;
+    }
+
+    // Check by field keys (from field search)
+    if (matchingFieldKeys) {
+        var visualFields = [];
+        try {
+            visualFields = JSON.parse(visual.dataset.fields || '[]');
+        } catch (e) { }
+        return visualFields.some(function (f) {
+            return matchingFieldKeys.has(f);
+        });
+    }
+
+    return false;
+}
+
+function filterVisualsBase() {
     var filter = document.getElementById('search-input').value.toLowerCase();
     var visuals = document.getElementsByClassName('visual-box');
     var pagesWithMatchingVisuals = new Set();
+    var noFiltersActive = !filter && visibilityFilter === null;
 
-    // 1. Filter Visuals & Track Matching Pages
+    // Filter Visuals & Track Matching Pages
     for (var i = 0; i < visuals.length; i++) {
         var visual = visuals[i];
-
         // Skip if manually hidden
         if (visual.dataset.manuallyHidden === "true") continue;
 
@@ -438,32 +494,25 @@ function filterVisuals() {
         }
     }
 
-    // 2. Filter Tabs
-    var tabs = document.getElementsByClassName('tab-button');
-    var noFiltersActive = !filter && visibilityFilter === null;
+    // Update tab visibility using helper
+    updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, filter);
 
-    for (var i = 0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        var pageName = tab.dataset.pageName.toLowerCase();
-        var pageId = tab.id.replace("tab-", "");
-
-        // Only check page name match if there's actual search text
-        var matchesName = filter && pageName.includes(filter);
-
-        if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
-            tab.style.display = "";
-        } else {
-            tab.style.display = "none";
-        }
-    }
-
-    // 3. Auto-switch to first visible page if current page has no matching visuals
+    // Auto-switch to first visible page if current page has no matching visuals
     if (!noFiltersActive) {
         switchToFirstVisiblePage(pagesWithMatchingVisuals);
     }
 
     // Update reset button state
     updateResetButtonState();
+}
+
+/* Main filter function - routes to appropriate filter based on state */
+function filterVisuals() {
+    if (selectedFields.size > 0) {
+        applyFieldFilters();
+    } else {
+        filterVisualsBase();
+    }
 }
 
 var tooltip = document.getElementById('tooltip');
@@ -793,29 +842,19 @@ function applySearchFieldFilter(matchingFieldKeys) {
     // Filter visuals to only show those using matching fields
     var allVisuals = document.getElementsByClassName('visual-box');
     var pagesWithMatchingVisuals = new Set();
+    var searchFilter = document.getElementById('search-input').value.toLowerCase();
 
     for (var i = 0; i < allVisuals.length; i++) {
         var visual = allVisuals[i];
-
         // Skip if manually hidden
         if (visual.dataset.manuallyHidden === "true") continue;
 
-        // Get fields for this visual
-        var visualFields = [];
-        try {
-            visualFields = JSON.parse(visual.dataset.fields || '[]');
-        } catch (e) { }
-
-        // Check if any visual field matches the search
-        var matchesSearch = visualFields.some(function (f) {
-            return matchingFieldKeys.has(f);
-        });
-
-        // Also respect other filters
-        var matchesText = isMatch(visual, document.getElementById('search-input').value.toLowerCase());
+        // Use helper for field matching
+        var matchesFields = checkFieldMatch(visual, null, matchingFieldKeys);
+        var matchesText = isMatch(visual, searchFilter);
         var matchesVis = matchesVisibilityFilter(visual);
 
-        var isVisible = matchesSearch && matchesText && matchesVis;
+        var isVisible = matchesFields && matchesText && matchesVis;
         setVisualVisibility(visual, isVisible);
 
         if (isVisible) {
@@ -823,22 +862,15 @@ function applySearchFieldFilter(matchingFieldKeys) {
         }
     }
 
-    // Update tab visibility
-    var tabs = document.getElementsByClassName('tab-button');
-    for (var i = 0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        var pageId = tab.id.replace("tab-", "");
-        tab.style.display = pagesWithMatchingVisuals.has(pageId) ? "" : "none";
-    }
-
-    // Switch to first visible page if current page has no visible visuals
+    // Update tab visibility using helper (no name matching for field search)
+    updateTabVisibility(pagesWithMatchingVisuals, false, null);
     switchToFirstVisiblePage(pagesWithMatchingVisuals);
 }
 
 function applyFieldFilters() {
     if (selectedFields.size === 0) {
         // No field filters, reset to show all (respecting other filters)
-        filterVisuals();
+        filterVisualsBase();
         return;
     }
 
@@ -854,18 +886,17 @@ function applyFieldFilters() {
     // Apply filter to visuals
     var allVisuals = document.getElementsByClassName('visual-box');
     var pagesWithMatchingVisuals = new Set();
+    var searchFilter = document.getElementById('search-input').value.toLowerCase();
 
     for (var i = 0; i < allVisuals.length; i++) {
         var visual = allVisuals[i];
-        var visualId = visual.dataset.id;
-
         // Skip if manually hidden
         if (visual.dataset.manuallyHidden === "true") continue;
 
-        // Check all filter conditions
-        var matchesSearch = isMatch(visual, document.getElementById('search-input').value.toLowerCase());
+        // Use helper for field matching
+        var matchesField = checkFieldMatch(visual, matchingVisualIds, null);
+        var matchesSearch = isMatch(visual, searchFilter);
         var matchesVis = matchesVisibilityFilter(visual);
-        var matchesField = matchingVisualIds.has(visualId);
 
         var isVisible = matchesSearch && matchesVis && matchesField;
         setVisualVisibility(visual, isVisible);
@@ -875,15 +906,8 @@ function applyFieldFilters() {
         }
     }
 
-    // Update tab visibility
-    var tabs = document.getElementsByClassName('tab-button');
-    for (var i = 0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        var pageId = tab.id.replace("tab-", "");
-        tab.style.display = pagesWithMatchingVisuals.has(pageId) ? "" : "none";
-    }
-
-    // Switch to first visible page if current page has no visible visuals
+    // Update tab visibility using helper
+    updateTabVisibility(pagesWithMatchingVisuals, false, null);
     switchToFirstVisiblePage(pagesWithMatchingVisuals);
 }
 
@@ -1014,16 +1038,6 @@ function showTableTooltip(e, tableName) {
 function hideTableTooltip() {
     tableTooltip.style.display = 'none';
 }
-
-// Override filterVisuals to include field filtering
-var originalFilterVisuals = filterVisuals;
-filterVisuals = function () {
-    if (selectedFields.size > 0) {
-        applyFieldFilters();
-    } else {
-        originalFilterVisuals();
-    }
-};
 
 // Initialize Fields Pane on load
 initFieldsPane();
