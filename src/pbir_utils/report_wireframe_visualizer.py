@@ -276,6 +276,7 @@ def display_report_wireframes(
                 vdata["id"] = vid
                 vdata["x"] = _parse_coordinate(vdata.get("x", 0))
                 vdata["y"] = _parse_coordinate(vdata.get("y", 0))
+                vdata["z"] = int(_parse_coordinate(vdata.get("z", 0)))
                 vdata["width"] = _parse_coordinate(vdata.get("width", 0))
                 vdata["height"] = _parse_coordinate(vdata.get("height", 0))
                 raw_visuals.append(vdata)

@@ -272,6 +272,7 @@ def extract_visual_info(page_folder: str | Path, include_fields: bool = False) -
         info = {
             "x": position.get("x"),
             "y": position.get("y"),
+            "z": position.get("z", 0),
             "width": position.get("width"),
             "height": position.get("height"),
             "visualType": visual_data.get("visual", {}).get("visualType", "Group"),

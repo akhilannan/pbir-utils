@@ -8,6 +8,8 @@
     - Added filter toggles to show/hide visible or hidden visuals
     - Implemented universal Reset/Undo functionality
     - Visual improvements for toggle buttons and filter states
+    - Modernized UI with glassmorphism, Inter font, and improved interactions
+    - Implemented visual layering (Z-index) based on Power BI visual order
 - **extract-metadata**: Added "Attribute Type" (Column/Measure) to the metadata CSV output
 
 ### Bug Fixes

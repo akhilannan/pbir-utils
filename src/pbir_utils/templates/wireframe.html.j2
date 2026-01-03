@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PBIR Wireframe - {{ report_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         {% include 'wireframe.css' %}
     </style>
@@ -95,9 +98,10 @@
              data-height="{{ visual.height }}"
              data-x="{{ visual.x }}"
              data-y="{{ visual.y }}"
+             data-z="{{ visual.z }}"
              data-parent-group="{{ visual.parentGroupName }}"
              data-fields='{{ field_keys | tojson }}'
-             style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px;">
+             style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px; z-index: {{ visual.z }};">
              {#-
                 Note: Keeping inner formatting simple for readability, 
                 but reducing outer whitespace.

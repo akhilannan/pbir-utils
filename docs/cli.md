@@ -42,6 +42,8 @@ The generated wireframe opens automatically in your default browser and includes
 - **Page Tabs**: Switch between pages with visual count badges
 - **Dark Mode**: Toggle with 🌙 button (preference saved automatically)
 - **Zoom Controls**: Scale 25%-200% for large reports
+- **Pro Layout**: Modern glassmorphic UI with Inter typography
+- **Accurate Layering**: Visuals respect their Z-order from Power BI for correct overlapping
 
 **Visual Interaction:**
 
