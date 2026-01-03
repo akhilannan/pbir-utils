@@ -18,15 +18,17 @@ __all__ = [
     "walk_json_files",
     "process_json_files",
     "traverse_pbir_json",
+    "iter_merged_fields",
+    "FLOAT_PRESERVE_PREFIX",
 ]
 
 # Magic prefix for preserving float precision during JSON round-trips.
 # Floats are loaded as strings with this prefix, then the prefix (and quotes)
 # are removed during write_json to restore the original numeric representation.
-_FLOAT_PRESERVE_PREFIX = "@@__PRESERVE_FLOAT__@@"
+FLOAT_PRESERVE_PREFIX = "@@__PRESERVE_FLOAT__@@"
 _FLOAT_RESTORE_PATTERN = re.compile(
     r'"'
-    + re.escape(_FLOAT_PRESERVE_PREFIX)
+    + re.escape(FLOAT_PRESERVE_PREFIX)
     + r'(-?[0-9]+\.?[0-9]*(?:[eE][+-]?[0-9]+)?)"'
 )
 
@@ -66,7 +68,7 @@ _FILTER_KEYS = frozenset({"filters", "filter", "parameters"})
 
 def _preserve_float(s: str) -> str:
     """Hook for json.load to preserve float precision as a prefixed string."""
-    return _FLOAT_PRESERVE_PREFIX + s
+    return FLOAT_PRESERVE_PREFIX + s
 
 
 def load_json(file_path: str | Path) -> dict:
@@ -279,46 +281,16 @@ def extract_visual_info(page_folder: str | Path, include_fields: bool = False) -
 
         if include_fields:
             fields = {}
-            pending_table = None
-            pending_attr_type = None
 
-            for (
-                table,
-                field,
-                used_in,
-                expression,
-                used_in_detail,
-                attr_type,
-            ) in traverse_pbir_json(visual_data, info["visualType"]):
-                # Case 1: Complete pair
-                if table and field:
-                    if table not in fields:
-                        fields[table] = {"columns": set(), "measures": set()}
-                    if attr_type == "Measure" or expression:
-                        fields[table]["measures"].add(field)
-                    else:
-                        fields[table]["columns"].add(field)
-                    pending_table = None
-
-                # Case 2: Entity only (store for next Property)
-                elif table and not field:
-                    pending_table = table
-                    pending_attr_type = attr_type
-
-                # Case 3: Property only (use stored Entity)
-                elif field and not table and pending_table:
-                    if pending_table not in fields:
-                        fields[pending_table] = {"columns": set(), "measures": set()}
-
-                    # Resolve attribute type
-                    final_attr = attr_type or pending_attr_type
-
-                    if final_attr == "Measure" or expression:
-                        fields[pending_table]["measures"].add(field)
-                    else:
-                        fields[pending_table]["columns"].add(field)
-
-                    pending_table = None
+            for table, field, _, expression, _, attr_type in iter_merged_fields(
+                visual_data, info["visualType"]
+            ):
+                if table not in fields:
+                    fields[table] = {"columns": set(), "measures": set()}
+                if attr_type == "Measure" or expression:
+                    fields[table]["measures"].add(field)
+                else:
+                    fields[table]["columns"].add(field)
 
             # Convert sets to sorted lists
             for table in fields:
@@ -526,3 +498,56 @@ def traverse_pbir_json(
             yield from traverse_pbir_json(
                 value, usage_context, new_usage_detail, attribute_type
             )
+
+
+def iter_merged_fields(
+    data: dict | list,
+    usage_context: str = None,
+) -> Generator[tuple[str, str, str, str | None, str, str], None, None]:
+    """
+    Iterate over merged Entity/Property pairs from PBIR JSON.
+
+    Wraps traverse_pbir_json and handles the pending_table/pending_attr_type
+    merge logic, yielding only complete (table, field) tuples.
+
+    Args:
+        data: The PBIR JSON data to traverse.
+        usage_context: Current context (e.g., visual type, filter, bookmark).
+
+    Yields:
+        tuple: (table, field, used_in, expression, used_in_detail, attr_type)
+               Only yields when both table AND field are resolved.
+    """
+    pending_table = None
+    pending_attr_type = None
+
+    for (
+        table,
+        field,
+        used_in,
+        expression,
+        used_in_detail,
+        attr_type,
+    ) in traverse_pbir_json(data, usage_context):
+        # Case 1: Complete pair (expression rows from entities)
+        if table and field:
+            yield (table, field, used_in, expression, used_in_detail, attr_type)
+            pending_table = None
+
+        # Case 2: Entity only - store for next Property
+        elif table and not field:
+            pending_table = table
+            pending_attr_type = attr_type
+
+        # Case 3: Property only - merge with pending Entity
+        elif field and not table and pending_table:
+            final_attr = attr_type or pending_attr_type
+            yield (
+                pending_table,
+                field,
+                used_in,
+                expression,
+                used_in_detail,
+                final_attr,
+            )
+            pending_table = None

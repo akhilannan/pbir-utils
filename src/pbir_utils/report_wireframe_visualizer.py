@@ -7,8 +7,9 @@ from .common import (
     iter_pages,
     iter_visuals,
     load_json,
-    traverse_pbir_json,
+    iter_merged_fields,
     extract_visual_info,
+    FLOAT_PRESERVE_PREFIX,
 )
 from .metadata_extractor import _get_page_order
 from .console_utils import console
@@ -19,8 +20,8 @@ def _parse_coordinate(value) -> float:
     Parse a coordinate value, handling potential string prefixes.
     """
     if isinstance(value, str):
-        if value.startswith("@@__PRESERVE_FLOAT__@@"):
-            value = value.replace("@@__PRESERVE_FLOAT__@@", "")
+        if value.startswith(FLOAT_PRESERVE_PREFIX):
+            value = value.replace(FLOAT_PRESERVE_PREFIX, "")
     return float(value)
 
 
@@ -33,46 +34,18 @@ def _extract_field_usage(data: dict, context: str, field_usage: dict) -> None:
         context: The context type ("Bookmarks" or "Filters").
         field_usage: Dict to update with field usage counts.
     """
-    pending_table = None
-    pending_attr_type = None
-
-    for (
-        table,
-        field,
-        used_in,
-        expression,
-        used_in_detail,
-        attr_type,
-    ) in traverse_pbir_json(data, context):
-        if table and field:
-            field_key = f"{table}.{field}"
-            if field_key not in field_usage:
-                field_usage[field_key] = {
-                    "bookmark_count": 0,
-                    "filter_count": 0,
-                    "attr_type": attr_type,
-                }
-            if context == "Bookmarks":
-                field_usage[field_key]["bookmark_count"] += 1
-            elif context == "Filters":
-                field_usage[field_key]["filter_count"] += 1
-            pending_table = None
-        elif table and not field:
-            pending_table = table
-            pending_attr_type = attr_type
-        elif field and not table and pending_table:
-            field_key = f"{pending_table}.{field}"
-            if field_key not in field_usage:
-                field_usage[field_key] = {
-                    "bookmark_count": 0,
-                    "filter_count": 0,
-                    "attr_type": attr_type or pending_attr_type,
-                }
-            if context == "Bookmarks":
-                field_usage[field_key]["bookmark_count"] += 1
-            elif context == "Filters":
-                field_usage[field_key]["filter_count"] += 1
-            pending_table = None
+    for table, field, _, _, _, attr_type in iter_merged_fields(data, context):
+        field_key = f"{table}.{field}"
+        if field_key not in field_usage:
+            field_usage[field_key] = {
+                "bookmark_count": 0,
+                "filter_count": 0,
+                "attr_type": attr_type,
+            }
+        if context == "Bookmarks":
+            field_usage[field_key]["bookmark_count"] += 1
+        elif context == "Filters":
+            field_usage[field_key]["filter_count"] += 1
 
 
 def _adjust_visual_positions(visuals: list[dict]) -> list[dict]:

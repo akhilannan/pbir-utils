@@ -3,7 +3,7 @@ import csv
 
 from .common import (
     load_json,
-    traverse_pbir_json,
+    iter_merged_fields,
     iter_pages,
     extract_visual_info,
     find_report_folders,
@@ -138,6 +138,32 @@ def _apply_row_filters(row: dict, filters: dict) -> bool:
     return True
 
 
+def _sort_by_page_order(metadata: list, report_paths: list[str]) -> None:
+    """
+    Sort metadata rows in-place by report name and page order.
+
+    Args:
+        metadata: List of row dicts with 'Report' and 'Page ID' keys.
+        report_paths: List of report folder paths.
+    """
+    # Build page order map for sorting
+    report_page_orders = {}
+    for r_path in report_paths:
+        r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
+        report_page_orders[r_name] = _get_page_order(r_path)
+
+    metadata.sort(
+        key=lambda row: (
+            row["Report"],
+            (
+                report_page_orders.get(row["Report"], []).index(row["Page ID"])
+                if row["Page ID"] in report_page_orders.get(row["Report"], [])
+                else len(report_page_orders.get(row["Report"], [])) + 1
+            ),
+        )
+    )
+
+
 def _extract_metadata_from_file(
     json_file_path: str | Path, filters: dict = None
 ) -> list:
@@ -164,66 +190,26 @@ def _extract_metadata_from_file(
     id = data.get("name", None)
     all_rows = []
 
-    def row_generator():
-        temp_row = None
-        for (
-            table,
-            column,
-            used_in,
-            expression,
-            used_in_detail,
-            attribute_type,  # Unpacked but not currently used in CSV output
-        ) in traverse_pbir_json(data):
-            row = dict(
-                zip(
-                    HEADER_FIELDS,
-                    [
-                        report_name,
-                        page_name,
-                        page_id,
-                        table,
-                        column,
-                        expression,
-                        used_in,
-                        used_in_detail,
-                        id,
-                    ],
-                )
+    # Use iter_merged_fields to get complete (table, field) pairs
+    for table, column, used_in, expression, used_in_detail, _ in iter_merged_fields(
+        data
+    ):
+        row = dict(
+            zip(
+                HEADER_FIELDS,
+                [
+                    report_name,
+                    page_name,
+                    page_id,
+                    table,
+                    column,
+                    expression,
+                    used_in,
+                    used_in_detail,
+                    id,
+                ],
             )
-
-            if expression is not None:
-                # If we have a pending temp_row, yield it first
-                if temp_row is not None:
-                    yield temp_row
-                    temp_row = None
-                yield row
-            else:
-                if temp_row is None:
-                    temp_row = row
-                else:
-                    merged = False
-                    # Check if we can merge into temp_row
-                    if row["Table"] and not temp_row["Table"]:
-                        temp_row["Table"] = row["Table"]
-                        merged = True
-                    elif row["Column or Measure"] and not temp_row["Column or Measure"]:
-                        temp_row["Column or Measure"] = row["Column or Measure"]
-                        merged = True
-
-                    if merged:
-                        # If we now have both, yield and reset
-                        if temp_row["Table"] and temp_row["Column or Measure"]:
-                            yield temp_row
-                            temp_row = None
-                    else:
-                        # Cannot merge, yield previous and start new
-                        yield temp_row
-                        temp_row = row
-
-        if temp_row is not None:
-            yield temp_row
-
-    for row in row_generator():
+        )
         if _apply_row_filters(row, filters):
             all_rows.append(row)
 
@@ -393,22 +379,7 @@ def _export_visual_metadata(
                 if _apply_row_filters(row, filters):
                     metadata.append(row)
 
-    # Build page order map for sorting
-    report_page_orders = {}
-    for r_path in report_paths:
-        r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
-        report_page_orders[r_name] = _get_page_order(r_path)
-
-    metadata.sort(
-        key=lambda row: (
-            row["Report"],
-            (
-                report_page_orders.get(row["Report"], []).index(row["Page ID"])
-                if row["Page ID"] in report_page_orders.get(row["Report"], [])
-                else len(report_page_orders.get(row["Report"], [])) + 1
-            ),
-        )
-    )
+    _sort_by_page_order(metadata, report_paths)
 
     try:
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
@@ -428,29 +399,8 @@ def _export_attribute_metadata(
 
     metadata = _consolidate_metadata_from_directory(directory_path, filters)
 
-    # Build page order map for sorting
     all_report_paths = find_report_folders(directory_path)
-    report_paths = {}
-    for r_path in all_report_paths:
-        r_name = _extract_report_name(Path(r_path) / "definition" / "report.json")
-        report_paths[r_name] = r_path
-
-    report_page_orders = {
-        report_name: _get_page_order(report_path)
-        for report_name, report_path in report_paths.items()
-    }
-
-    # Sort by Report name alphabetically, then by Page ID based on the page order
-    metadata.sort(
-        key=lambda row: (
-            row["Report"],
-            (
-                report_page_orders.get(row["Report"], []).index(row["Page ID"])
-                if row["Page ID"] in report_page_orders.get(row["Report"], [])
-                else len(report_page_orders.get(row["Report"], [])) + 1
-            ),
-        )
-    )
+    _sort_by_page_order(metadata, all_report_paths)
 
     try:
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
