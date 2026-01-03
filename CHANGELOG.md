@@ -8,6 +8,7 @@
     - Added filter toggles to show/hide visible or hidden visuals
     - Implemented universal Reset/Undo functionality
     - Visual improvements for toggle buttons and filter states
+- **extract-metadata**: Added "Attribute Type" (Column/Measure) to the metadata CSV output
 
 ### Bug Fixes
 - **sanitize**: Improved summary mode messaging

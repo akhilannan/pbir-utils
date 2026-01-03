@@ -16,6 +16,7 @@ HEADER_FIELDS = [
     "Page ID",
     "Table",
     "Column or Measure",
+    "Attribute Type",
     "Expression",
     "Used In",
     "Used In Detail",
@@ -201,9 +202,14 @@ def _extract_metadata_from_file(
     all_rows = []
 
     # Use iter_merged_fields to get complete (table, field) pairs
-    for table, column, used_in, expression, used_in_detail, _ in iter_merged_fields(
-        data
-    ):
+    for (
+        table,
+        column,
+        used_in,
+        expression,
+        used_in_detail,
+        attr_type,
+    ) in iter_merged_fields(data):
         row = dict(
             zip(
                 HEADER_FIELDS,
@@ -213,6 +219,7 @@ def _extract_metadata_from_file(
                     page_id,
                     table,
                     column,
+                    attr_type,
                     expression,
                     used_in,
                     used_in_detail,
