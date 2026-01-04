@@ -1,0 +1,141 @@
+
+<div class="pbir-wireframe">
+<header>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <h1>{{ report_name }}</h1>
+        <input type="text" id="search-input" class="search-input" placeholder="Search visuals (ID, Type)..." oninput="filterVisuals()">
+        <div class="visibility-filter">
+            <button id="filter-hidden" class="filter-toggle filter-hidden" onclick="toggleVisibilityFilter('hidden')" title="Show only hidden visuals">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+                Hidden
+            </button>
+            <button id="filter-visible" class="filter-toggle" onclick="toggleVisibilityFilter('visible')" title="Show only visible visuals">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Visible
+            </button>
+        </div>
+    </div>
+    <div class="controls-group">
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+            <span class="zoom-level" id="zoom-level">100%</span>
+            <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+            <button class="zoom-btn" onclick="resetZoom()" title="Reset Zoom">↻</button>
+        </div>
+        <button id="undo-btn" class="icon-button" onclick="undoLastAction()" title="Undo Last Action" disabled>↩</button>
+        <button id="reset-btn" class="icon-button" onclick="resetAllFilters()" title="Reset All Filters" disabled>🔄</button>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode" id="theme-btn">🌙</button>
+        <span id="toast" class="toast">ID Copied!</span>
+    </div>
+</header>
+<div class="tabs" id="tabs-container">
+    {%- for page in pages %}
+    {%- set visual_types = {} %}
+    {%- for type, visuals in page.visuals|groupby('visualType') %}
+        {%- set _ = visual_types.update({type: visuals|length}) %}
+    {%- endfor %}
+    <button class="tab-button {% if page.id == active_page_id %}active{% endif %} {% if page.is_hidden %}hidden-page{% endif %}" 
+            onclick="openPage('{{ page.id }}')"
+            oncontextmenu="hidePage(event, '{{ page.id }}')"
+            id="tab-{{ page.id }}"
+            data-page-name="{{ page.display_name }}"
+            data-visual-count="{{ page.visuals | length }}"
+            data-visual-types='{{ visual_types | tojson }}'
+            data-is-hidden="{{ page.is_hidden }}"
+            data-page-width="{{ page.width }}"
+            data-page-height="{{ page.height }}"
+            onmouseenter="showPageTooltip(event, this)"
+            onmouseleave="hidePageTooltip()">
+        {{ page.display_name }}
+        <span class="visual-count">{{ page.visuals | length }}</span>
+    </button>
+    {%- endfor %}
+    <span class="hidden-pages-pill" id="hidden-pages-pill" onclick="resetHiddenPages()" title="Click to restore hidden pages"></span>
+</div>
+
+<div class="main-content">
+<div class="content-area">
+    {%- for page in pages %}
+    <div id="{{ page.id }}" class="page-container {% if page.id == active_page_id %}active{% endif %}" 
+         data-page-name="{{ page.display_name }}"
+         style="width: {{ page.width }}px; height: {{ page.height }}px;">
+        
+        {%- for visual in page.visuals %}
+            {#- Build a list of field keys for this visual -#}
+            {%- set field_keys = [] %}
+            {%- for table_name, table_data in visual.fields.items() %}
+                {%- for col in table_data.columns %}
+                    {%- set _ = field_keys.append(table_name ~ '.' ~ col) %}
+                {%- endfor %}
+                {%- for meas in table_data.measures %}
+                    {%- set _ = field_keys.append(table_name ~ '.' ~ meas) %}
+                {%- endfor %}
+            {%- endfor %}
+        <div class="visual-box {% if visual.isHidden %}hidden{% endif %}"
+             id="visual-{{ visual.id }}"
+             data-id="{{ visual.id }}"
+             data-type="{{ visual.visualType }}"
+             data-width="{{ visual.width }}"
+             data-height="{{ visual.height }}"
+             data-x="{{ visual.x }}"
+             data-y="{{ visual.y }}"
+             data-z="{{ visual.z }}"
+             data-parent-group="{{ visual.parentGroupName }}"
+             data-fields='{{ field_keys | tojson }}'
+             style="left: {{ visual.x }}px; top: {{ visual.y }}px; width: {{ visual.width }}px; height: {{ visual.height }}px; z-index: {{ visual.z }};">
+             {#-
+                Note: Keeping inner formatting simple for readability, 
+                but reducing outer whitespace.
+             -#}
+            <div class="visual-label">
+                {{ visual.visualType }}
+            </div>
+        </div>
+        {%- endfor %}
+    </div>
+    {%- endfor %}
+</div>
+
+<div class="fields-pane collapsed" id="fields-pane">
+    <div class="fields-pane-resize" id="fields-pane-resize" onmousedown="initFieldsPaneResize(event)"></div>
+    <div class="fields-pane-header">
+        <div class="fields-pane-title">
+            <span>Fields</span>
+        </div>
+        <input type="text" id="fields-search" class="fields-search" placeholder="Search tables, columns..." oninput="searchFields()">
+    </div>
+    <div class="fields-list" id="fields-list">
+        <!-- Populated by JavaScript -->
+    </div>
+    <div class="fields-pane-footer">
+        <span class="selected-count" id="selected-count">0 selected</span>
+        <button class="clear-fields-btn" id="clear-fields-btn" onclick="clearFieldFilters()" disabled>Clear All</button>
+    </div>
+</div>
+</div>
+
+<!-- Fields Pane Toggle Button (Edge) - outside main-content for proper scrollbar -->
+<button class="fields-pane-toggle pane-collapsed" id="fields-pane-btn" onclick="toggleFieldsPane()" title="Toggle Fields Pane">
+    <svg class="toggle-icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+    <svg class="toggle-icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</button>
+
+<footer>
+    Generated by PBIR-Utils
+</footer>
+</div>
+
+<div id="tooltip" class="base-tooltip tooltip"></div>
+<div id="page-tooltip" class="base-tooltip page-tooltip"></div>
+<div id="field-tooltip" class="base-tooltip field-tooltip"></div>
+<div id="table-tooltip" class="base-tooltip table-tooltip"></div>

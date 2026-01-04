@@ -10,6 +10,56 @@ The `pbir-utils` command-line interface provides access to all utilities after i
 !!! tip "Summary Mode"
     Use the `--summary` flag with any command to get concise count-based output instead of detailed messages.
 
+## UI (Web Interface)
+
+Launch a local web-based UI client for browsing reports, visualizing wireframes, and executing actions interactively.
+
+!!! note "Optional Dependencies"
+    UI requires additional dependencies. Install with: `pip install pbir-utils[ui]`
+
+```bash
+# Launch UI (opens browser automatically)
+# Alias: pbir-utils serve
+pbir-utils ui
+
+# Auto-open a specific report
+pbir-utils ui "C:\Reports\MyReport.Report"
+
+# From inside a .Report folder (auto-detected)
+cd "C:\Reports\MyReport.Report"
+pbir-utils ui
+
+# Custom port
+pbir-utils ui --port 9000
+
+# Don't auto-open browser
+pbir-utils ui --no-browser
+
+# Custom host (for remote access)
+pbir-utils ui --host 0.0.0.0 --port 8080
+```
+
+### UI Features
+
+| Feature | Description |
+|---------|-------------|
+| **Report Browser** | Navigate filesystem to select `.Report` folders |
+| **Wireframe Viewer** | Full wireframe visualization with zoom, filters, fields pane |
+| **Action Execution** | Run sanitize actions with real-time progress streaming |
+| **CSV Export** | Download attribute and visual metadata as CSV |
+| **Auto-Reload** | Wireframe refreshes automatically after successful actions |
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `report_path` | Path to auto-open on launch (optional; auto-detects `.Report` from CWD) |
+| `--port` | Port to bind to (default: 8765) |
+| `--host` | Host to bind to (default: 127.0.0.1) |
+| `--no-browser` | Don't automatically open the browser |
+
+---
+
 ## Extract Metadata
 
 Export attribute metadata from PBIR to CSV. Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.

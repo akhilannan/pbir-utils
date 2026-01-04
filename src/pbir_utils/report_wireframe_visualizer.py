@@ -201,26 +201,30 @@ def _build_fields_index(
     }
 
 
-def display_report_wireframes(
+def get_wireframe_data(
     report_path: str,
     pages: list = None,
     visual_types: list = None,
     visual_ids: list = None,
     show_hidden: bool = True,
-) -> None:
+) -> dict | None:
     """
-    Generate and display wireframes using static HTML.
+    Extract wireframe data from a PBIR report.
+
+    This is the data-only function used by the API. It returns a dict suitable
+    for JSON serialization instead of rendering HTML.
 
     Args:
         report_path (str): Path to the report root folder.
         pages (list, optional): List of page IDs/Names to include.
         visual_types (list, optional): List of visual types to include.
         visual_ids (list, optional): List of visual IDs to include.
-        show_hidden (bool, optional): Show hidden visuals. Defaults to True.
-    """
-    console.print_action_heading("Generating report wireframes", False)
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
+        show_hidden (bool, optional): Include hidden visuals. Defaults to True.
 
+    Returns:
+        dict: Wireframe data with keys: report_name, pages, fields_index, active_page_id.
+        None: If no pages found or no pages match filters.
+    """
     pages_data = []
 
     # 1. Extract Data
@@ -295,12 +299,11 @@ def display_report_wireframes(
                     "visuals": adjusted_visuals,
                 }
             )
-        except Exception as e:
-            console.print_error(f"Error processing page {page_id}: {e}")
+        except Exception:  # nosec B110
+            pass  # Skip problematic pages silently for API use
 
     if not pages_data:
-        console.print_warning("No pages found in report.")
-        return
+        return None
 
     # 2. Filter Data
     filtered_pages = _apply_wireframe_filters(
@@ -308,8 +311,7 @@ def display_report_wireframes(
     )
 
     if not filtered_pages:
-        console.print_warning("No pages match the given filters.")
-        return
+        return None
 
     # 3. Sort Pages and Get Active Page
     active_page_id = None
@@ -330,7 +332,6 @@ def display_report_wireframes(
             page["visuals"] = [v for v in page["visuals"] if not v["isHidden"]]
 
     # 5. Build Fields Index for the Fields Pane
-    # Includes fields from visuals, bookmarks, and page filters
     fields_index = _build_fields_index(filtered_pages, field_usage)
 
     # Fallback active page to first page if not found or not in filtered pages
@@ -338,29 +339,63 @@ def display_report_wireframes(
     if not active_page_id or active_page_id not in page_ids:
         active_page_id = page_ids[0] if page_ids else None
 
-    # 6. Render Template
+    report_name = Path(report_path).name.replace(".Report", "")
+
+    return {
+        "report_name": report_name,
+        "pages": filtered_pages,
+        "fields_index": fields_index,
+        "active_page_id": active_page_id,
+    }
+
+
+def display_report_wireframes(
+    report_path: str,
+    pages: list = None,
+    visual_types: list = None,
+    visual_ids: list = None,
+    show_hidden: bool = True,
+) -> None:
+    """
+    Generate and display wireframes using static HTML.
+
+    Args:
+        report_path (str): Path to the report root folder.
+        pages (list, optional): List of page IDs/Names to include.
+        visual_types (list, optional): List of visual types to include.
+        visual_ids (list, optional): List of visual IDs to include.
+        show_hidden (bool, optional): Show hidden visuals. Defaults to True.
+    """
+    console.print_action_heading("Generating report wireframes", False)
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+    # Get wireframe data using the extracted function
+    data = get_wireframe_data(report_path, pages, visual_types, visual_ids, show_hidden)
+
+    if data is None:
+        console.print_warning("No pages found or no pages match the given filters.")
+        return
+
+    # Render Template
     try:
         template_dir = Path(__file__).parent / "templates"
+        static_dir = Path(__file__).parent / "static"
         env = Environment(
-            loader=FileSystemLoader(template_dir),
+            loader=FileSystemLoader([template_dir, static_dir]),
             autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
         )
         template = env.get_template("wireframe.html.j2")
 
-        report_name = Path(report_path).name.replace(".Report", "")
-
         html_content = template.render(
-            report_name=report_name,
-            pages=filtered_pages,
-            fields_index=fields_index,
-            active_page_id=active_page_id,
+            report_name=data["report_name"],
+            pages=data["pages"],
+            fields_index=data["fields_index"],
+            active_page_id=data["active_page_id"],
         )
 
-        # 6. Save and Open
-        # We create a temporary file that persists so the browser can open it
-        # Using delete=False
+        # Save and Open
         fd, path = tempfile.mkstemp(
-            suffix=".html", prefix=f"pbir_wireframe_{report_name}_"
+            suffix=".html", prefix=f"pbir_wireframe_{data['report_name']}_"
         )
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(html_content)

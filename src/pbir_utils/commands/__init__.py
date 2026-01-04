@@ -11,6 +11,7 @@ from . import (
     measures,
     filters,
     pages,
+    ui,
 )
 
 # All command modules for registration
@@ -23,6 +24,7 @@ ALL_COMMANDS = [
     measures,
     filters,
     pages,
+    ui,
 ]
 
 

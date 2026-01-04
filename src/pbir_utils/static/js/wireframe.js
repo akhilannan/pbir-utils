@@ -1,3 +1,6 @@
+// Mode detection: API mode loads data dynamically from backend
+var API_MODE = typeof API_MODE !== 'undefined' ? API_MODE : false;
+
 var currentZoom = 1;
 var minZoom = 0.25;
 var maxZoom = 2;
@@ -192,14 +195,15 @@ function resetHiddenPages() {
 
 function copyVisualId(visualId) {
     navigator.clipboard.writeText(visualId).then(function () {
-        showToast();
+        showToast('ID Copied!');
     }, function (err) {
         console.error('Async: Could not copy text: ', err);
     });
 }
 
-function showToast() {
+function showToast(message) {
     var toast = document.getElementById("toast");
+    if (message) toast.textContent = message;
     toast.className = "toast show";
     setTimeout(function () { toast.className = toast.className.replace("show", ""); }, 2000);
 }
@@ -1055,11 +1059,8 @@ function hideTableTooltip() {
     tableTooltip.style.display = 'none';
 }
 
-// Initialize Fields Pane on load
-initFieldsPane();
-
 // Event Delegation for Visual Boxes (performance optimization)
-(function setupVisualEventDelegation() {
+function setupVisualEventDelegation() {
     var contentArea = document.querySelector('.content-area');
     if (!contentArea) return;
 
@@ -1096,4 +1097,75 @@ initFieldsPane();
             hideTooltip();
         }
     });
+}
+
+/* Fields Pane Resize Functionality */
+var isResizingFieldsPane = false;
+var fieldsPaneStartX = 0;
+var fieldsPaneStartWidth = 0;
+
+function initFieldsPaneResize(e) {
+    var pane = document.getElementById('fields-pane');
+    if (!pane || pane.classList.contains('collapsed')) return;
+
+    isResizingFieldsPane = true;
+    fieldsPaneStartX = e.clientX;
+    fieldsPaneStartWidth = pane.getBoundingClientRect().width;
+
+    // Disable transitions for smooth dragging
+    pane.classList.add('resizing');
+    var btn = document.getElementById('fields-pane-btn');
+    if (btn) btn.classList.add('resizing');
+    document.getElementById('fields-pane-resize').classList.add('active');
+
+    document.body.style.cursor = 'ew-resize';
+    e.preventDefault();
+}
+
+document.addEventListener('mousemove', function (e) {
+    if (!isResizingFieldsPane) return;
+
+    // Dragging left edge: moving left increases width, moving right decreases width
+    var newWidth = fieldsPaneStartWidth - (e.clientX - fieldsPaneStartX);
+
+    // Constraints (matching CSS min-width and max-width)
+    if (newWidth < 200) newWidth = 200;
+    if (newWidth > 600) newWidth = 600;
+
+    document.documentElement.style.setProperty('--fields-pane-width', newWidth + 'px');
+});
+
+document.addEventListener('mouseup', function (e) {
+    if (!isResizingFieldsPane) return;
+
+    isResizingFieldsPane = false;
+    document.body.style.cursor = '';
+
+    // Re-enable transitions
+    var pane = document.getElementById('fields-pane');
+    if (pane) pane.classList.remove('resizing');
+    var btn = document.getElementById('fields-pane-btn');
+    if (btn) btn.classList.remove('resizing');
+    var handle = document.getElementById('fields-pane-resize');
+    if (handle) handle.classList.remove('active');
+
+    // Save width to localStorage
+    var width = getComputedStyle(document.documentElement).getPropertyValue('--fields-pane-width').trim();
+    localStorage.setItem('wireframe-fields-pane-width', width);
+});
+
+// Restore saved fields pane width
+(function () {
+    var savedWidth = localStorage.getItem('wireframe-fields-pane-width');
+    if (savedWidth) {
+        document.documentElement.style.setProperty('--fields-pane-width', savedWidth);
+    }
 })();
+
+// Initialize based on mode
+if (!API_MODE) {
+    // Static mode: data is embedded by Jinja, initialize immediately
+    initFieldsPane();
+    setupVisualEventDelegation();
+}
+

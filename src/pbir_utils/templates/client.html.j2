@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBIR-Utils UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        {% include 'css/wireframe.css' %}
+
+        /* Client UI Additions */
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: var(--card-bg);
+        }
+
+        [data-theme="dark"] {
+            --sidebar-bg: var(--card-bg);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-primary);
+            background-color: var(--bg-color);
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: 150px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+            position: relative;
+            transition: width 0.05s linear;
+            box-shadow: var(--shadow-md);
+            z-index: 50;
+        }
+        
+        .sidebar.transition-enabled {
+             transition: width 0.25s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+        }
+
+        .sidebar-resizer {
+            position: absolute;
+            top: 0;
+            right: -3px;
+            bottom: 0;
+            width: 6px;
+            cursor: col-resize;
+            z-index: 100;
+            background: transparent;
+            transition: background 0.2s;
+        }
+
+        .sidebar-resizer:hover, .sidebar-resizer.resizing {
+            background: var(--accent-color);
+            opacity: 0.5;
+        }
+
+        .sidebar.collapsed .sidebar-section {
+            display: none;
+        }
+
+        /* Sidebar Toggle Button */
+        .sidebar-toggle {
+            position: absolute;
+            left: var(--sidebar-width);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 60px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            z-index: 90;
+            transition: left 0.25s ease, background 0.15s, color 0.15s;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .sidebar.collapsed + .sidebar-toggle {
+            left: 0;
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .sidebar.collapsed + .sidebar-toggle:hover {
+            background: var(--accent-hover);
+        }
+
+        .sidebar-toggle .chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar.collapsed + .sidebar-toggle .chevron {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-section {
+            padding: 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: flex 0.25s ease;
+            min-height: 0;
+        }
+
+        .sidebar-section:not(.collapsed) {
+            flex: 1;
+        }
+
+        .sidebar-section.collapsed {
+            flex: 0 0 auto;
+        }
+
+        .sidebar-section-header {
+            padding: 12px 16px;
+            margin: 0;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.02);
+        }
+
+        .sidebar-section-header:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .sidebar-section-header .chevron {
+            transition: transform 0.2s ease;
+            font-size: 9px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section-header .chevron {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-section.collapsed .sidebar-section-header .chevron {
+            transform: rotate(0deg);
+        }
+
+        .sidebar-section-header .section-title {
+            flex: 1;
+        }
+
+        .sidebar-section-content {
+            overflow-y: auto;
+            flex: 1;
+            padding: 0;
+        }
+
+        .sidebar-section.collapsed .sidebar-section-content {
+            display: none;
+        }
+
+        /* File Browser */
+        .file-browser {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-browser .sidebar-section-content {
+            flex: 1;
+            overflow-y: auto;
+            max-height: none;
+        }
+
+        .file-browser.collapsed .sidebar-section-content {
+            max-height: 0;
+        }
+
+        .file-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            border-radius: 6px;
+            margin: 2px 8px;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .file-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .file-item.active {
+            background: var(--accent-color);
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .file-item.report {
+            font-weight: 500;
+        }
+
+        .breadcrumb {
+            padding: 8px 16px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 4px;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+
+        /* Actions Panel */
+        .actions-panel .sidebar-section-content {
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
+
+        .action-item {
+            padding: 6px 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .action-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .action-item input[type="checkbox"] {
+            margin: 0;
+            accent-color: var(--accent-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .action-btn.primary {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-btn.primary:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .action-btn.secondary {
+            background: transparent;
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .action-btn.secondary:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        [data-theme="dark"] .action-btn.secondary {
+            background: transparent !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        [data-theme="dark"] .action-btn.secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--accent-color) !important;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .action-separator {
+            padding: 12px 16px 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .action-item.additional {
+            opacity: 0.9;
+        }
+
+        .action-item.additional label {
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .config-indicator {
+            display: none;
+            padding: 2px 6px;
+            font-size: 10px;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+            cursor: help;
+        }
+
+        /* Export Buttons */
+        .export-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .export-btn {
+            padding: 8px 12px;
+            font-size: 13px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .export-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Content */
+        .main-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Output Console */
+        .output-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 200px;
+            min-height: 0;
+            flex-shrink: 0;
+            overflow: visible;
+            transition: height 0.25s cubic-bezier(0.2, 0, 0.2, 1);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            z-index: 80;
+        }
+
+        .output-panel.collapsed {
+            height: 0 !important;
+            border-top: none;
+        }
+
+        /* Hide content when collapsed, but keep toggle visible */
+        .output-panel.collapsed > .output-header,
+        .output-panel.collapsed > .output-content,
+        .output-panel.collapsed > .output-resizer {
+            display: none;
+        }
+
+        .output-resizer {
+            height: 6px;
+            background: transparent;
+            cursor: row-resize;
+            position: absolute;
+            top: -3px; 
+            left: 0;
+            right: 0;
+            z-index: 100;
+            transition: background 0.2s;
+        }
+
+        .output-resizer:hover, .output-resizer.resizing {
+            background: var(--accent-color);
+            opacity: 0.5;
+        }
+
+        /* Output Toggle Button */
+        .output-toggle {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 20px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            z-index: 90;
+            transition: all 0.2s;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+
+        .output-panel.collapsed .output-toggle {
+             border-bottom: 1px solid var(--border-color);
+             background: var(--accent-color);
+             color: white;
+             border-color: var(--accent-color);
+        }
+
+        .output-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .output-panel.collapsed .output-toggle:hover {
+            background: var(--accent-hover);
+        }
+        
+        /* Rotate chevron based on state */
+        .output-toggle .chevron {
+            transition: transform 0.2s ease;
+            transform: rotate(180deg); 
+        }
+        
+        .output-panel.collapsed .output-toggle .chevron {
+            transform: rotate(0deg);
+        }
+
+        .output-header {
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            user-select: none;
+            background: rgba(0,0,0,0.01);
+        }
+
+        .output-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .output-header h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .output-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.4); 
+        }
+        
+        [data-theme="dark"] .output-content {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .output-panel.collapsed .output-content {
+            display: none;
+        }
+
+        .output-line {
+            padding: 2px 0;
+        }
+
+        .output-line.success, .output-line.cleared { color: var(--success-color, #22c55e); }
+        .output-line.warning, .output-line.dry_run { color: var(--warning-color, #f59e0b); }
+        .output-line.error { color: var(--error-color, #ef4444); }
+        .output-line.info { color: var(--accent-color); }
+
+        /* Dirty State Banner */
+        .dirty-banner {
+            display: none;
+            padding: 8px 16px;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .dirty-banner {
+            background: #78350f;
+            color: #fef3c7;
+        }
+
+        /* Welcome State */
+        .welcome-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .welcome-state h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .welcome-state p {
+            font-size: 14px;
+        }
+
+        /* Wireframe container for API mode */
+        .wireframe-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .wireframe-container header {
+            position: relative;
+        }
+
+        .wireframe-container .main-content {
+            flex: 1;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- File Browser -->
+            <div class="sidebar-section file-browser" id="section-reports">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-reports')">
+                    <span class="chevron">▶</span>
+                    <span class="section-title">📁 REPORTS</span>
+                </div>
+                <div class="sidebar-section-content">
+                    <div class="breadcrumb" id="breadcrumb"></div>
+                    <div id="file-list"></div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="sidebar-section actions-panel" id="section-actions">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')">
+                    <span class="chevron">▶</span>
+                    <span class="section-title">⚡ ACTIONS</span>
+                    <span class="config-indicator" id="config-indicator"></span>
+                </div>
+                <div class="sidebar-section-content">
+                    <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; position: sticky; top: 0; background: var(--sidebar-bg); z-index: 1;">
+                        <button class="action-btn primary" onclick="runActions(false)" id="run-btn" disabled>▶ Run</button>
+                        <button class="action-btn secondary" onclick="runActions(true)" id="dry-run-btn" disabled>👁 Dry Run</button>
+                    </div>
+                    <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
+                        <input type="file" id="config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomConfig(this)">
+                        <button class="export-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center;">
+                            📄 Load Custom Config
+                        </button>
+                        <button class="export-btn" id="reset-config-btn" onclick="resetConfig()" style="width: 100%; justify-content: center; margin-top: 4px; display: none;">
+                            ↩ Reset to Defaults
+                        </button>
+                    </div>
+                    <div id="actions-list"></div>
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="sidebar-section" id="section-export">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')">
+                    <span class="chevron">▶</span>
+                    <span class="section-title">📥 EXPORT</span>
+                </div>
+                <div class="sidebar-section-content" style="padding: 8px 12px;">
+                    <div class="export-buttons">
+                        <button class="export-btn" onclick="downloadCSV('metadata')" id="export-meta-btn" disabled>
+                            📄 Attributes CSV
+                        </button>
+                        <button class="export-btn" onclick="downloadCSV('visuals')" id="export-visuals-btn" disabled>
+                            📊 Visuals CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-resizer" onmousedown="initSidebarResize(event)"></div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+
+        <!-- Main Content -->
+        <main class="main-content-wrapper">
+            <div id="dirty-banner" class="dirty-banner"></div>
+
+            <!-- Wireframe Container (populated dynamically) -->
+            <div id="wireframe-container" class="wireframe-container">
+                <div class="welcome-state" id="welcome-state">
+                    <h2>PBIR-Utils</h2>
+                    <p>Select a .Report folder from the sidebar to begin</p>
+                </div>
+            </div>
+
+            <!-- Output Console -->
+            <div class="output-panel" id="output-panel">
+                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+                <div class="output-resizer" id="output-resizer" onmousedown="initOutputResize(event)"></div>
+                <div class="output-header">
+                    <div class="output-header-left">
+                        <h4>📋 Output</h4>
+                    </div>
+                    <button class="export-btn" onclick="clearOutput(); event.stopPropagation();" style="padding: 4px 8px;">Clear</button>
+                </div>
+                <div class="output-content" id="output-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // API Mode flag - client.js will set this
+        var API_MODE = true;
+        var fieldsIndex = {};
+        var activePageId = null;
+        var currentReportPath = null;
+        var initialReportPath = {{ initial_report | tojson if initial_report else 'null' }};
+
+        // Include wireframe.js functions
+        {% include 'js/wireframe.js' %}
+    </script>
+    <script>
+        {% include 'js/client.js' %}
+    </script>
+</body>
+</html>

@@ -31,9 +31,16 @@ Homepage = "https://github.com/akhilannan/pbir-utils"
 pbir-utils = "pbir_utils.cli:main"
 
 [project.optional-dependencies]
+ui = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sse-starlette",
+    "python-multipart",
+]
 dev = [
     "pytest",
     "pytest-cov",
+    "httpx",
     "ruff",
     "black",
     "bandit",
@@ -49,6 +56,6 @@ docs = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-pbir_utils = ["defaults/*.yaml", "py.typed"]
+pbir_utils = ["defaults/*.yaml", "templates/*", "static/css/*", "static/js/*", "py.typed"]
 
 [tool.setuptools_scm]

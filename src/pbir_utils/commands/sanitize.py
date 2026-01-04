@@ -177,10 +177,16 @@ def handle(args):
                 ActionSpec(name=action_name, implementation=action_name)
             )
 
+    # Build merged options: start with config options, override with CLI args
+    merged_options = dict(config.options)
+    merged_options["dry_run"] = args.dry_run  # CLI always overrides
+    if args.summary:  # Only override if explicitly set via CLI
+        merged_options["summary"] = args.summary
+
     run_config = SanitizeConfig(
         actions=action_specs,
         definitions=config.definitions,
-        options={"dry_run": args.dry_run, "summary": args.summary},
+        options=merged_options,
     )
 
     # Run sanitization with the full config
