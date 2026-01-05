@@ -279,15 +279,27 @@ async def run_actions_stream(
 
 
 @router.get("/metadata/csv")
-async def download_metadata_csv(report_path: str):
-    """Download attribute metadata as CSV."""
+async def download_metadata_csv(report_path: str, visual_ids: str = None):
+    """
+    Download attribute metadata as CSV.
+
+    Args:
+        report_path: Path to the PBIR report folder.
+        visual_ids: Optional comma-separated list of visual IDs to filter by (WYSIWYG export).
+    """
     from pbir_utils.metadata_extractor import (
         _consolidate_metadata_from_directory,
         HEADER_FIELDS,
     )
 
+    # Build filters from visual_ids if provided (WYSIWYG filtered export)
+    # Note: HEADER_FIELDS uses "ID" for the visual identifier
+    filters = None
+    if visual_ids:
+        filters = {"ID": set(visual_ids.split(","))}
+
     metadata = await run_in_threadpool(
-        _consolidate_metadata_from_directory, report_path
+        _consolidate_metadata_from_directory, report_path, filters
     )
 
     if not metadata:
@@ -307,11 +319,20 @@ async def download_metadata_csv(report_path: str):
 
 
 @router.get("/visuals/csv")
-async def download_visuals_csv(report_path: str):
-    """Download visual metadata as CSV."""
+async def download_visuals_csv(report_path: str, visual_ids: str = None):
+    """
+    Download visual metadata as CSV.
+
+    Args:
+        report_path: Path to the PBIR report folder.
+        visual_ids: Optional comma-separated list of visual IDs to filter by (WYSIWYG export).
+    """
     from pbir_utils.common import iter_pages, extract_visual_info
     from pbir_utils.metadata_extractor import VISUAL_HEADER_FIELDS
     from pathlib import Path
+
+    # Parse visual IDs filter (for WYSIWYG filtered export)
+    visual_id_set = set(visual_ids.split(",")) if visual_ids else None
 
     def extract_visuals():
         metadata = []
@@ -322,6 +343,9 @@ async def download_visuals_csv(report_path: str):
             visuals_info = extract_visual_info(page_folder)
 
             for visual_id, info in visuals_info.items():
+                # Skip if filtering and this visual not in filter (WYSIWYG)
+                if visual_id_set and visual_id not in visual_id_set:
+                    continue
                 metadata.append(
                     {
                         "Report": report_name,

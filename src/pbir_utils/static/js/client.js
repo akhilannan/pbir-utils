@@ -475,14 +475,26 @@ async function runActions(dryRun) {
 
 // ============ CSV Export ============
 
-function downloadCSV(type) {
+function downloadCSV(type, filteredOnly) {
     if (!currentReportPath) return;
 
     var url = '/api/reports/' + (type === 'visuals' ? 'visuals' : 'metadata') + '/csv' +
         '?report_path=' + encodeURIComponent(currentReportPath);
 
+    // Add visual IDs filter if exporting filtered view (WYSIWYG)
+    var isFiltered = false;
+    if (filteredOnly && typeof getVisibleVisualIds === 'function' && typeof hasActiveFilters === 'function') {
+        if (hasActiveFilters()) {
+            var visibleIds = getVisibleVisualIds();
+            if (visibleIds.length > 0) {
+                url += '&visual_ids=' + encodeURIComponent(visibleIds.join(','));
+                isFiltered = true;
+            }
+        }
+    }
+
     window.open(url, '_blank');
-    appendOutput('info', 'Downloading ' + type + ' CSV...');
+    appendOutput('info', 'Downloading ' + type + ' CSV' + (isFiltered ? ' (filtered)' : '') + '...');
 }
 
 // ============ Output Console ============

@@ -1162,6 +1162,40 @@ document.addEventListener('mouseup', function (e) {
     }
 })();
 
+/**
+ * Returns an array of visual IDs that are currently visible (not filtered out).
+ * Used for WYSIWYG CSV export - exports only what the user sees.
+ */
+function getVisibleVisualIds() {
+    var visibleIds = [];
+    getCachedVisuals().forEach(function (visual) {
+        // Skip manually hidden visuals
+        if (visual.dataset.manuallyHidden === "true") return;
+
+        // Skip filtered out visuals (opacity 0.1 or 0 means hidden by filter)
+        if (visual.style.opacity === "0.1" || visual.style.opacity === "0") return;
+
+        // Skip visuals on manually hidden pages
+        var pageId = visual.parentElement.id;
+        if (hiddenPagesStack.indexOf(pageId) !== -1) return;
+
+        visibleIds.push(visual.dataset.id);
+    });
+    return visibleIds;
+}
+
+/**
+ * Checks if any filters are currently active that would limit visible visuals.
+ */
+function hasActiveFilters() {
+    return document.getElementById('search-input').value !== '' ||
+        document.getElementById('fields-search').value !== '' ||
+        visibilityFilter !== null ||
+        selectedFields.size > 0 ||
+        hiddenStack.length > 0 ||
+        hiddenPagesStack.length > 0;
+}
+
 // Initialize based on mode
 if (!API_MODE) {
     // Static mode: data is embedded by Jinja, initialize immediately

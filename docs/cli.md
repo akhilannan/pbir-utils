@@ -46,7 +46,7 @@ pbir-utils ui --host 0.0.0.0 --port 8080
 | **Report Browser** | Navigate filesystem to select `.Report` folders |
 | **Wireframe Viewer** | Full wireframe visualization with zoom, filters, fields pane |
 | **Action Execution** | Run sanitize actions with real-time progress streaming |
-| **CSV Export** | Download attribute and visual metadata as CSV |
+| **CSV Export** | Download attribute and visual metadata as CSV (respects search, field filters, visibility toggles) |
 | **Auto-Reload** | Wireframe refreshes automatically after successful actions |
 
 ### CLI Options

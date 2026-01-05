@@ -682,11 +682,13 @@
                 </div>
                 <div class="sidebar-section-content" style="padding: 8px 12px;">
                     <div class="export-buttons">
-                        <button class="export-btn" onclick="downloadCSV('metadata')" id="export-meta-btn" disabled>
-                            📄 Attributes CSV
+                        <button class="menu-btn" onclick="downloadCSV('attributes', true)" id="export-meta-btn" disabled
+                            title="Export attributes for visuals currently visible in the wireframe (respects UI view and search & selection)">
+                            <span class="icon">📄</span> Attributes CSV
                         </button>
-                        <button class="export-btn" onclick="downloadCSV('visuals')" id="export-visuals-btn" disabled>
-                            📊 Visuals CSV
+                        <button class="menu-btn" onclick="downloadCSV('visuals', true)" id="export-visuals-btn" disabled
+                            title="Export visual metadata for visuals currently visible in the wireframe (respects UI view and search & selection)">
+                            <span class="icon">📊</span> Visuals CSV
                         </button>
                     </div>
                 </div>

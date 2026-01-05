@@ -376,8 +376,10 @@ def test_adjust_visual_positions_no_parent():
 @pytest.fixture
 def template_env():
     """Set up the Jinja2 environment for template testing."""
-    template_dir = Path(__file__).parent.parent / "src" / "pbir_utils" / "templates"
-    return Environment(loader=FileSystemLoader(template_dir))
+    base_dir = Path(__file__).parent.parent / "src" / "pbir_utils"
+    template_dir = base_dir / "templates"
+    static_dir = base_dir / "static"
+    return Environment(loader=FileSystemLoader([template_dir, static_dir]))
 
 
 @pytest.fixture

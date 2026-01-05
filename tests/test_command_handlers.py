@@ -427,7 +427,14 @@ class TestOtherHandlers:
         """Test extract-metadata handler."""
         mock_resolve.return_value = "resolved/path"
         args = argparse.Namespace(
-            args=["path", "out.csv"], filters=None, visuals_only=False
+            args=["path", "out.csv"],
+            filters=None,
+            visuals_only=False,
+            pages=None,
+            reports=None,
+            tables=None,
+            visual_types=None,
+            visual_ids=None,
         )
 
         from pbir_utils.commands.extract_metadata import handle as handle_extract
@@ -443,7 +450,16 @@ class TestOtherHandlers:
     def test_handle_extract_metadata_no_args(self, mock_export, mock_resolve):
         """Test extract-metadata handler with no arguments resolves from CWD."""
         mock_resolve.return_value = "resolved/path"
-        args = argparse.Namespace(args=[], filters=None, visuals_only=False)
+        args = argparse.Namespace(
+            args=[],
+            filters=None,
+            visuals_only=False,
+            pages=None,
+            reports=None,
+            tables=None,
+            visual_types=None,
+            visual_ids=None,
+        )
         from pbir_utils.commands.extract_metadata import handle as handle_extract
 
         handle_extract(args)

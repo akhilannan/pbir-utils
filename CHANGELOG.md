@@ -3,7 +3,7 @@
     - Report browser for navigating and selecting `.Report` folders
     - Full wireframe visualization with all existing features
     - Execute sanitize actions with real-time progress streaming (SSE)
-    - Download attribute and visual metadata as CSV
+    - Download attribute and visual metadata as CSV (respects search, field filters, visibility toggles)
     - Auto-reload wireframe after successful actions
     - Persistent toast notifications and dirty state indicators
 - **extract-metadata**: Simplified filter arguments
