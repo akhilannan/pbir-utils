@@ -28,7 +28,9 @@ def register(subparsers):
           pbir-utils extract-metadata "C:\Reports\MyReport.Report"
           pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only
           pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\custom.csv"
-          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --filters '{"Page Name": ["Overview"]}'
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
+          pbir-utils extract-metadata "C:\Reports" --reports "Report1" "Report2"
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only --visual-types slicer card
     """
     )
     parser = subparsers.add_parser(
@@ -44,13 +46,38 @@ def register(subparsers):
         help="[report_path] [output_path] (both optional if inside a .Report folder)",
     )
     parser.add_argument(
-        "--filters",
-        help='JSON string representing filters (e.g., \'{"Page Name": ["Page1"]}\').',
+        "--pages",
+        nargs="+",
+        help="Filter by page displayName(s)",
+    )
+    parser.add_argument(
+        "--reports",
+        nargs="+",
+        help="Filter by report name(s) (when path is a directory containing multiple reports)",
+    )
+    parser.add_argument(
+        "--tables",
+        nargs="+",
+        help="Filter by table name(s)",
+    )
+    parser.add_argument(
+        "--visual-types",
+        nargs="+",
+        help="Filter by visual type(s) (for --visuals-only mode)",
+    )
+    parser.add_argument(
+        "--visual-ids",
+        nargs="+",
+        help="Filter by visual ID(s) (for --visuals-only mode)",
     )
     parser.add_argument(
         "--visuals-only",
         action="store_true",
         help="Extract visual-level metadata instead of attribute usage.",
+    )
+    parser.add_argument(
+        "--filters",
+        help="[Deprecated] JSON string representing filters. Use --pages, --reports, etc. instead.",
     )
     parser.set_defaults(func=handle)
 
@@ -84,7 +111,22 @@ def handle(args):
         sys.exit(1)
         return
 
-    filters = parse_filters(args.filters)
+    # Build filters from legacy --filters and/or new explicit arguments
+    filters = parse_filters(args.filters) if args.filters else {}
+    if args.pages:
+        filters["Page Name"] = set(args.pages)
+    if args.reports:
+        filters["Report"] = set(args.reports)
+    if args.tables:
+        filters["Table"] = set(args.tables)
+    if getattr(args, "visual_types", None):
+        filters["Visual Type"] = set(args.visual_types)
+    if getattr(args, "visual_ids", None):
+        filters["Visual ID"] = set(args.visual_ids)
+
     export_pbir_metadata_to_csv(
-        report_path, output_path, filters=filters, visuals_only=args.visuals_only
+        report_path,
+        output_path,
+        filters=filters or None,
+        visuals_only=args.visuals_only,
     )

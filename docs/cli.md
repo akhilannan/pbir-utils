@@ -68,15 +68,24 @@ Export attribute metadata from PBIR to CSV. Extracts detailed information about 
 # Basic extraction
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
 
-# Filter by page name
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv" --filters '{"Page Name": ["Overview"]}'
+# Filter by page name(s)
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
+
+# Filter by report name(s) when processing a directory
+pbir-utils extract-metadata "C:\Reports" --reports "Report1" "Report2"
 ```
 
 ### CLI Options
 
 | Option | Description |
 |--------|-------------|
-| `--filters` | JSON string to filter results (e.g., `'{"Page Name": ["Page1", "Page2"]}'`) |
+| `--pages` | Filter by page displayName(s) |
+| `--reports` | Filter by report name(s) when processing a directory |
+| `--tables` | Filter by table name(s) |
+| `--visual-types` | Filter by visual type(s) (for `--visuals-only` mode) |
+| `--visual-ids` | Filter by visual ID(s) (for `--visuals-only` mode) |
+| `--visuals-only` | Extract visual-level metadata instead of attribute usage |
+| `--filters` | [Deprecated] JSON string filter. Use explicit arguments above instead. |
 
 ---
 
@@ -185,8 +194,11 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report"
 # With custom output path
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
 
-# With filters
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" --filters '{"Page Name": ["Overview"]}'
+# Filter by page name(s)
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
+
+# Filter by report name(s) when processing a directory
+pbir-utils extract-metadata "C:\Reports" --reports "Report1" "Report2"
 ```
 
 **Output columns:** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
@@ -199,6 +211,9 @@ Exports visual-level information including type, grouping, and hidden status.
 # Creates visuals.csv in the report folder
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only
 
+# Filter by visual type
+pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only --visual-types slicer card
+
 # With custom output path
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv" --visuals-only
 ```
@@ -209,8 +224,13 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv"
 
 | Option | Description |
 |--------|-------------|
-| `--filters` | JSON string to filter results (e.g., `'{"Page Name": ["Page1"]}'`) |
+| `--pages` | Filter by page displayName(s) |
+| `--reports` | Filter by report name(s) when processing a directory |
+| `--tables` | Filter by table name(s) |
+| `--visual-types` | Filter by visual type(s) (for `--visuals-only` mode) |
+| `--visual-ids` | Filter by visual ID(s) (for `--visuals-only` mode) |
 | `--visuals-only` | Extract visual-level metadata instead of attribute usage |
+| `--filters` | [Deprecated] JSON string filter. Use explicit arguments instead. |
 
 ---
 

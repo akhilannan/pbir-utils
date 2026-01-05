@@ -6,3 +6,8 @@
     - Download attribute and visual metadata as CSV
     - Auto-reload wireframe after successful actions
     - Persistent toast notifications and dirty state indicators
+- **extract-metadata**: Simplified filter arguments
+    - Added explicit `--pages`, `--reports`, `--tables`, `--visual-types`, and `--visual-ids` arguments
+    - Aligned filter syntax with other CLI commands for bette r ergonomics
+    - Updated Python API (`export_pbir_metadata_to_csv`) with explicit keyword-only parameters
+    - Maintained backward compatibility for legacy JSON-based `--filters`

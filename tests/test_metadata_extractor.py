@@ -537,3 +537,95 @@ class TestVisualMetadataExport:
         reports = {r["Report"] for r in rows}
         assert "Report1" in reports
         assert "Report2" in reports
+
+
+class TestExplicitParameters:
+    """Tests for new explicit filter parameters (pages, reports, visual_types, etc)."""
+
+    def test_export_with_pages_param(self, tmp_path):
+        """Test export with explicit pages parameter."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page1_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page1_data)
+
+        page2_data = {"name": "Page2", "displayName": "Detail"}
+        create_dummy_file(report_dir, "definition/pages/Page2/page.json", page2_data)
+
+        output_csv = tmp_path / "output.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir), str(output_csv), pages=["Overview"]
+        )
+
+        assert output_csv.exists()
+
+    def test_export_visuals_only_with_visual_types(self, tmp_path):
+        """Test visuals_only export with visual_types filter."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        # Create slicer visual
+        slicer_data = {
+            "name": "Slicer1",
+            "position": {"x": 0, "y": 0, "width": 100, "height": 50},
+            "visual": {"visualType": "slicer"},
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Slicer1/visual.json",
+            slicer_data,
+        )
+
+        # Create card visual
+        card_data = {
+            "name": "Card1",
+            "position": {"x": 100, "y": 0, "width": 100, "height": 50},
+            "visual": {"visualType": "card"},
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Card1/visual.json",
+            card_data,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir), str(output_csv), visuals_only=True, visual_types=["slicer"]
+        )
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # Should only include slicer
+        assert len(rows) == 1
+        assert rows[0]["Visual Type"] == "slicer"
+
+    def test_explicit_params_merge_with_filters(self, tmp_path):
+        """Test that explicit params merge with legacy filters dict."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        output_csv = tmp_path / "output.csv"
+        # Both filters dict and explicit pages param
+        filters = {"Table": {"Sales"}}
+        export_pbir_metadata_to_csv(
+            str(report_dir), str(output_csv), filters=filters, pages=["Overview"]
+        )
+
+        assert output_csv.exists()

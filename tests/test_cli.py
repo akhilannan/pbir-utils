@@ -86,6 +86,48 @@ def test_extract_metadata_no_args_success(simple_report, run_cli):
     assert "Metadata exported to" in result.stdout
 
 
+def test_extract_metadata_with_pages_filter(simple_report, tmp_path, run_cli):
+    """Test --pages filter argument."""
+    output_csv = tmp_path / "output.csv"
+    result = run_cli(
+        ["extract-metadata", simple_report, str(output_csv), "--pages", "Overview"]
+    )
+    assert result.returncode == 0
+
+
+def test_extract_metadata_with_visual_types(simple_report, tmp_path, run_cli):
+    """Test --visual-types with --visuals-only."""
+    output_csv = tmp_path / "visuals.csv"
+    result = run_cli(
+        [
+            "extract-metadata",
+            simple_report,
+            str(output_csv),
+            "--visuals-only",
+            "--visual-types",
+            "slicer",
+        ]
+    )
+    assert result.returncode == 0
+
+
+def test_extract_metadata_deprecated_filters_still_works(
+    simple_report, tmp_path, run_cli
+):
+    """Test backward compat: --filters JSON still works."""
+    output_csv = tmp_path / "output.csv"
+    result = run_cli(
+        [
+            "extract-metadata",
+            simple_report,
+            str(output_csv),
+            "--filters",
+            '{"Page Name": ["Overview"]}',
+        ]
+    )
+    assert result.returncode == 0
+
+
 def test_visualize_no_path_outside_report_dir(tmp_path, run_cli):
     result = run_cli(["visualize"], cwd=str(tmp_path))
     assert result.returncode != 0

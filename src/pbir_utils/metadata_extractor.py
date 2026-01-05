@@ -319,6 +319,12 @@ def export_pbir_metadata_to_csv(
     directory_path: str,
     csv_output_path: str = None,
     filters: dict = None,
+    *,
+    pages: list[str] = None,
+    reports: list[str] = None,
+    tables: list[str] = None,
+    visual_types: list[str] = None,
+    visual_ids: list[str] = None,
     visuals_only: bool = False,
 ):
     """
@@ -329,24 +335,42 @@ def export_pbir_metadata_to_csv(
         csv_output_path (str, optional): The output path for the CSV file. If not provided,
                                          defaults to 'metadata.csv' or 'visuals.csv' (based on mode)
                                          in the same directory as directory_path.
-        filters (dict, optional): A dictionary with column names as keys and sets of allowed values as values.
-                                  If a filter key has an empty set/dict, it will be ignored.
-                                  If filters is None or an empty dict, all data will be processed.
+        filters (dict, optional): A dictionary with column names as keys and sets of allowed values.
+                                  Kept for backward compatibility. Prefer using explicit parameters.
+        pages (list[str], optional): Filter by page displayName(s).
+        reports (list[str], optional): Filter by report name(s) when processing a directory.
+        tables (list[str], optional): Filter by table name(s).
+        visual_types (list[str], optional): Filter by visual type(s) (for visuals_only mode).
+        visual_ids (list[str], optional): Filter by visual ID(s) (for visuals_only mode).
         visuals_only (bool, optional): If True, exports visual-level metadata instead of attribute usage.
                                        Defaults to False.
 
     Returns:
         None
     """
+    # Merge explicit parameters with legacy filters dict
+    merged_filters = dict(filters) if filters else {}
+    if pages:
+        merged_filters["Page Name"] = set(pages)
+    if reports:
+        merged_filters["Report"] = set(reports)
+    if tables:
+        merged_filters["Table"] = set(tables)
+    if visual_types:
+        merged_filters["Visual Type"] = set(visual_types)
+    if visual_ids:
+        merged_filters["Visual ID"] = set(visual_ids)
+
+    final_filters = merged_filters or None
 
     if csv_output_path is None:
         default_filename = "visuals.csv" if visuals_only else "metadata.csv"
         csv_output_path = str(Path(directory_path) / default_filename)
 
     if visuals_only:
-        _export_visual_metadata(directory_path, csv_output_path, filters)
+        _export_visual_metadata(directory_path, csv_output_path, final_filters)
     else:
-        _export_attribute_metadata(directory_path, csv_output_path, filters)
+        _export_attribute_metadata(directory_path, csv_output_path, final_filters)
 
 
 def _export_visual_metadata(

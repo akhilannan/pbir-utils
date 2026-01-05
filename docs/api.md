@@ -51,7 +51,12 @@ Exports metadata from PBIR into a CSV file. Supports two modes: **attribute meta
 |-----------|------|-------------|
 | `directory_path` | str | Path to the PBIR report folder or a parent directory containing multiple reports |
 | `csv_output_path` | str | Path for output CSV file. If not provided, defaults to `metadata.csv` or `visuals.csv` in the report folder |
-| `filters` | dict | Dictionary to filter output data (keys are column names, values are sets of allowed values). Keys with empty sets are ignored. |
+| `filters` | dict | [Deprecated] Dictionary to filter output. Prefer using explicit parameters below. |
+| `pages` | list[str] | Filter by page displayName(s) |
+| `reports` | list[str] | Filter by report name(s) when processing a directory |
+| `tables` | list[str] | Filter by table name(s) |
+| `visual_types` | list[str] | Filter by visual type(s) (for `visuals_only=True`) |
+| `visual_ids` | list[str] | Filter by visual ID(s) (for `visuals_only=True`) |
 | `visuals_only` | bool | If `True`, exports visual-level metadata instead of attribute usage. Default: `False` |
 
 ### Example
@@ -62,17 +67,24 @@ pbir.export_pbir_metadata_to_csv(
     directory_path=r"C:\DEV\Power BI Report",
 )
 
-# Export attribute metadata with custom path
+# Export with page filter
 pbir.export_pbir_metadata_to_csv(
     directory_path=r"C:\DEV\Power BI Report",
     csv_output_path=r"C:\DEV\metadata.csv",
-    filters={"Page Name": {"Overview"}},
+    pages=["Overview", "Detail"],
 )
 
-# Export visual metadata with default output (visuals.csv in report folder)
+# Export from directory, filtering by report names
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Reports",
+    reports=["Report1", "Report2"],
+)
+
+# Export visual metadata with visual type filter
 pbir.export_pbir_metadata_to_csv(
     directory_path=r"C:\DEV\Power BI Report",
     visuals_only=True,
+    visual_types=["slicer", "card"],
 )
 ```
 
@@ -81,6 +93,7 @@ pbir.export_pbir_metadata_to_csv(
 **Attribute Metadata (default):** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
 
 **Visual Metadata (`visuals_only=True`):** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
+
 
 ---
 
