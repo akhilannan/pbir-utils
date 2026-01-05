@@ -245,10 +245,10 @@ function renderActions(actions) {
     // --- Additional Actions Section ---
     if (additionalActions.length > 0) {
         html += `
-        <div class="action-separator" style="margin-top: 12px;">
-            <div class="action-item select-all-container" style="padding: 0;">
+        <div class="action-group-header" style="margin-top: 12px;">
+            <div class="action-item select-all-container" style="border-bottom: 1px solid var(--border-color); margin-bottom: 4px; padding-bottom: 8px;">
                 <input type="checkbox" id="select-all-additional" onchange="toggleGroup('additional', this)">
-                <label for="select-all-additional" style="font-weight: 600; font-style: normal; color: var(--text-secondary);">ADDITIONAL ACTIONS</label>
+                <label for="select-all-additional" style="font-weight: 600;">Additional Actions</label>
             </div>
         </div>`;
 

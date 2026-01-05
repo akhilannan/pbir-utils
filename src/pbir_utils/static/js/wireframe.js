@@ -183,13 +183,9 @@ function hidePage(event, pageId) {
 }
 
 function resetHiddenPages() {
-    hiddenPagesStack.forEach(function (pageId) {
-        var tab = document.getElementById('tab-' + pageId);
-        if (tab) {
-            tab.style.display = '';
-        }
-    });
     hiddenPagesStack = [];
+    // Re-apply filters (this will show all pages if no filter, or only matching pages if search is active)
+    filterVisuals();
     updateButtons();
 }
 
@@ -464,6 +460,15 @@ function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFi
     getCachedTabs().forEach(function (tab) {
         var pageName = tab.dataset.pageName.toLowerCase();
         var pageId = tab.id.replace("tab-", "");
+
+        // Check if page is explicitly hidden by user
+        var isManuallyHidden = hiddenPagesStack.indexOf(pageId) !== -1;
+
+        if (isManuallyHidden) {
+            tab.style.display = "none";
+            return;
+        }
+
         // Only check page name match if there's actual search text
         var matchesName = searchFilter && pageName.includes(searchFilter);
         if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
