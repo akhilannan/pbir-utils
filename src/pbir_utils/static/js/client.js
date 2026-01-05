@@ -132,6 +132,7 @@ async function loadReport(reportPath, preserveActions) {
         document.getElementById('dry-run-btn').disabled = false;
         document.getElementById('export-meta-btn').disabled = false;
         document.getElementById('export-visuals-btn').disabled = false;
+        document.getElementById('export-html-btn').disabled = false;
 
         setDirtyState(false);
         appendOutput('success', 'Report loaded: ' + data.report_name);
@@ -495,6 +496,27 @@ function downloadCSV(type, filteredOnly) {
 
     window.open(url, '_blank');
     appendOutput('info', 'Downloading ' + type + ' CSV' + (isFiltered ? ' (filtered)' : '') + '...');
+}
+
+function downloadWireframeHTML(filteredOnly) {
+    if (!currentReportPath) return;
+
+    var url = '/api/reports/wireframe/html?report_path=' + encodeURIComponent(currentReportPath);
+
+    // Add visual IDs filter if exporting filtered view (WYSIWYG)
+    var isFiltered = false;
+    if (filteredOnly && typeof getVisibleVisualIds === 'function' && typeof hasActiveFilters === 'function') {
+        if (hasActiveFilters()) {
+            var visibleIds = getVisibleVisualIds();
+            if (visibleIds.length > 0) {
+                url += '&visual_ids=' + encodeURIComponent(visibleIds.join(','));
+                isFiltered = true;
+            }
+        }
+    }
+
+    window.open(url, '_blank');
+    appendOutput('info', 'Downloading wireframe HTML' + (isFiltered ? ' (filtered)' : '') + '...');
 }
 
 // ============ Output Console ============

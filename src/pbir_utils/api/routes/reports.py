@@ -374,3 +374,60 @@ async def download_visuals_csv(report_path: str, visual_ids: str = None):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=visuals.csv"},
     )
+
+
+@router.get("/wireframe/html")
+async def download_wireframe_html(report_path: str, visual_ids: str = None):
+    """
+    Download wireframe as self-contained HTML file.
+
+    Args:
+        report_path: Path to the PBIR report folder.
+        visual_ids: Optional comma-separated list of visual IDs to filter by (WYSIWYG export).
+    """
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+    from pathlib import Path
+
+    from pbir_utils.report_wireframe_visualizer import get_wireframe_data
+
+    # Parse visual IDs filter (for WYSIWYG filtered export)
+    visual_id_list = visual_ids.split(",") if visual_ids else None
+
+    # Get wireframe data with optional filtering
+    data = await run_in_threadpool(
+        get_wireframe_data,
+        report_path,
+        visual_ids=visual_id_list,
+    )
+
+    if data is None:
+        raise HTTPException(
+            status_code=404, detail="No pages found or no pages match filters"
+        )
+
+    # Render the full standalone wireframe HTML template
+    template_dir = Path(__file__).parent.parent.parent / "templates"
+    static_dir = Path(__file__).parent.parent.parent / "static"
+
+    env = Environment(
+        loader=FileSystemLoader([template_dir, static_dir]),
+        autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
+    )
+    template = env.get_template("wireframe.html.j2")
+
+    html_content = template.render(
+        report_name=data["report_name"],
+        pages=data["pages"],
+        fields_index=data["fields_index"],
+        active_page_id=data["active_page_id"],
+    )
+
+    # Generate filename from report name
+    report_name = data["report_name"].replace(" ", "_")
+    filename = f"wireframe_{report_name}.html"
+
+    return StreamingResponse(
+        iter([html_content]),
+        media_type="text/html",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
