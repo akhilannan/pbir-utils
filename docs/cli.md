@@ -61,35 +61,6 @@ pbir-utils ui --host 0.0.0.0 --port 8080
 
 ---
 
-## Extract Metadata
-
-Export attribute metadata from PBIR to CSV. Extracts detailed information about tables, columns, measures, DAX expressions, and usage contexts.
-
-```bash
-# Basic extraction
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
-
-# Filter by page name(s)
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
-
-# Filter by report name(s) when processing a directory
-pbir-utils extract-metadata "C:\Reports" --reports "Report1" "Report2"
-```
-
-### CLI Options
-
-| Option | Description |
-|--------|-------------|
-| `--pages` | Filter by page displayName(s) |
-| `--reports` | Filter by report name(s) when processing a directory |
-| `--tables` | Filter by table name(s) |
-| `--visual-types` | Filter by visual type(s) (for `--visuals-only` mode) |
-| `--visual-ids` | Filter by visual ID(s) (for `--visuals-only` mode) |
-| `--visuals-only` | Extract visual-level metadata instead of attribute usage |
-| `--filters` | [Deprecated] JSON string filter. Use explicit arguments above instead. |
-
----
-
 ## Visualize Wireframes
 
 Generate a static HTML wireframe of the report layout. This tool creates a lightweight, portable HTML file that visualizes the position and size of visuals across pages.
@@ -567,7 +538,9 @@ The following actions are available for use with `--actions`, `--include`, or `-
 
 ### YAML Configuration
 
-Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited:
+Create a `pbir-sanitize.yaml` file to customize defaults. You only need to specify what you want to **change** - defaults are inherited.
+
+> **See Also:** [YAML Configuration Basics](#yaml-configuration-basics) for common patterns like `definitions`, `include`/`exclude`, merge behavior, and config discovery.
 
 ```yaml
 # pbir-sanitize.yaml - extends package defaults
@@ -719,8 +692,9 @@ Validating MyReport.Report
 
 ### YAML Configuration
 
-Create a `pbir-rules.yaml` file in your report folder or CWD to customize rules. See [Complete Example](#complete-example) for a full configuration reference.
+Create a `pbir-rules.yaml` file in your report folder or CWD to customize rules.
 
+> **See Also:** [YAML Configuration Basics](#yaml-configuration-basics) for common patterns like `definitions`, `include`/`exclude`, merge behavior, and config discovery.
 
 ### Rules Configuration Reference
 
@@ -786,23 +760,6 @@ How the final rule list is determined:
 | `rules:` specified | Only listed rules run |
 | `include:` specified | Listed rules are added to the default set |
 | `exclude:` specified | Listed rules are removed from the set |
-
-**Examples:**
-
-```yaml
-# Run only specific rules
-rules:
-  - remove_unused_bookmarks
-  - reduce_pages
-
-# OR add to defaults
-include:
-  - my_custom_rule
-
-# AND/OR remove from defaults
-exclude:
-  - reduce_advanced_filters
-```
 
 ### Customization Reference
 
@@ -990,3 +947,73 @@ When `include_sanitizer_defaults: true`:
 
 This means running `pbir-utils sanitize --dry-run` and `pbir-utils validate` will check the **same things** when configured correctly.
 
+---
+
+## YAML Configuration Basics
+
+Both `pbir-sanitize.yaml` and `pbir-rules.yaml` share a common structure. This section covers shared features.
+
+### Common Structure
+
+```yaml
+definitions:
+  my_item:
+    description: "Human-readable description"
+    params:
+      key: value
+    disabled: true  # Skip this item by default
+
+actions:  # or 'rules:' for validation
+  - item1
+  - item2
+
+include:
+  - additional_item  # Add to default list
+
+exclude:
+  - unwanted_item    # Remove from list
+
+options:
+  dry_run: false
+```
+
+### Merge Behavior
+
+| Section | Behavior |
+|---------|----------|
+| `definitions` | **Deep merge**: User params merge with default params |
+| `actions`/`rules` | **Replace**: Completely replaces default list |
+| `include` | **Append**: Added to list |
+| `exclude` | **Remove**: Removed from final list |
+| `options` | **Override**: User options override defaults |
+
+### Params Deep Merge
+
+Params are **merged**, not replaced:
+
+```yaml
+# Default: my_action has params {a: 1, b: 2}
+definitions:
+  my_action:
+    params:
+      a: 10  # Override 'a' only
+# Result: params = {a: 10, b: 2}
+```
+
+### Disabled Items
+
+```yaml
+definitions:
+  noisy_action:
+    disabled: true   # Won't run by default
+
+include:
+  - noisy_action     # Overrides disabled: true
+```
+
+### Config Discovery
+
+1. **Current working directory** (checked first)
+2. **Report folder** (if `report_path` provided)
+
+Use `--config path/to/file.yaml` to specify explicitly.

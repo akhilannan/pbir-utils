@@ -9,24 +9,29 @@ hide:
 
 ## ✨ Features
 
-- **💻 CLI Support**: Access all utilities directly from the command line.
-- **📄 Extract Metadata**: Retrieve key metadata information from PBIR files.
-- **✏️ Update Metadata**: Apply updates to metadata within PBIR files.
-- **🖼️ Wireframe Visualizer**: Visualize PBIR report wireframe.
-- **⛔ Disable Interactions**: Bulk disable interactions in PBIR report.
-- **🧹 Remove Measures**: Bulk remove report-level measures.
-- **🔗 Measure Dependencies**: Extract the dependency tree for report-level measures.
-- **🔍 Update Filters**: Update the filters added to the Power BI report level filter pane.
-- **🔢 Sort Filters**: Reorder filters in report filter pane on a specified sorting strategy.
-- **📂 Standardize Folders**: Standardize page and visual folder names to be descriptive.
-- **🔖 Remove Unused Bookmarks**: Remove bookmarks not used in the report.
-- **🎨 Remove Unused Visuals**: Remove custom visuals not used in the report.
-- **👁️‍🗨️ Disable "No Data"**: Disable "Show items with no data" property for visuals.
-- **🙈 Hide Tooltip Pages**: Hide pages used as tooltips or drillthroughs.
-- **⚙️ Configure Filter Pane**: Configure filter pane visibility and expanded state.
-- **📏 Set Page Size**: Set page dimensions for all non-tooltip pages.
-- **▶️ Set First Page Active**: Set the first page of the report as the active page.
-- **🧼 Sanitize Report**: Clean up and optimize Power BI reports with YAML configuration support.
+### Core Utilities
+
+- **🌐 Web UI**: Interactive browser-based interface for reports, wireframes, and actions
+- **📄 Extract Metadata**: Export metadata from PBIR files to CSV
+- **🖼️ Wireframe Visualizer**: Visual report layout with zoom, search, and field tracking
+- **✅ Validate Report**: Rule-based validation with custom expression support
+- **🧹 Sanitize Report**: Clean up and optimize reports with YAML configuration
+
+### Report Management
+
+- **⛔ Disable Interactions**: Bulk disable interactions between visuals
+- **🧼 Remove Measures**: Remove unused report-level measures
+- **🔗 Measure Dependencies**: Extract measure dependency trees
+- **🔖 Remove Unused Bookmarks**: Clean up orphaned bookmarks
+- **🎨 Remove Unused Visuals**: Remove unused custom visual registrations
+
+### Filters & Pages
+
+- **🔍 Update Filters**: Modify report-level filter conditions
+- **🔢 Sort Filters**: Reorder filter pane items
+- **⚙️ Configure Filter Pane**: Control pane visibility and state
+- **📏 Set Page Size**: Set page dimensions for all pages
+- **🙈 Hide Tooltip Pages**: Auto-hide tooltip and drillthrough pages
 
 ## 📦 Installation
 
@@ -34,16 +39,28 @@ hide:
 pip install pbir-utils
 ```
 
+For the web UI, install with optional dependencies:
+
+```bash
+pip install pbir-utils[ui]
+```
+
 ## 🚀 Quick Start
 
 After installation, the `pbir-utils` CLI is available:
 
 ```bash
-# Sanitize a report with default actions (dry-run to preview changes)
+# Launch interactive web UI
+pbir-utils ui
+
+# Sanitize a report with default actions (dry-run to preview)
 pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
 
+# Validate against best practices
+pbir-utils validate "C:\Reports\MyReport.Report"
+
 # Extract metadata to CSV
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
+pbir-utils extract-metadata "C:\Reports\MyReport.Report"
 
 # Visualize report wireframes
 pbir-utils visualize "C:\Reports\MyReport.Report"
@@ -54,10 +71,13 @@ Or use the Python API:
 ```python
 import pbir_utils as pbir
 
-# Sanitize a report
-pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", actions=["remove_unused_measures"])
-```
+# Validate a report
+result = pbir.validate_report(r"C:\Reports\MyReport.Report", strict=False)
+print(result)  # "5 passed, 0 errors, 2 warnings"
 
+# Sanitize a report
+pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", dry_run=True)
+```
 
 ## 📚 Next Steps
 

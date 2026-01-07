@@ -28,6 +28,9 @@ pip install pbir-utils
 ### CLI
 
 ```bash
+# Launch interactive web UI (alias: pbir-utils serve)
+pbir-utils ui
+
 # Sanitize a report (dry-run to preview changes)
 pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
 
@@ -35,7 +38,7 @@ pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
 pbir-utils validate "C:\Reports\MyReport.Report"
 
 # Extract metadata to CSV
-pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
+pbir-utils extract-metadata "C:\Reports\MyReport.Report"
 
 # Visualize report wireframes
 pbir-utils visualize "C:\Reports\MyReport.Report"
@@ -54,6 +57,7 @@ pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", actions=["remove_unu
 ## ✨ Features
 
 - **💻 CLI Support**: Access all utilities directly from the command line
+- **🌐 Web UI**: Interactive browser-based interface for reports and actions
 - **⚙️ CI/CD Integration**: Validate reports in pipelines before deployment
 - **✅ Validate Reports**: Rule-based validation with custom expressions
 - **📄 Extract Metadata**: Retrieve key metadata from PBIR files

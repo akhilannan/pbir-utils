@@ -19,9 +19,10 @@ class TestActionSpec:
     def test_from_definition_implicit(self):
         """Test creating ActionSpec from implicit definition (empty dict)."""
         spec = ActionSpec.from_definition("remove_unused_measures", {})
-        assert spec.name == "remove_unused_measures"
+        assert spec.id == "remove_unused_measures"
         assert spec.func_name == "remove_unused_measures"
         assert spec.params == {}
+        assert spec.disabled is None
 
     def test_from_definition_explicit(self):
         """Test creating ActionSpec from explicit definition with implementation."""
@@ -32,15 +33,33 @@ class TestActionSpec:
                 "params": {"page_type": "Tooltip"},
             },
         )
-        assert spec.name == "hide_tooltip_pages"
+        assert spec.id == "hide_tooltip_pages"
         assert spec.func_name == "hide_pages_by_type"
         assert spec.params == {"page_type": "Tooltip"}
 
     def test_from_definition_none(self):
         """Test creating ActionSpec from None definition (same as implicit)."""
         spec = ActionSpec.from_definition("cleanup_invalid_bookmarks", None)
-        assert spec.name == "cleanup_invalid_bookmarks"
+        assert spec.id == "cleanup_invalid_bookmarks"
         assert spec.func_name == "cleanup_invalid_bookmarks"
+
+    def test_from_definition_disabled(self):
+        """Test creating ActionSpec with disabled field."""
+        spec = ActionSpec.from_definition("test_action", {"disabled": True})
+        assert spec.id == "test_action"
+        assert spec.disabled is True
+
+    def test_display_name_with_description(self):
+        """Test display_name property returns description when set."""
+        spec = ActionSpec.from_definition(
+            "test_action", {"description": "My Test Action"}
+        )
+        assert spec.display_name == "My Test Action"
+
+    def test_display_name_fallback_to_id(self):
+        """Test display_name property formats ID when no description."""
+        spec = ActionSpec.from_definition("cleanup_invalid_bookmarks", {})
+        assert spec.display_name == "Cleanup Invalid Bookmarks"
 
 
 class TestSanitizeConfig:
@@ -48,14 +67,16 @@ class TestSanitizeConfig:
 
     def test_default_values(self):
         """Test default property values."""
-        config = SanitizeConfig(actions=[ActionSpec("test", "test")], options={})
+        config = SanitizeConfig(
+            actions=[ActionSpec(id="test", implementation="test")], options={}
+        )
         assert config.dry_run is False
         assert config.summary is False
 
     def test_options_override(self):
         """Test that options override defaults."""
         config = SanitizeConfig(
-            actions=[ActionSpec("test", "test")],
+            actions=[ActionSpec(id="test", implementation="test")],
             options={"dry_run": True, "summary": True},
         )
         assert config.dry_run is True
@@ -64,15 +85,22 @@ class TestSanitizeConfig:
     def test_get_action_names(self):
         """Test get_action_names method."""
         config = SanitizeConfig(
-            actions=[ActionSpec("a", "a"), ActionSpec("b", "b")], options={}
+            actions=[
+                ActionSpec(id="a", implementation="a"),
+                ActionSpec(id="b", implementation="b"),
+            ],
+            options={},
         )
         assert config.get_action_names() == ["a", "b"]
 
     def test_get_additional_actions(self):
         """Test get_additional_actions method."""
         config = SanitizeConfig(
-            actions=[ActionSpec("a", "a")],
-            definitions={"a": ActionSpec("a", "a"), "b": ActionSpec("b", "b")},
+            actions=[ActionSpec(id="a", implementation="a")],
+            definitions={
+                "a": ActionSpec(id="a", implementation="a"),
+                "b": ActionSpec(id="b", implementation="b"),
+            },
             options={},
         )
         assert config.get_additional_actions() == ["b"]
@@ -166,8 +194,8 @@ class TestMergeConfigs:
 
         config = _merge_configs(default, user)
 
-        action_names = [a.name for a in config.actions]
-        assert action_names == ["c"]
+        action_ids = [a.id for a in config.actions]
+        assert action_ids == ["c"]
 
     def test_user_include(self):
         """Test that include appends to actions."""
@@ -180,9 +208,9 @@ class TestMergeConfigs:
 
         config = _merge_configs(default, user)
 
-        action_names = [a.name for a in config.actions]
-        assert "a" in action_names
-        assert "b" in action_names
+        action_ids = [a.id for a in config.actions]
+        assert "a" in action_ids
+        assert "b" in action_ids
 
     def test_user_exclude(self):
         """Test that exclude removes actions."""
@@ -195,10 +223,10 @@ class TestMergeConfigs:
 
         config = _merge_configs(default, user)
 
-        action_names = [a.name for a in config.actions]
-        assert "action1" in action_names
-        assert "action2" not in action_names
-        assert "action3" in action_names
+        action_ids = [a.id for a in config.actions]
+        assert "action1" in action_ids
+        assert "action2" not in action_ids
+        assert "action3" in action_ids
 
 
 class TestLoadConfig:
@@ -232,6 +260,63 @@ options:
         config = load_config(config_path=str(config_file))
 
         # Check custom action
-        set_page = next(a for a in config.actions if a.name == "set_page_size")
+        set_page = next(a for a in config.actions if a.id == "set_page_size")
         assert set_page.params == {"width": 1920}
         assert config.dry_run is True
+
+
+class TestNewFeatures:
+    """Tests for new alignment features."""
+
+    def test_params_deep_merge(self):
+        """Test that params are deep merged, not replaced."""
+        default = {
+            "definitions": {"action1": {"params": {"a": 1, "b": 2}}},
+            "actions": ["action1"],
+        }
+        user = {"definitions": {"action1": {"params": {"a": 10}}}}
+        config = _merge_configs(default, user)
+        action1 = config.definitions["action1"]
+        # a is overridden, b is preserved
+        assert action1.params == {"a": 10, "b": 2}
+
+    def test_all_definitions_when_actions_omitted(self):
+        """Test that all definitions are used when actions list is omitted."""
+        default = {"definitions": {"a": {}, "b": {}}}  # No actions list
+        user = {}
+        config = _merge_configs(default, user)
+        assert set(config.get_action_names()) == {"a", "b"}
+
+    def test_disabled_action_skipped(self):
+        """Test that disabled actions are skipped."""
+        default = {
+            "definitions": {"action1": {"disabled": True}, "action2": {}},
+            "actions": ["action1", "action2"],
+        }
+        config = _merge_configs(default, {})
+        assert "action1" not in config.get_action_names()
+        assert "action2" in config.get_action_names()
+
+    def test_disabled_action_included_via_include(self):
+        """Test that disabled actions can be force-included."""
+        default = {
+            "definitions": {"action1": {"disabled": True}},
+            "actions": ["action1"],
+        }
+        user = {"include": ["action1"]}
+        config = _merge_configs(default, user)
+        assert "action1" in config.get_action_names()
+
+    def test_description_preserved_in_deep_merge(self):
+        """Test that description is preserved when merging."""
+        default = {
+            "definitions": {
+                "action1": {"description": "Original description", "params": {"a": 1}}
+            },
+            "actions": ["action1"],
+        }
+        user = {"definitions": {"action1": {"params": {"a": 10}}}}  # No description
+        config = _merge_configs(default, user)
+        action1 = config.definitions["action1"]
+        assert action1.description == "Original description"
+        assert action1.params == {"a": 10}

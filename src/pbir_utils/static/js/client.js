@@ -232,12 +232,12 @@ function renderActions(actions) {
         </div>`;
 
         html += defaultActions.map(function (action, i) {
-            selectedActions.add(action.name); // Auto-select default
-            var description = action.description || action.name.replace(/_/g, ' ');
+            selectedActions.add(action.id); // Auto-select default
+            var description = action.description || action.id.replace(/_/g, ' ');
             return `
-            <div class="action-item" title="${escapeHtml(action.name)}">
-                <input type="checkbox" id="action-def-${i}" value="${action.name}" checked
-                    class="action-checkbox-default" onchange="toggleAction('${action.name}')">
+            <div class="action-item" title="${escapeHtml(action.id)}">
+                <input type="checkbox" id="action-def-${i}" value="${action.id}" checked
+                    class="action-checkbox-default" onchange="toggleAction('${action.id}')">
                 <label for="action-def-${i}">${escapeHtml(description)}</label>
             </div>`;
         }).join('');
@@ -254,11 +254,11 @@ function renderActions(actions) {
         </div>`;
 
         html += additionalActions.map(function (action, i) {
-            var description = action.description || action.name.replace(/_/g, ' ');
+            var description = action.description || action.id.replace(/_/g, ' ');
             return `
-            <div class="action-item additional" title="${escapeHtml(action.name)}">
-                <input type="checkbox" id="action-add-${i}" value="${action.name}"
-                    class="action-checkbox-additional" onchange="toggleAction('${action.name}')">
+            <div class="action-item additional" title="${escapeHtml(action.id)}">
+                <input type="checkbox" id="action-add-${i}" value="${action.id}"
+                    class="action-checkbox-additional" onchange="toggleAction('${action.id}')">
                 <label for="action-add-${i}">${escapeHtml(description)}</label>
             </div>`;
         }).join('');
@@ -333,11 +333,11 @@ async function loadCustomConfig(input) {
         customConfigYaml = yamlContent;
 
         // Render new actions from config
-        var actions = data.actions.map(function (name) {
-            var def = data.definitions[name];
+        var actions = data.actions.map(function (id) {
+            var def = data.definitions[id];
             return {
-                name: name,
-                description: def ? def.description : name.replace(/_/g, ' '),
+                id: id,
+                description: def ? def.description : id.replace(/_/g, ' '),
                 is_default: true
             };
         });

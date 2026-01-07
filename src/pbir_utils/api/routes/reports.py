@@ -98,18 +98,18 @@ async def list_actions(report_path: str = None):
     for action in config.actions:
         actions.append(
             ActionInfo(
-                name=action.name,
+                id=action.id,
                 description=action.description,
                 is_default=True,
             )
         )
 
     # Then add additional defined actions (not in defaults)
-    for name, spec in config.definitions.items():
-        if name not in default_action_names:
+    for action_id, spec in config.definitions.items():
+        if action_id not in default_action_names:
             actions.append(
                 ActionInfo(
-                    name=name,
+                    id=action_id,
                     description=spec.description,
                     is_default=False,
                 )
@@ -245,7 +245,7 @@ async def run_actions_stream(
                             action_specs.append(custom_config.definitions[action_name])
                         else:
                             action_specs.append(
-                                ActionSpec(name=action_name, implementation=action_name)
+                                ActionSpec(id=action_name, implementation=action_name)
                             )
 
                     # Merge options from custom config with dry_run override

@@ -48,15 +48,15 @@ class TestRuleSpec:
         assert spec.params == {"max_pages": 10}
         assert spec.is_expression_rule is True
 
-    def test_display_name_uses_name_if_present(self):
-        """Test display_name property returns name when set."""
-        spec = RuleSpec(id="test_rule", name="Test Rule Display Name")
+    def test_display_name_uses_description_if_present(self):
+        """Test display_name property returns description when set."""
+        spec = RuleSpec(id="test_rule", description="Test Rule Display Name")
         assert spec.display_name == "Test Rule Display Name"
 
     def test_display_name_fallback_to_id(self):
-        """Test display_name property falls back to id."""
+        """Test display_name property falls back to id formatted as title."""
         spec = RuleSpec(id="test_rule")
-        assert spec.display_name == "test_rule"
+        assert spec.display_name == "Test Rule"
 
 
 class TestRulesConfig:

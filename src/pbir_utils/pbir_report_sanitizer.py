@@ -92,7 +92,7 @@ def sanitize_powerbi_report(
             else:
                 # Not in definitions - create implicit spec
                 filtered_actions.append(
-                    ActionSpec(name=action_name, implementation=action_name)
+                    ActionSpec(id=action_name, implementation=action_name)
                 )
         cfg = SanitizeConfig(
             actions=filtered_actions,
@@ -111,9 +111,11 @@ def sanitize_powerbi_report(
             if isinstance(a, str) and a in definitions:
                 action_specs.append(definitions[a])
             elif isinstance(a, str):
-                action_specs.append(ActionSpec(name=a, implementation=a))
+                action_specs.append(ActionSpec(id=a, implementation=a))
             else:
-                action_specs.append(ActionSpec.from_definition(a.get("name", ""), a))
+                action_specs.append(
+                    ActionSpec.from_definition(a.get("id", a.get("name", "")), a)
+                )
         cfg = SanitizeConfig(
             actions=action_specs,
             definitions=definitions,
@@ -140,7 +142,7 @@ def sanitize_powerbi_report(
         func_name = action_spec.func_name
         if func_name not in available:
             console.print_warning(
-                f"Warning: Unknown action '{action_spec.name}' (func: {func_name}) skipped."
+                f"Warning: Unknown action '{action_spec.id}' (func: {func_name}) skipped."
             )
             continue
 
@@ -158,7 +160,7 @@ def sanitize_powerbi_report(
                     "summary": cfg.summary,
                     **action_spec.params,
                 }
-                results[action_spec.name] = func(report_path, **kwargs)
+                results[action_spec.id] = func(report_path, **kwargs)
         else:
             # No custom description - let function print its default heading
             kwargs: dict[str, Any] = {
@@ -166,7 +168,7 @@ def sanitize_powerbi_report(
                 "summary": cfg.summary,
                 **action_spec.params,
             }
-            results[action_spec.name] = func(report_path, **kwargs)
+            results[action_spec.id] = func(report_path, **kwargs)
 
     print()  # Add blank line before final status
     console.print_success("Power BI report sanitization completed.")

@@ -63,8 +63,8 @@ class TestSanitizeHandler:
         mock_resolve.return_value = "dummy/path"
         mock_config = MagicMock()
         mock_config.definitions = {
-            "a1": ActionSpec(name="a1", implementation="a1"),
-            "a2": ActionSpec(name="a2", implementation="a2"),
+            "a1": ActionSpec(id="a1", implementation="a1"),
+            "a2": ActionSpec(id="a2", implementation="a2"),
         }
         mock_load_config.return_value = mock_config
 
@@ -85,7 +85,7 @@ class TestSanitizeHandler:
         )
         mock_sanitize.assert_called_once()
         run_config = mock_sanitize.call_args[1]["config"]
-        assert [a.name for a in run_config.actions] == ["a1"]
+        assert [a.id for a in run_config.actions] == ["a1"]
 
     @patch("pbir_utils.common.resolve_report_path")
     @patch("pbir_utils.sanitize_config.load_config")
@@ -99,9 +99,9 @@ class TestSanitizeHandler:
         mock_resolve.return_value = "dummy/path"
         mock_config = MagicMock()
         mock_config.definitions = {
-            "a1": ActionSpec(name="a1"),
-            "a2": ActionSpec(name="a2"),
-            "a3": ActionSpec(name="a3"),
+            "a1": ActionSpec(id="a1"),
+            "a2": ActionSpec(id="a2"),
+            "a3": ActionSpec(id="a3"),
         }
         mock_config.get_action_names.return_value = ["a1", "a2"]
         mock_load_config.return_value = mock_config
@@ -119,10 +119,10 @@ class TestSanitizeHandler:
         handle_sanitize(args)
 
         run_config = mock_sanitize.call_args[1]["config"]
-        action_names = [a.name for a in run_config.actions]
-        assert "a1" not in action_names
-        assert "a2" in action_names
-        assert "a3" in action_names
+        action_ids = [a.id for a in run_config.actions]
+        assert "a1" not in action_ids
+        assert "a2" in action_ids
+        assert "a3" in action_ids
 
     @patch("pbir_utils.common.resolve_report_path")
     @patch("pbir_utils.sanitize_config.load_config")

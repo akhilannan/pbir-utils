@@ -42,7 +42,7 @@ class WireframeResponse(BaseModel):
 class ActionInfo(BaseModel):
     """Information about a sanitize action."""
 
-    name: str
+    id: str
     description: str | None = None
     is_default: bool = False
 

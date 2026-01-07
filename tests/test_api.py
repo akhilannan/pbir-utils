@@ -176,11 +176,11 @@ def test_list_actions(api_client):
     assert "actions" in data
     actions = data["actions"]
 
-    # Actions are ActionInfo objects with name, description, is_default
-    action_names = [a["name"] for a in actions]
+    # Actions are ActionInfo objects with id, description, is_default
+    action_ids = [a["id"] for a in actions]
     # Should have some common default actions
-    assert "remove_unused_bookmarks" in action_names
-    assert "cleanup_invalid_bookmarks" in action_names
+    assert "remove_unused_bookmarks" in action_ids
+    assert "cleanup_invalid_bookmarks" in action_ids
 
 
 def test_get_config(api_client):

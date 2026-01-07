@@ -205,7 +205,7 @@ def _merge_configs(
 
         # Add all ACTIVE actions from the sanitizer config as rules
         for action in san_cfg.actions:
-            action_id = action.name
+            action_id = action.id
             if action_id and action_id not in rule_ids:
                 rule_ids.append(action_id)
                 # Create implicit definition from ActionSpec

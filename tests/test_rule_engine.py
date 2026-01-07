@@ -149,8 +149,10 @@ class TestEvaluateExpressionRule:
 class TestValidateReport:
     """Tests for validate_report function."""
 
-    def test_returns_dict_with_results(self, tmp_path):
-        """Test that validate_report returns dict with results."""
+    def test_returns_validation_result(self, tmp_path):
+        """Test that validate_report returns ValidationResult with results."""
+        from pbir_utils.rule_engine import ValidationResult
+
         # Create minimal report structure
         report_path = tmp_path / "Test.Report"
         definition_path = report_path / "definition"
@@ -171,11 +173,11 @@ class TestValidateReport:
                     fail_on_warning=False,
                 )
                 with patch("pbir_utils.rule_engine.console"):
-                    results = validate_report(str(report_path), strict=False)
+                    result = validate_report(str(report_path), strict=False)
 
-        assert isinstance(results, dict)
-        assert "test_rule" in results
-        assert results["test_rule"] is True
+        assert isinstance(result, ValidationResult)
+        assert "test_rule" in result.results
+        assert result.results["test_rule"] is True
 
     def test_strict_mode_raises_on_violations(self, tmp_path):
         """Test that strict mode raises ValidationError on violations."""
@@ -220,10 +222,10 @@ class TestValidateReport:
                     fail_on_warning=False,
                 )
                 with patch("pbir_utils.rule_engine.console"):
-                    results = validate_report(
+                    result = validate_report(
                         str(report_path), severity="warning", strict=False
                     )
 
         # Only warning severity and above should be in results
-        assert "warn_rule" in results
-        assert "info_rule" not in results
+        assert "warn_rule" in result.results
+        assert "info_rule" not in result.results
