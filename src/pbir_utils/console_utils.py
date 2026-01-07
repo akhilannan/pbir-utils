@@ -101,6 +101,21 @@ class ConsoleUtils:
         finally:
             self._suppress_heading_output = False
 
+    @contextmanager
+    def suppress_all(self):
+        """Context manager to temporarily suppress all console output."""
+        import io
+
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = io.StringIO()
+        sys.stderr = io.StringIO()
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+
     def print_action_heading(self, action_name: str, dry_run: bool = False):
         """
         Prints a standardized action heading with optional dry run indicator.
@@ -157,6 +172,16 @@ class ConsoleUtils:
         """Prints a cleared message."""
         print(f"{self._format('[Cleared]', self.GREEN, self.BOLD)} {message}")
         self._broadcast("cleared", message)
+
+    def print_pass(self, message: str):
+        """Prints a pass message (green checkmark)."""
+        print(f"{self._format('✓', self.GREEN)} {message}")
+        self._broadcast("pass", message)
+
+    def print(self, message: str):
+        """Prints a plain message."""
+        print(message)
+        self._broadcast("message", message)
 
 
 # Global instance

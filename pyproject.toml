@@ -31,6 +31,9 @@ Homepage = "https://github.com/akhilannan/pbir-utils"
 pbir-utils = "pbir_utils.cli:main"
 
 [project.optional-dependencies]
+rules = [
+    "rule-engine",
+]
 ui = [
     "fastapi",
     "uvicorn[standard]",

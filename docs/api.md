@@ -634,3 +634,85 @@ pbir.set_page_display_option(report_path, display_option="FitToPage", dry_run=Tr
 
 !!! warning "Backup Your Reports"
     Always backup your report or use version control before running sanitization. Some actions are irreversible. Use `dry_run=True` to preview changes.
+
+---
+
+## Validate Report
+
+Validates a Power BI report against configurable rules.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the report folder |
+| `rules` | list | Specific rule IDs to run (optional) |
+| `config` | str/Path/dict | Config file path or dict |
+| `sanitize_config` | str/Path | Custom sanitize config path (default: auto-discovered) |
+| `severity` | str | Minimum severity to check (`info`, `warning`, `error`) |
+| `strict` | bool | Raise exception on error violations. Default: `True` |
+
+### Returns
+
+`ValidationResult` object with:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `passed` | int | Number of rules that passed |
+| `failed` | int | Number of rules that failed |
+| `error_count` | int | Violations with `severity=error` |
+| `warning_count` | int | Violations with `severity=warning` |
+| `info_count` | int | Violations with `severity=info` |
+| `has_errors` | bool | `True` if any errors exist |
+| `has_warnings` | bool | `True` if any warnings exist |
+| `results` | dict | Rule ID → passed (bool) |
+| `violations` | list | Full violation details |
+
+### Raises
+
+- `ValidationError`: If `strict=True` and any error violations found (or warnings if `fail_on_warning: true` in config).
+
+### Example
+
+```python
+from pbir_utils import validate_report, ValidationError
+
+# Run with strict=False to get results without exception
+result = pbir.validate_report(r"C:\Reports\MyReport.Report", strict=False)
+print(result)  # "5 passed, 0 errors, 13 warnings, 2 info"
+
+# Access counts directly
+if result.has_errors:
+    print("Build failed!")
+print(f"Warnings: {result.warning_count}")
+
+# Run specific rules only
+result = pbir.validate_report(
+    r"C:\Reports\MyReport.Report",
+    rules=["remove_unused_bookmarks", "reduce_pages"],
+    strict=False
+)
+
+# Use custom config
+result = pbir.validate_report(
+    r"C:\Reports\MyReport.Report",
+    config="pbir-rules.yaml",
+    strict=False
+)
+```
+
+### Handling ValidationError
+
+```python
+from pbir_utils import validate_report, ValidationError
+
+try:
+    result = pbir.validate_report(r"C:\Reports\MyReport.Report", strict=True)
+except ValidationError as e:
+    print(f"Validation failed: {e}")
+    for v in e.violations:
+        print(f"  - {v['rule_id']}: {v['message']}")
+```
+
+For rule configuration details, see [Rules Configuration Reference](cli.md#rules-configuration-reference).
+

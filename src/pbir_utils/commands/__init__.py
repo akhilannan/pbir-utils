@@ -12,6 +12,7 @@ from . import (
     filters,
     pages,
     ui,
+    validate,
 )
 
 # All command modules for registration
@@ -25,6 +26,7 @@ ALL_COMMANDS = [
     filters,
     pages,
     ui,
+    validate,
 ]
 
 

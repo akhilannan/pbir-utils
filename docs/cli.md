@@ -640,3 +640,353 @@ Configuration is resolved in the following order (highest to lowest):
 !!! tip "Auto-Discovery"
     - **Config**: Place `pbir-sanitize.yaml` in your report folder or current directory and it will be used automatically. Use `--config path/to/config.yaml` to specify a different file.
     - **Report Path**: When running from inside a `.Report` folder, the report path argument is optional—it will be detected automatically.
+
+---
+
+## Validate Report
+
+Validate a Power BI report against configurable rules. Rules can check for best practices, performance recommendations, and custom organizational standards.
+
+```bash
+# Validate with default rules
+pbir-utils validate "C:\Reports\MyReport.Report"
+
+# Validate with specific rules only
+pbir-utils validate "C:\Reports\MyReport.Report" --rules remove_unused_bookmarks reduce_pages
+
+# Filter by minimum severity
+pbir-utils validate "C:\Reports\MyReport.Report" --severity warning
+
+# Strict mode for CI/CD (exit code 1 on violations)
+pbir-utils validate "C:\Reports\MyReport.Report" --strict
+
+# JSON output for scripting
+pbir-utils validate "C:\Reports\MyReport.Report" --format json
+
+# Use a custom config file
+pbir-utils validate "C:\Reports\MyReport.Report" --config pbir-rules.yaml
+```
+
+### Sample Output
+
+```
+Validating MyReport.Report
+--------------------------
+[PASS] Reports with too many pages are harder to navigate
+[WARNING] Remove unused bookmarks
+    └─ Would remove bookmark: Unused Bookmark 1
+[PASS] Remove unused measures
+[WARNING] Too many visuals on a page degrades rendering performance
+    └─ Page "Dashboard" has 25 visuals (max: 20)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[WARNING] Validation complete: 2 passed, 2 warnings
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All rules passed (or no `--strict` flag) |
+| `1` | Violations found (with `--strict`) or errors when `fail_on_warning: true` |
+
+### Default Rules
+
+**Sanitizer Rules:** All default sanitize actions (see [Available Actions](#available-actions)) are included as validation rules with `severity: warning` by default.
+
+**Expression Rules (built-in):**
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| `reduce_pages` | info | Reports with more than 10 pages |
+| `reduce_visuals_on_page` | warning | Pages with more than 20 visuals |
+| `reduce_objects_within_visuals` | warning | Visuals with more than 6 data fields |
+| `reduce_topn_filters` | info | Visuals with multiple TopN filters |
+| `reduce_advanced_filters` | info | Visuals with multiple Advanced filters |
+
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--rules` | Specific rule IDs to run (default: all rules from config) |
+| `--config` | Path to a custom rules config YAML file |
+| `--sanitize-config` | Path to a custom sanitize config YAML file (default: auto-discovered) |
+| `--severity` | Minimum severity to report (`info`, `warning`, `error`) |
+| `--strict` | Exit with code 1 if any violations found |
+| `--format` | Output format: `console` (default) or `json` |
+
+### YAML Configuration
+
+Create a `pbir-rules.yaml` file in your report folder or CWD to customize rules. See [Complete Example](#complete-example) for a full configuration reference.
+
+
+### Rules Configuration Reference
+
+This section explains how rules are loaded and merged.
+
+#### Default Behavior (No Config Files)
+
+If you run `pbir-utils validate` without any config files in your project:
+
+- **Built-in Expression Rules**: Loaded from package defaults (e.g., `reduce_pages`).
+- **Sanitizer Rules**: Built-in sanitizer defaults are auto-included as **warnings**.
+- **Severity**: Default severities apply.
+
+#### Customizing with `pbir-rules.yaml` Only
+
+Create `pbir-rules.yaml` to customize behavior. If no `pbir-sanitize.yaml` exists, the package's built-in sanitizer defaults are still used.
+
+**Merge Order:**
+```
+1. Internal defaults/rules.yaml
+2. Internal sanitizer defaults
+3. Your pbir-rules.yaml (overrides/disables)
+```
+
+#### Customizing with Sanitizer Config
+
+You can also provide a custom sanitizer configuration to define what "clean" means for your project.
+
+**Using `pbir-sanitize.yaml`:**
+Place this file in your report folder or CWD. It will be auto-discovered and merged with package defaults.
+
+**Using explicit path:**
+```bash
+pbir-utils validate ... --sanitize-config custom-sanitize.yaml
+```
+
+**Merge Order:**
+```
+1. Internal defaults/rules.yaml
+       ↓
+2. Active sanitizer actions (Package defaults + Your sanitizer config)
+       ↓
+3. Your pbir-rules.yaml definitions/overrides
+```
+
+> **Note:** Sanitizer actions are included by default. You only need to configure `include_sanitizer_defaults: false` in your `pbir-rules.yaml` if you want to disable them.
+
+#### Key Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `include_sanitizer_defaults` | `bool` | `true` | When true, automatically adds all active sanitizer actions as validation rules |
+| `default_sanitizer_severity` | `string` | `"warning"` | Severity level for sanitizer-based rules |
+| `fail_on_warning` | `bool` | `false` | When true with `--strict`, warnings also cause exit code 1 |
+
+#### Rule Selection
+
+How the final rule list is determined:
+
+| Config State | Result |
+|--------------|--------|
+| No `rules:` specified | All defined rules run (definitions from all sources) |
+| `rules:` specified | Only listed rules run |
+| `include:` specified | Listed rules are added to the default set |
+| `exclude:` specified | Listed rules are removed from the set |
+
+**Examples:**
+
+```yaml
+# Run only specific rules
+rules:
+  - remove_unused_bookmarks
+  - reduce_pages
+
+# OR add to defaults
+include:
+  - my_custom_rule
+
+# AND/OR remove from defaults
+exclude:
+  - reduce_advanced_filters
+```
+
+### Customization Reference
+
+#### Disabling Rules
+
+You can disable any rule (including built-in defaults) in your `pbir-rules.yaml`:
+
+```yaml
+definitions:
+  # Disable a noisy rule
+  reduce_visuals_on_page:
+    disabled: true
+  
+  # Enable a rule that's disabled by default
+  ensure_theme_colors:
+    disabled: false
+```
+
+#### Severity Override
+
+Override severity of any rule:
+
+```yaml
+definitions:
+  # Make unused measures a hard error (fails CI)
+  remove_unused_measures:
+    severity: error
+  
+  # Downgrade to info (won't fail CI)
+  reduce_advanced_filters:
+    severity: info
+```
+
+#### Expression Rules
+
+Custom expression rules evaluate Python expressions against report data. This is powerful for enforcing organizational standards.
+
+**Available scopes and context variables:**
+
+| Scope | Context Variable | Description |
+|-------|------------------|-------------|
+| `report` | `report` | Full report context (pages, bookmarks, reportExtensions, etc.) |
+| `page` | `page` | Current page object (with `visuals` array) |
+| `visual` | `visual`, `page` | Current visual object and its parent page |
+| `measure` | `measure`, `entity` | Current measure object and its parent entity |
+| `bookmark` | `bookmark` | Current bookmark object |
+
+**Available functions:** `len()`, `sum()`, `min()`, `max()`, `any()`, `all()`, `re` (regex module)
+
+##### How to Write Expression Rules
+
+**Step 1: Explore the PBIR Structure**
+
+The easiest way to understand what data is available is to explore your report's JSON files directly. PBIR reports are just folders containing JSON files:
+
+```
+MyReport.Report/
+├── definition/
+│   ├── report.json              # Report settings, theme references
+│   ├── reportExtensions.json    # Measures
+│   ├── pages/
+│   │   ├── pages.json           # Page order/list
+│   │   └── {pageId}/            # Each page has a unique ID folder
+│   │       ├── page.json        # Page properties (displayName, size)
+│   │       └── visuals/
+│   │           └── {visualId}/  # Each visual has its own folder
+│   │               └── visual.json  # Visual config (type, query, filters)
+│   └── bookmarks/
+│       ├── bookmarks.json       # Bookmark list
+│       └── {id}.bookmark.json   # Individual bookmark state
+```
+
+Open these JSON files to see the exact structure and property names available.
+
+**Step 2: Match Scope to Your Target**
+
+| If you want to check... | Use Scope | You'll get |
+|-------------------------|-----------|------------|
+| Report-level properties (page count, bookmarks) | `report` | `report` dict with full structure |
+| Each page (visuals count, page name) | `page` | `page` dict for each page |
+| Each visual (type, fields, filters) | `visual` | `visual` dict + parent `page` |
+| Each measure (expression, name) | `measure` | `measure` dict + parent `entity` |
+| Each bookmark | `bookmark` | `bookmark` dict |
+
+**Step 3: Write the Expression**
+
+Expressions are Python code that returns `True` (pass) or `False` (violation). Use `.get()` for safe access:
+
+```yaml
+definitions:
+  # Check page has a description
+  require_page_description:
+    description: "All pages should have descriptions"
+    severity: warning
+    scope: page
+    expression: |
+      len(page.get("displayOption", {}).get("description", "")) > 0
+
+  # Check visual doesn't use hardcoded colors
+  no_hardcoded_colors:
+    description: "Avoid hex colors in visuals"
+    severity: info
+    scope: visual
+    expression: |
+      not re.search(r'#[A-Fa-f0-9]{6}', str(visual.get("visual", {}).get("objects", {})))
+
+  # Limit total bookmarks
+  max_bookmarks:
+    description: "Reports should have at most 10 bookmarks"
+    severity: warning
+    scope: report
+    expression: |
+      len(report.get("bookmarks", [])) <= 10
+```
+
+**Step 4: Use Parameters for Flexibility**
+
+Make rules configurable with `params`:
+
+```yaml
+definitions:
+  max_visuals_per_page:
+    description: "Limit visuals per page"
+    severity: warning
+    scope: page
+    params:
+      max_visuals: 15
+      excluded_types: ["shape", "textbox"]
+    expression: |
+      len([v for v in page.get("visuals", [])
+           if v.get("visual", {}).get("visualType") not in excluded_types]) <= max_visuals
+```
+
+Users can override default params by redefining the rule in their `pbir-rules.yaml`:
+
+```yaml
+# Override built-in rule's params
+definitions:
+  reduce_visuals_on_page:
+    params:
+      max_visuals: 10  # Stricter than default 20
+```
+
+### Complete Example
+
+```yaml
+# pbir-rules.yaml
+
+options:
+  include_sanitizer_defaults: true
+  default_sanitizer_severity: warning
+  fail_on_warning: false
+
+definitions:
+  # 1. Severity overrides (make specific checks hard errors)
+  remove_unused_measures:
+    severity: error
+
+  # 2. Disable noisy checks
+  reduce_advanced_filters:
+    disabled: true
+
+  # 3. Custom expression rules
+  require_page_names:
+    description: "All pages must have descriptive names (not 'Page 1')"
+    severity: warning
+    scope: page
+    expression: |
+      not page.get("displayName", "").startswith("Page ")
+
+include:
+  - require_page_names
+
+exclude:
+  - reduce_topn_filters
+```
+
+### Integration with pbir-sanitize.yaml
+
+When `include_sanitizer_defaults: true`:
+
+1. **Your `pbir-sanitize.yaml` is loaded** (with all its `include`/`exclude` customizations)
+2. **All active actions become validation rules** at `default_sanitizer_severity`
+3. **Your `pbir-rules.yaml` can override** severity or disable any of them
+
+This means running `pbir-utils sanitize --dry-run` and `pbir-utils validate` will check the **same things** when configured correctly.
+

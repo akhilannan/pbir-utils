@@ -1,0 +1,86 @@
+# Default Rules Configuration
+# Engine loads entire PBIR into a context object for expression evaluation.
+# Expressions can traverse: report, reportExtensions, pages (with visuals), bookmarks, themes.
+
+options:
+  include_sanitizer_defaults: true       # Auto-include all sanitizer actions
+  default_sanitizer_severity: warning    # Default severity for them
+  fail_on_warning: false
+
+definitions:
+  # ============================================
+  # Sanitizer-based rules (reference existing actions)
+  # ============================================
+  sort_filters_selected_top:
+    severity: warning
+
+  # ============================================
+  # Expression-based rules (traverse PBIR context)
+  # ============================================
+
+  reduce_pages:
+    description: "Reports with too many pages are harder to navigate"
+    severity: info
+    scope: report
+    params:
+      max_pages: 10
+    expression: >
+      len(pages) <= max_pages
+
+  reduce_visuals_on_page:
+    description: "Too many visuals on a page degrades rendering performance"
+    severity: info
+    scope: page
+    params:
+      max_visuals: 20
+      excluded_types: ["shape", "slicer", "actionButton", "textbox"]
+    expression: >
+      len([v for v in page.get("visuals", []) 
+           if not v.get("isHidden") 
+           and v.get("visual", {}).get("visualType") not in excluded_types]) <= max_visuals
+
+  reduce_objects_within_visuals:
+    description: "Visuals with more data fields degrade performance"
+    severity: info
+    scope: visual
+    params:
+      max_fields: 6
+    expression: >
+      len(visual.get("visual", {}).get("query", {}).get("queryState", {}).get("Values", {}).get("projections", [])) <= max_fields
+
+  reduce_topn_filters:
+    description: "TopN filters are expensive; avoid overuse"
+    severity: info
+    scope: visual
+    params:
+      max_topn_filters: 1
+    expression: >
+      len([f for f in visual.get("filterConfig", {}).get("filters", []) 
+           if f.get("type") == "TopN"]) <= max_topn_filters
+
+  reduce_advanced_filters:
+    description: "Advanced filters can impact query performance"
+    severity: info
+    scope: visual
+    params:
+      max_advanced_filters: 1
+    expression: >
+      len([f for f in visual.get("filterConfig", {}).get("filters", []) 
+           if f.get("type") == "Advanced"]) <= max_advanced_filters
+
+  ensure_theme_colors:
+    description: "Avoid hardcoded hex colors; use ThemeDataColor for consistency"
+    severity: info
+    scope: visual
+    disabled: true
+    expression: >
+      visual.get("visual", {}).get("visualType") == "textbox" or not re.search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(visual.get("visual", {}).get("objects", {})))
+
+# NOTE: No explicit 'rules:' list needed!
+# When omitted, ALL rules from 'definitions' are run automatically.
+# Combined with 'include_sanitizer_defaults: true', this also includes
+# all sanitizer default actions as rules.
+#
+# To exclude specific rules, use:
+#   exclude:
+#     - rule_id_to_skip

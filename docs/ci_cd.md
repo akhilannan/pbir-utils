@@ -23,15 +23,14 @@ my-powerbi-repo/
 │   └── ...
 ├── scripts/
 │   └── check_reports.py         # The validation script (works on any CI)
-├── pbir-sanitize.yaml           # Shared sanitization configuration
+├── pbir-sanitize.yaml           # Defines WHAT to clean/sanitize (the standard)
+├── pbir-rules.yaml              # Defines validation strictness & extra checks
 └── requirements.txt             # Dependencies (including pbir-utils)
 ```
 
-## 1. Define Sanitization Rules
+## 1. Define Sanitization Standards
 
-First, define the rules you want to enforce in a `pbir-sanitize.yaml` file. This ensures all checks use the same standard.
-
-You can customize the rules using `include` and `exclude` to modify the defaults, and even define custom rules.
+First, define the "cleanup" standards in `pbir-sanitize.yaml`. This file controls which actions run and allows you to customize their behavior.
 
 ```yaml
 # pbir-sanitize.yaml
@@ -61,39 +60,57 @@ include:
 
 For more details on configuration and available actions, see the [CLI Reference](cli.md#yaml-configuration).
 
-## 2. Create the Validation Script
+## 2. Define Validation Rules
 
-Create a Python script (e.g., `scripts/check_reports.py`) that validates each report. This script **automatically detects** whether it's running on GitHub Actions, Azure DevOps, or locally, and formats output accordingly.
+Next, create a `pbir-rules.yaml` to configure validation behavior. This file tells the validation engine to:
 
-The script will:
+1.  **Auto-include** all your sanitization standards as validation checks.
+2.  **Customize severity** levels (make specific rules hard errors).
+3.  **Add extra checks** (like naming conventions) that aren't sanitization tasks.
 
-1. Iterate through all reports in your repository.
-2. Run `sanitize_powerbi_report` in `dry_run` mode.
-3. Log warnings or errors in the appropriate CI format.
-4. Configure `BLOCKING_RULES` to specify which actions should **fail** the build. Actions not in this set will only produce warnings. Set it to `{}` (empty) if you want warnings only.
+```yaml
+# pbir-rules.yaml
+
+options:
+  # Crucial: Automatically uses your pbir-sanitize.yaml actions as rules!
+  include_sanitizer_defaults: true
+  
+  # Fail build if ANY warning occurs? (Default strict=True fails on errors only)
+  fail_on_warning: false
+
+definitions:
+  # 1. Customize severity of sanitizer rules
+  # (Use the action names from pbir-sanitize.yaml)
+  remove_unused_measures:
+    severity: error  # Unused measures is a HARD failure
+  
+  remove_identifier_filters:
+    severity: warning # ID filters are just a warning
+
+  # 2. Add extra expression-based rules (not related to sanitization)
+  ensure_visual_title:
+    description: "All visuals must have a title"
+    severity: warning
+    scope: visual
+    expression: |
+      len(visual.get("visual", {}).get("visualContainer", {}).get("title", {}).get("text", "")) > 0
+```
+
+> **Note:** `pbir-rules.yaml` is automatically discovered when placed in the repository root (parent directory of your reports).
+
+For complete documentation on all configuration options (merge order, severity overrides, expression rules, and integration with `pbir-sanitize.yaml`), see the [Rules Configuration Reference](cli.md#rules-configuration-reference).
+
+## 3. Create the Validation Script
+
+Create a Python script (e.g., `scripts/check_reports.py`) that validates each report:
 
 ```python
-"""CI/CD validation script for Power BI reports (GitHub Actions & Azure DevOps)."""
-import os
+"""CI/CD validation script for Power BI reports."""
 import sys
 from pathlib import Path
-from pbir_utils import sanitize_powerbi_report
+from pbir_utils import validate_report
 
-# Configuration
-REPORT_PATTERN = "src/*.Report"
-BLOCKING_RULES = {"remove_identifier_filters", "remove_unused_measures"}
-
-
-def log_issue(message: str, is_error: bool = False) -> None:
-    """Log an issue in the appropriate CI format."""
-    level = "error" if is_error else "warning"
-    if os.getenv("GITHUB_ACTIONS"):
-        print(f"::{level}::{message}")
-    elif os.getenv("TF_BUILD"):
-        print(f"##vso[task.logissue type={level}]{message}")
-    else:
-        print(f"  [{level.upper()}] {message}")
-
+REPORT_PATTERN = "**/*.Report"
 
 def main() -> None:
     reports = list(Path.cwd().glob(REPORT_PATTERN))
@@ -101,37 +118,31 @@ def main() -> None:
         print(f"No reports found matching '{REPORT_PATTERN}'")
         return
 
-    print(f"Checking {len(reports)} report(s)...\n")
-    has_blocking_errors = False
-
+    results = []
     for report_path in reports:
-        name = report_path.name
-        print(f"--- {name} ---")
+        result = validate_report(str(report_path), strict=False)
+        results.append((report_path.name, result))
 
-        results = sanitize_powerbi_report(str(report_path), dry_run=True, summary=True)
-        failed = [action for action, has_issues in results.items() if has_issues]
-
-        if not failed:
-            print("  OK")
-            continue
-
-        for action in failed:
-            is_error = action in BLOCKING_RULES
-            log_issue(f"[{name}] {action}", is_error=is_error)
-            if is_error:
-                has_blocking_errors = True
-
-    if has_blocking_errors:
-        print("\nBuild FAILED: Blocking errors found.")
-        sys.exit(1)
-    print("\nValidation complete.")
-
+    # Print summary and check for errors
+    print("\n=== SUMMARY ===")
+    has_errors = False
+    for name, r in results:
+        print(f"'{name}': {r}")
+        has_errors = has_errors or r.has_errors
+    
+    sys.exit(1 if has_errors else 0)
 
 if __name__ == "__main__":
     main()
 ```
 
-## 3. Configure Your CI Pipeline
+The script is simple because `validate_report()` already:
+- Prints detailed rule results with colors
+- Shows a summary line: "Validation complete: 5 passed, 13 warning(s), 2 info"
+- Returns a `ValidationResult` with `.has_errors`, `.error_count`, `.warning_count`, etc.
+
+
+## 4. Configure Your CI Pipeline
 
 ### GitHub Actions
 
@@ -196,16 +207,23 @@ steps:
 ## How it Works
 
 1. **Pull Request**: When a developer opens a PR, the pipeline runs.
-2. **Validation**: The script scans all reports matching the pattern.
-3. **Feedback**: Issues are logged in the native CI format (errors/warnings appear in the PR view).
-4. **Result**: Build fails if any `BLOCKING_RULES` are triggered; otherwise, it passes with warnings.
+2. **Validation**: The script scans all reports and runs `validate_report`.
+3. **Configuration Loading**: 
+   - `validate_report` loads `pbir-rules.yaml`.
+   - Sees `include_sanitizer_defaults: true`.
+   - Loads your `pbir-sanitize.yaml` (with all its `include`/`exclude` customizations).
+   - Combines them with your explicit rules.
+4. **Result**: Build fails only if any `error` level rules are violated.
 
-## Why not auto-fix in CI?
+## Auto-fixing
 
-You *could* run the sanitizer with `dry_run=False` and commit the changes back, but this is generally discouraged in CI because:
+If validation fails, the developer can simply run:
 
-*   It modifies code without explicit developer review.
-*   It can cause commit loops or merge conflicts.
-*   Some sanitization actions (like removing measures) might need human judgment if defaults are too aggressive.
+```bash
+# Developer runs locally to fix issues
+pbir-utils sanitize "src/SalesReport.Report"
+git add .
+git commit -m "Fix validation errors"
+```
 
-The recommended approach is to **warn in CI** or **fail the build in CI**, forcing the developer to run `pbir-utils sanitize` locally and commit the clean version.
+Because validation uses the SAME `pbir-sanitize.yaml` as the standard, running `sanitize` locally is guaranteed to fix all sanitizer-related issues. Expression rules (like `ensure_visual_title`) require manual fixing in Power BI Desktop.

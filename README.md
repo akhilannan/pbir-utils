@@ -31,6 +31,9 @@ pip install pbir-utils
 # Sanitize a report (dry-run to preview changes)
 pbir-utils sanitize "C:\Reports\MyReport.Report" --dry-run
 
+# Validate a report against rules
+pbir-utils validate "C:\Reports\MyReport.Report"
+
 # Extract metadata to CSV
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\metadata.csv"
 
@@ -52,6 +55,7 @@ pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", actions=["remove_unu
 
 - **💻 CLI Support**: Access all utilities directly from the command line
 - **⚙️ CI/CD Integration**: Validate reports in pipelines before deployment
+- **✅ Validate Reports**: Rule-based validation with custom expressions
 - **📄 Extract Metadata**: Retrieve key metadata from PBIR files
 - **🖼️ Wireframe Visualizer**: Visualize PBIR report layout
 - **🧼 Sanitize Reports**: Clean up and optimize reports with YAML configuration

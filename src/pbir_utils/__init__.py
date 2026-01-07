@@ -29,6 +29,7 @@ from .visual_utils import (
 )
 from .folder_standardizer import standardize_pbir_folders
 from .sanitize_config import SanitizeConfig, ActionSpec, load_config
+from .rule_engine import validate_report, ValidationError, ValidationResult
 
 __all__ = [
     # Core utilities
@@ -65,4 +66,8 @@ __all__ = [
     "remove_hidden_visuals_never_shown",
     # Folder utilities
     "standardize_pbir_folders",
+    # Rule validation
+    "validate_report",
+    "ValidationError",
+    "ValidationResult",
 ]
