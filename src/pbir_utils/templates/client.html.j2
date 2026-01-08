@@ -389,6 +389,53 @@
             cursor: help;
         }
 
+        /* Validation Panel */
+        .rule-item {
+            padding: 6px 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rule-item:hover { background: var(--hover-bg); }
+        .rule-item input[type="checkbox"] { margin: 0; accent-color: var(--accent-color); }
+
+        .severity-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .severity-badge.error { background: #fee2e2; color: #dc2626; }
+        .severity-badge.warning { background: #fef3c7; color: #d97706; }
+        .severity-badge.info { background: #dbeafe; color: #2563eb; }
+
+        [data-theme="dark"] .severity-badge.error { background: #991b1b; color: #fecaca; }
+        [data-theme="dark"] .severity-badge.warning { background: #92400e; color: #fef3c7; }
+        [data-theme="dark"] .severity-badge.info { background: #1e40af; color: #dbeafe; }
+
+        /* Validation Toast */
+        .validation-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        .validation-toast.success { border-left: 4px solid var(--success-color); }
+        .validation-toast.warning { border-left: 4px solid var(--warning-color); }
+        .validation-toast.error { border-left: 4px solid var(--error-color); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
         /* Export Buttons */
         .export-buttons {
             display: flex;
@@ -671,6 +718,22 @@
                         </button>
                     </div>
                     <div id="actions-list"></div>
+                </div>
+            </div>
+
+            <!-- Validate -->
+            <div class="sidebar-section validation-panel" id="section-validate">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')">
+                    <span class="chevron">▶</span>
+                    <span class="section-title">🔍 VALIDATE</span>
+                </div>
+                <div class="sidebar-section-content">
+                    <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding: 8px 16px;">
+                        <button class="action-btn primary" onclick="runCheck()" id="check-btn" disabled>
+                            ✓ Check
+                        </button>
+                    </div>
+                    <div id="rules-list"></div>
                 </div>
             </div>
 

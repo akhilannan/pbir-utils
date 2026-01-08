@@ -75,3 +75,54 @@ class RunActionResponse(BaseModel):
 
     success: bool
     output: list[str]
+
+
+# Validation models
+
+
+class RuleInfo(BaseModel):
+    """Expression-based validation rule."""
+
+    id: str
+    description: str | None = None
+    severity: str = "warning"
+    scope: str = "report"
+
+
+class RulesResponse(BaseModel):
+    """Response listing expression-based rules."""
+
+    rules: list[RuleInfo]
+    config_path: str | None = None
+
+
+class ValidateRequest(BaseModel):
+    """Request for combined validation."""
+
+    report_path: str
+    expression_rules: list[str] | None = None
+    sanitize_actions: list[str] | None = None
+
+
+class ViolationInfo(BaseModel):
+    """Single validation violation."""
+
+    rule_id: str
+    rule_name: str
+    severity: str
+    message: str
+    rule_type: str = "expression"
+    page_name: str | None = None
+    visual_name: str | None = None
+
+
+class ValidateResponse(BaseModel):
+    """Validation results."""
+
+    passed: int
+    failed: int
+    error_count: int
+    warning_count: int
+    info_count: int
+    results: dict[str, bool]
+    violations: list[ViolationInfo]

@@ -11,6 +11,7 @@ var fieldsIndex = null;
 var activePageId = null;
 var currentConfigPath = null;
 var customConfigYaml = null;
+var expressionRules = [];  // Validation rules
 
 
 // DOM Elements
@@ -144,6 +145,9 @@ async function loadReport(reportPath, preserveActions) {
         if (savedActions) {
             restoreActionSelection(savedActions);
         }
+
+        // Load expression rules for validation
+        await loadExpressionRules(reportPath);
 
         // Navigate file browser to show and highlight the loaded report
         var parentPath = reportPath.replace(/[\\/][^\\/]+$/, '');
@@ -474,6 +478,121 @@ async function runActions(dryRun) {
     };
 }
 
+// ============ Validation ============
+
+async function loadExpressionRules(reportPath) {
+    if (!reportPath) return;
+    try {
+        var url = '/api/reports/validate/rules?report_path=' + encodeURIComponent(reportPath);
+        var response = await fetch(url);
+        var data = await response.json();
+        expressionRules = data.rules || [];
+        renderExpressionRules();
+        document.getElementById('check-btn').disabled = false;
+    } catch (e) {
+        console.error('Failed to load validation rules:', e);
+        expressionRules = [];
+        renderExpressionRules();
+    }
+}
+
+function renderExpressionRules() {
+    var container = document.getElementById('rules-list');
+    if (!container) return;
+
+    if (!expressionRules.length) {
+        container.innerHTML = '<div style="padding: 16px; color: var(--text-secondary); font-size: 12px;">No expression rules available</div>';
+        return;
+    }
+
+    var html = expressionRules.map(function(r) {
+        var desc = r.description || r.id.replace(/_/g, ' ');
+        var badge = r.severity[0].toUpperCase();
+        return `
+            <div class="rule-item">
+                <input type="checkbox" id="rule-${r.id}" value="${r.id}" checked>
+                <label for="rule-${r.id}" style="flex:1;cursor:pointer;">${escapeHtml(desc)}</label>
+                <span class="severity-badge ${r.severity}">${badge}</span>
+            </div>`;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+async function runCheck() {
+    if (!currentReportPath) {
+        showToast('⚠️ Please open a report first', 3000);
+        return;
+    }
+
+    // Get selected expression rules
+    var exprRules = Array.from(document.querySelectorAll('#rules-list input:checked')).map(function(cb) { return cb.value; });
+    // Get selected sanitize actions from ACTIONS panel
+    var sanitizeActions = Array.from(selectedActions);
+
+    if (exprRules.length === 0 && sanitizeActions.length === 0) {
+        showValidationToast(0, 0, 0, 0, 'warning');
+        appendOutput('warning', 'No rules or actions selected for validation');
+        return;
+    }
+
+    var btn = document.getElementById('check-btn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Checking...';
+    appendOutput('info', 'Checking ' + exprRules.length + ' rules + ' + sanitizeActions.length + ' actions...');
+
+    try {
+        var response = await fetch('/api/reports/validate/run', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                report_path: currentReportPath,
+                expression_rules: exprRules.length ? exprRules : null,
+                sanitize_actions: sanitizeActions.length ? sanitizeActions : null
+            })
+        });
+
+        var result = await response.json();
+
+        // Show popup
+        showValidationToast(result.passed, result.failed, result.warning_count, result.error_count);
+
+        // Output summary
+        appendOutput(result.failed ? 'warning' : 'success', 
+            'Check complete: ' + result.passed + ' passed, ' + result.failed + ' failed');
+
+        // Output violations
+        for (var i = 0; i < result.violations.length; i++) {
+            var v = result.violations[i];
+            var details = v.page_name ? ' (Page: ' + v.page_name + ')' : '';
+            appendOutput(v.severity, '  [' + v.severity.toUpperCase() + '] ' + v.rule_name + ': ' + v.message + details);
+        }
+
+    } catch (e) {
+        appendOutput('error', 'Check error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✓ Check';
+    }
+}
+
+function showValidationToast(passed, failed, warnings, errors) {
+    // Remove existing validation toast
+    var existing = document.querySelector('.validation-toast');
+    if (existing) existing.remove();
+
+    var type = errors > 0 ? 'error' : (failed > 0 ? 'warning' : 'success');
+    var toast = document.createElement('div');
+    toast.className = 'validation-toast ' + type;
+    toast.innerHTML = 
+        '<div style="font-weight:600;margin-bottom:4px;">Validation Complete</div>' +
+        '<div>✓ ' + passed + ' passed &nbsp; ✗ ' + failed + ' failed</div>' +
+        (errors ? '<div style="color:var(--error-color);">🔴 ' + errors + ' error(s)</div>' : '') +
+        (warnings ? '<div style="color:var(--warning-color);">🟡 ' + warnings + ' warning(s)</div>' : '');
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 5000);
+}
+
 // ============ CSV Export ============
 
 function downloadCSV(type, filteredOnly) {
@@ -639,6 +758,7 @@ function savePanelState() {
     var state = {
         reports: document.getElementById('section-reports')?.classList.contains('collapsed'),
         actions: document.getElementById('section-actions')?.classList.contains('collapsed'),
+        validate: document.getElementById('section-validate')?.classList.contains('collapsed'),
         export: document.getElementById('section-export')?.classList.contains('collapsed'),
         output: outputPanel?.classList.contains('collapsed'),
         sidebar: sidebar?.classList.contains('collapsed'),
@@ -655,6 +775,7 @@ function restorePanelState() {
             var state = JSON.parse(saved);
             if (state.reports) document.getElementById('section-reports')?.classList.add('collapsed');
             if (state.actions) document.getElementById('section-actions')?.classList.add('collapsed');
+            if (state.validate) document.getElementById('section-validate')?.classList.add('collapsed');
             if (state.export) document.getElementById('section-export')?.classList.add('collapsed');
 
             var outputPanel = document.getElementById('output-panel');

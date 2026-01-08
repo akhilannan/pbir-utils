@@ -20,6 +20,11 @@ from ..models import (
     ConfigResponse,
     RunActionRequest,
     RunActionResponse,
+    RuleInfo,
+    RulesResponse,
+    ValidateRequest,
+    ViolationInfo,
+    ValidateResponse,
 )
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -430,4 +435,113 @@ async def download_wireframe_html(report_path: str, visual_ids: str = None):
         iter([html_content]),
         media_type="text/html",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+# Validation endpoints
+
+
+@router.get("/validate/rules", response_model=RulesResponse)
+async def list_expression_rules(report_path: str = None):
+    """
+    List expression-based validation rules only.
+
+    Excludes sanitizer-based rules since those are shown in the Actions panel.
+    """
+    from pbir_utils.rule_config import load_rules, find_user_rules
+
+    cfg = await run_in_threadpool(load_rules, report_path=report_path)
+
+    # Filter to expression-based rules only
+    rules = [
+        RuleInfo(
+            id=r.id,
+            description=r.description or r.display_name,
+            severity=r.severity,
+            scope=r.scope,
+        )
+        for r in cfg.rules
+        if r.is_expression_rule
+    ]
+
+    user_config = find_user_rules(report_path)
+    return RulesResponse(
+        rules=rules, config_path=str(user_config) if user_config else None
+    )
+
+
+@router.post("/validate/run", response_model=ValidateResponse)
+async def run_validation(request: ValidateRequest):
+    """
+    Run combined validation: expression rules + sanitize action checks.
+
+    Expression rules evaluate conditions on report structure.
+    Sanitize actions are run in dry-run mode to check if changes would be made.
+    """
+    from pbir_utils.rule_engine import validate_report
+    from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
+    from pbir_utils.console_utils import console
+
+    all_results = {}
+    all_violations = []
+
+    # 1. Run expression rules
+    if request.expression_rules:
+        with console.suppress_all():
+            result = await run_in_threadpool(
+                validate_report,
+                request.report_path,
+                rules=request.expression_rules,
+                strict=False,
+            )
+        all_results.update(result.results)
+        for v in result.violations:
+            all_violations.append(
+                ViolationInfo(
+                    rule_id=v.get("rule_id", ""),
+                    rule_name=v.get("rule_name", ""),
+                    severity=v.get("severity", "warning"),
+                    message=v.get("message", ""),
+                    rule_type="expression",
+                    page_name=v.get("page_name"),
+                    visual_name=v.get("visual_name"),
+                )
+            )
+
+    # 2. Run sanitize action dry-run checks
+    if request.sanitize_actions:
+        with console.suppress_all():
+            results = await run_in_threadpool(
+                sanitize_powerbi_report,
+                request.report_path,
+                actions=request.sanitize_actions,
+                dry_run=True,
+            )
+
+        # Actions that would change = violations
+        for action_id, would_change in results.items():
+            all_results[action_id] = not would_change
+            if would_change:
+                all_violations.append(
+                    ViolationInfo(
+                        rule_id=action_id,
+                        rule_name=action_id.replace("_", " ").title(),
+                        severity="warning",
+                        message="Would make changes",
+                        rule_type="sanitizer",
+                    )
+                )
+
+    # Calculate counts
+    passed = sum(1 for v in all_results.values() if v)
+    failed = sum(1 for v in all_results.values() if not v)
+
+    return ValidateResponse(
+        passed=passed,
+        failed=failed,
+        error_count=sum(1 for v in all_violations if v.severity == "error"),
+        warning_count=sum(1 for v in all_violations if v.severity == "warning"),
+        info_count=sum(1 for v in all_violations if v.severity == "info"),
+        results=all_results,
+        violations=all_violations,
     )

@@ -3,6 +3,7 @@
     - Report browser for navigating and selecting `.Report` folders
     - Full wireframe visualization with all existing features
     - Execute sanitize actions with real-time progress streaming (SSE)
+    - Run expression rules + sanitize action checks with popup summary
     - Export metadata (CSV) and wireframe (HTML) (respects search, field filters, visibility toggles)
     - Auto-reload wireframe after successful actions
     - Persistent toast notifications and dirty state indicators
