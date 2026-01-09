@@ -597,10 +597,6 @@ async function runCheck() {
         eventSource.close();
         var summary = JSON.parse(event.data);
 
-        appendOutput('info', '');
-        appendOutput(summary.failed > 0 ? 'warning' : 'success',
-            'Check complete: ' + summary.passed + ' passed, ' + summary.failed + ' failed');
-
         showValidationToast(summary.passed, summary.failed, summary.warning_count, summary.error_count);
 
         btn.disabled = false;
