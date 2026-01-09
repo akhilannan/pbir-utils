@@ -1,19 +1,14 @@
 # Default Rules Configuration
+# This file defines expression-based validation rules only.
+# Sanitizer-based checks are now handled directly via sanitize.yaml.
+#
 # Engine loads entire PBIR into a context object for expression evaluation.
 # Expressions can traverse: report, reportExtensions, pages (with visuals), bookmarks, themes.
 
 options:
-  include_sanitizer_defaults: true       # Auto-include all sanitizer actions
-  default_sanitizer_severity: warning    # Default severity for them
   fail_on_warning: false
 
 definitions:
-  # ============================================
-  # Sanitizer-based rules (reference existing actions)
-  # ============================================
-  sort_filters_selected_top:
-    severity: warning
-
   # ============================================
   # Expression-based rules (traverse PBIR context)
   # ============================================
@@ -78,8 +73,6 @@ definitions:
 
 # NOTE: No explicit 'rules:' list needed!
 # When omitted, ALL rules from 'definitions' are run automatically.
-# Combined with 'include_sanitizer_defaults: true', this also includes
-# all sanitizer default actions as rules.
 #
 # To exclude specific rules, use:
 #   exclude:

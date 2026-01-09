@@ -7,13 +7,18 @@
     - Export metadata (CSV) and wireframe (HTML) (respects search, field filters, visibility toggles)
     - Auto-reload wireframe after successful actions
     - Persistent toast notifications and dirty state indicators
-- **validate**: New rule-based report validation command
-    - `pbir-utils validate` CLI command for validating against configurable rules
-    - `validate_report()` Python API function returning `dict[str, bool]`
-    - 10 default rules: sanitizer-based (remove_unused_bookmarks, etc.) and expression-based (reduce_pages, reduce_visuals_on_page, etc.)
-    - Custom rules via `pbir-rules.yaml` (same pattern as sanitize config)
-    - JSON output format for CI/CD integration (`--format json`)
-    - Strict mode exits with code 1 on violations (`--strict`)
+- **validate**: New report validation command
+    - Runs sanitizer checks (dry-run) + expression rules by default
+    - `--source all|sanitize|rules` to filter which checks to run
+    - `--actions` to cherry-pick specific sanitizer actions
+    - `--rules` to cherry-pick specific expression rules
+    - `--rules-config` and `--sanitize-config` for custom YAML configs
+    - `--strict` mode exits with code 1 on violations (for CI/CD)
+    - `--format json` for machine-readable output
+    - Output grouped by `[Sanitizer Checks]` and `[Expression Rules]` sections
+- **sanitize**: Added `severity` field to action definitions
+    - Actions can now specify `severity: error|warning|info` in `pbir-sanitize.yaml`
+    - Enables per-action violation levels when used with `validate` command
 - **extract-metadata**: Simplified filter arguments
     - Added explicit `--pages`, `--reports`, `--tables`, `--visual-types`, and `--visual-ids` arguments
     - Aligned filter syntax with other CLI commands for bette r ergonomics

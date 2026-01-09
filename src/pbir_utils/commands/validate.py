@@ -7,33 +7,17 @@ import json
 import sys
 import textwrap
 
-from ..rule_config import get_default_rules_path, _load_yaml
-
 
 def register(subparsers):
     """Register the validate command."""
-    # Build description dynamically from defaults/rules.yaml
-    default_rules_path = get_default_rules_path()
-    if default_rules_path.exists():
-        default_config = _load_yaml(default_rules_path)
-    else:
-        default_config = {}
-
-    # Get default rule IDs
-    default_rule_ids = default_config.get("rules", [])
-
-    # Build dynamic description
-    rules_list = "\n".join(f"          - {rule_id}" for rule_id in default_rule_ids)
-
-    validate_desc = f"""
-        Validate a Power BI report against configurable rules.
+    validate_desc = """
+        Validate a Power BI report against configurable checks.
         
-        Rules can be:
-        - Sanitizer-based: Check if a sanitize action would make changes
-        - Expression-based: Evaluate conditions on report structure
+        By default, runs BOTH:
+        - Sanitizer checks: Verify sanitize actions wouldn't make changes
+        - Expression rules: Evaluate conditions on report structure
         
-        Default Rules:
-{rules_list}
+        Use --source to run only sanitizer checks or only expression rules.
         
         Severity Levels:
           - error: Critical issues (fails in strict mode)
@@ -41,18 +25,28 @@ def register(subparsers):
           - info: Recommendations only
         
         Configuration:
-          Create a 'pbir-rules.yaml' in your project to customize rules.
-          Or use --config to specify a custom config file path.
+          Create 'pbir-sanitize.yaml' and/or 'pbir-rules.yaml' in your project
+          to customize checks. Or use --sanitize-config / --rules-config to 
+          specify custom config file paths.
     """
 
     validate_epilog = textwrap.dedent(
         r"""
         Examples:
-          # Validate with default rules
+          # Validate with all checks (default)
           pbir-utils validate "C:\Reports\MyReport.Report"
           
-          # Validate with specific rules only
-          pbir-utils validate "C:\Reports\MyReport.Report" --rules remove_unused_bookmarks reduce_pages
+          # Run only sanitizer checks
+          pbir-utils validate "C:\Reports\MyReport.Report" --source sanitize
+          
+          # Run only expression rules
+          pbir-utils validate "C:\Reports\MyReport.Report" --source rules
+          
+          # Run specific sanitizer actions only
+          pbir-utils validate "C:\Reports\MyReport.Report" --actions remove_unused_measures cleanup_invalid_bookmarks
+          
+          # Run specific expression rules only
+          pbir-utils validate "C:\Reports\MyReport.Report" --rules reduce_pages reduce_visuals_on_page
           
           # Filter by minimum severity
           pbir-utils validate "C:\Reports\MyReport.Report" --severity warning
@@ -63,8 +57,9 @@ def register(subparsers):
           # JSON output for scripting
           pbir-utils validate "C:\Reports\MyReport.Report" --format json
           
-          # Use a custom config file
-          pbir-utils validate "C:\Reports\MyReport.Report" --config pbir-rules.yaml
+          # Use custom config files
+          pbir-utils validate "C:\Reports\MyReport.Report" --sanitize-config my-sanitize.yaml
+          pbir-utils validate "C:\Reports\MyReport.Report" --rules-config my-rules.yaml
     """
     )
 
@@ -81,15 +76,22 @@ def register(subparsers):
         help="Path to the Power BI report folder (optional if inside a .Report folder)",
     )
     parser.add_argument(
+        "--source",
+        choices=["all", "sanitize", "rules"],
+        default="all",
+        help="Which checks to run: 'all' (default), 'sanitize' only, or 'rules' only",
+    )
+    parser.add_argument(
+        "--actions",
+        nargs="+",
+        metavar="ACTION",
+        help="Specific sanitizer action IDs to check (from pbir-sanitize.yaml)",
+    )
+    parser.add_argument(
         "--rules",
         nargs="+",
         metavar="RULE",
-        help="Specific rule IDs to run (default: all rules from config)",
-    )
-    parser.add_argument(
-        "--config",
-        metavar="PATH",
-        help="Path to a custom rules config YAML file.",
+        help="Specific expression rule IDs to run (from pbir-rules.yaml)",
     )
     parser.add_argument(
         "--sanitize-config",
@@ -97,9 +99,14 @@ def register(subparsers):
         help="Path to a custom sanitize config YAML file (default: auto-discovered).",
     )
     parser.add_argument(
+        "--rules-config",
+        metavar="PATH",
+        help="Path to a custom rules config YAML file (default: auto-discovered).",
+    )
+    parser.add_argument(
         "--severity",
         choices=["info", "warning", "error"],
-        help="Minimum severity to report (default: info - all rules)",
+        help="Minimum severity to report (default: info - all checks)",
     )
     parser.add_argument(
         "--strict",
@@ -130,9 +137,11 @@ def handle(args):
             with console.suppress_all():
                 result = validate_report(
                     report_path,
+                    source=args.source,
+                    actions=args.actions,
                     rules=args.rules,
-                    config=args.config,
                     sanitize_config=getattr(args, "sanitize_config", None),
+                    rules_config=getattr(args, "rules_config", None),
                     severity=args.severity,
                     strict=args.strict,
                 )
@@ -153,9 +162,11 @@ def handle(args):
             # Console mode
             results = validate_report(
                 report_path,
+                source=args.source,
+                actions=args.actions,
                 rules=args.rules,
-                config=args.config,
                 sanitize_config=getattr(args, "sanitize_config", None),
+                rules_config=getattr(args, "rules_config", None),
                 severity=args.severity,
                 strict=args.strict,
             )

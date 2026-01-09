@@ -228,9 +228,10 @@ class TestLoadRules:
         with patch("pbir_utils.rule_config.find_user_rules", return_value=None):
             config = load_rules()
 
-        # Should have default rules
+        # Should have default expression rules (no sanitizer actions in rules.yaml)
         assert len(config.rules) > 0
-        assert "remove_unused_bookmarks" in config.get_rule_ids()
+        # Check for an expression rule, not a sanitizer action
+        assert "reduce_pages" in config.get_rule_ids()
 
     def test_raises_on_missing_explicit_config(self, tmp_path):
         """Test that explicit config path raises if not found."""

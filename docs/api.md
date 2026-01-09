@@ -639,16 +639,18 @@ pbir.set_page_display_option(report_path, display_option="FitToPage", dry_run=Tr
 
 ## Validate Report
 
-Validates a Power BI report against configurable rules.
+Validates a Power BI report against configurable checks. By default, runs both sanitizer checks and expression rules.
 
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `report_path` | str | Path to the report folder |
-| `rules` | list | Specific rule IDs to run (optional) |
-| `config` | str/Path/dict | Config file path or dict |
+| `source` | str | Which checks to run: `"all"` (default), `"sanitize"`, or `"rules"` |
+| `actions` | list | Specific sanitizer action IDs to check (from `pbir-sanitize.yaml`) |
+| `rules` | list | Specific expression rule IDs to run (from `pbir-rules.yaml`) |
 | `sanitize_config` | str/Path | Custom sanitize config path (default: auto-discovered) |
+| `rules_config` | str/Path | Custom rules config path (default: auto-discovered) |
 | `severity` | str | Minimum severity to check (`info`, `warning`, `error`) |
 | `strict` | bool | Raise exception on error violations. Default: `True` |
 
@@ -658,14 +660,14 @@ Validates a Power BI report against configurable rules.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `passed` | int | Number of rules that passed |
-| `failed` | int | Number of rules that failed |
+| `passed` | int | Number of checks that passed |
+| `failed` | int | Number of checks that failed |
 | `error_count` | int | Violations with `severity=error` |
 | `warning_count` | int | Violations with `severity=warning` |
 | `info_count` | int | Violations with `severity=info` |
 | `has_errors` | bool | `True` if any errors exist |
 | `has_warnings` | bool | `True` if any warnings exist |
-| `results` | dict | Rule ID → passed (bool) |
+| `results` | dict | Check ID → passed (bool) |
 | `violations` | list | Full violation details |
 
 ### Raises
@@ -677,28 +679,57 @@ Validates a Power BI report against configurable rules.
 ```python
 from pbir_utils import validate_report, ValidationError
 
-# Run with strict=False to get results without exception
-result = pbir.validate_report(r"C:\Reports\MyReport.Report", strict=False)
-print(result)  # "5 passed, 0 errors, 13 warnings, 2 info"
+# Run all checks (default)
+result = validate_report(r"C:\Reports\MyReport.Report", strict=False)
+print(result)  # "5 passed, 0 errors, 9 warnings, 3 info"
+
+# Run only sanitizer checks
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    source="sanitize",
+    strict=False
+)
+
+# Run only expression rules
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    source="rules",
+    strict=False
+)
+
+# Run specific sanitizer actions only
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    actions=["remove_unused_measures", "cleanup_invalid_bookmarks"],
+    strict=False
+)
+
+# Run specific expression rules only
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    rules=["reduce_pages", "reduce_visuals_on_page"],
+    strict=False
+)
+
+# Filter by minimum severity
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    severity="warning",  # Only warning and error
+    strict=False
+)
+
+# Use custom config files
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    sanitize_config="custom-sanitize.yaml",
+    rules_config="custom-rules.yaml",
+    strict=False
+)
 
 # Access counts directly
 if result.has_errors:
     print("Build failed!")
 print(f"Warnings: {result.warning_count}")
-
-# Run specific rules only
-result = pbir.validate_report(
-    r"C:\Reports\MyReport.Report",
-    rules=["remove_unused_bookmarks", "reduce_pages"],
-    strict=False
-)
-
-# Use custom config
-result = pbir.validate_report(
-    r"C:\Reports\MyReport.Report",
-    config="pbir-rules.yaml",
-    strict=False
-)
 ```
 
 ### Handling ValidationError
@@ -707,12 +738,12 @@ result = pbir.validate_report(
 from pbir_utils import validate_report, ValidationError
 
 try:
-    result = pbir.validate_report(r"C:\Reports\MyReport.Report", strict=True)
+    result = validate_report(r"C:\Reports\MyReport.Report", strict=True)
 except ValidationError as e:
     print(f"Validation failed: {e}")
     for v in e.violations:
         print(f"  - {v['rule_id']}: {v['message']}")
 ```
 
-For rule configuration details, see [Rules Configuration Reference](cli.md#rules-configuration-reference).
+For configuration details, see [Validate Report CLI Reference](cli.md#validate-report).
 

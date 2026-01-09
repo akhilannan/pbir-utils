@@ -23,82 +23,87 @@ my-powerbi-repo/
 │   └── ...
 ├── scripts/
 │   └── check_reports.py         # The validation script (works on any CI)
-├── pbir-sanitize.yaml           # Defines WHAT to clean/sanitize (the standard)
-├── pbir-rules.yaml              # Defines validation strictness & extra checks
+├── pbir-sanitize.yaml           # (Optional) Customize sanitizer actions/severity
+├── pbir-rules.yaml              # (Optional) Customize expression rules
 └── requirements.txt             # Dependencies (including pbir-utils)
 ```
 
-## 1. Define Sanitization Standards
+!!! tip "Optional Configuration"
+    Both config files are **optional**. Without them, `validate_report()` uses the [default sanitize actions](cli.md#available-actions) and [default expression rules](cli.md#expression-rules). Config files are auto-discovered when placed in the repository root or report folder.
 
-First, define the "cleanup" standards in `pbir-sanitize.yaml`. This file controls which actions run and allows you to customize their behavior.
+## 1. Define Sanitization Standards (Optional)
+
+Customize which actions run or their severity levels:
 
 ```yaml
 # pbir-sanitize.yaml
 # By default, runs standard actions (remove_unused_measures, etc.)
 
-# 1. Define custom rules first
 definitions:
-  remove_identifier_filters:
-    implementation: clear_filters # Using the clear_filters function
-    params:
-        include_columns: ["*Id*", "* ID*"] # Pattern to match ID columns
-        clear_all: true # Required to actually perform the clear
-    description: "Remove filters on identifier columns (e.g. OrderId, Customer ID)"
+  # Override severity for specific actions
+  remove_unused_measures:
+    severity: error  # Make this a hard failure in CI
 
-# 2. Exclude specific default actions if needed
+  cleanup_invalid_bookmarks:
+    severity: warning  # Standard warning
+
+  # Define custom actions
+  remove_identifier_filters:
+    implementation: clear_filters
+    params:
+      include_columns: ["*Id*", "* ID*"]
+      clear_all: true
+    description: "Remove filters on identifier columns"
+    severity: warning
+
+# Exclude specific default actions if needed
 exclude:
   - set_first_page_as_active
   - remove_empty_pages
 
-# 3. Include additional actions (built-in or custom defined above)
+# Include additional actions
 include:
   - standardize_pbir_folders 
   - remove_identifier_filters
 ```
 
-> **Note:** `pbir-sanitize.yaml` is automatically discovered when placed in the repository root. If using a different name or location, pass the `config` parameter explicitly: `sanitize_powerbi_report(path, config="path/to/config.yaml", ...)`
+## 2. Define Expression Rules (Optional)
 
-For more details on configuration and available actions, see the [CLI Reference](cli.md#yaml-configuration).
-
-## 2. Define Validation Rules
-
-Next, create a `pbir-rules.yaml` to configure validation behavior. This file tells the validation engine to:
-
-1.  **Auto-include** all your sanitization standards as validation checks.
-2.  **Customize severity** levels (make specific rules hard errors).
-3.  **Add extra checks** (like naming conventions) that aren't sanitization tasks.
+Add custom expression rules or customize severity:
 
 ```yaml
 # pbir-rules.yaml
 
 options:
-  # Crucial: Automatically uses your pbir-sanitize.yaml actions as rules!
-  include_sanitizer_defaults: true
-  
   # Fail build if ANY warning occurs? (Default strict=True fails on errors only)
   fail_on_warning: false
 
 definitions:
-  # 1. Customize severity of sanitizer rules
-  # (Use the action names from pbir-sanitize.yaml)
-  remove_unused_measures:
-    severity: error  # Unused measures is a HARD failure
-  
-  remove_identifier_filters:
-    severity: warning # ID filters are just a warning
+  # Override default rule severity
+  reduce_visuals_on_page:
+    severity: warning
+    params:
+      max_visuals: 15  # Stricter than default 20
 
-  # 2. Add extra expression-based rules (not related to sanitization)
+  # Add custom expression-based rules
   ensure_visual_title:
     description: "All visuals must have a title"
     severity: warning
     scope: visual
     expression: |
       len(visual.get("visual", {}).get("visualContainer", {}).get("title", {}).get("text", "")) > 0
+  
+  require_page_description:
+    description: "All pages should have descriptions"
+    severity: info
+    scope: page
+    expression: |
+      len(page.get("displayOption", {}).get("description", "")) > 0
+
+include:
+  - ensure_visual_title
+  - require_page_description
 ```
-
-> **Note:** `pbir-rules.yaml` is automatically discovered when placed in the repository root (parent directory of your reports).
-
-For complete documentation on all configuration options (merge order, severity overrides, expression rules, and integration with `pbir-sanitize.yaml`), see the [Rules Configuration Reference](cli.md#rules-configuration-reference).
 
 ## 3. Create the Validation Script
 
@@ -120,6 +125,7 @@ def main() -> None:
 
     results = []
     for report_path in reports:
+        # Run all checks (sanitizer + expression rules)
         result = validate_report(str(report_path), strict=False)
         results.append((report_path.name, result))
 
@@ -137,10 +143,30 @@ if __name__ == "__main__":
 ```
 
 The script is simple because `validate_report()` already:
-- Prints detailed rule results with colors
-- Shows a summary line: "Validation complete: 5 passed, 13 warning(s), 2 info"
+
+- Runs both **sanitizer checks** (from `pbir-sanitize.yaml`) and **expression rules** (from `pbir-rules.yaml`)
+- Prints detailed results with `[Sanitizer Checks]` and `[Expression Rules]` sections
+- Shows a summary line: "Validation complete: 5 passed, 9 warning(s), 3 info"
 - Returns a `ValidationResult` with `.has_errors`, `.error_count`, `.warning_count`, etc.
 
+### Advanced: Cherry-Pick Specific Checks
+
+You can also run specific checks:
+
+```python
+# Run only sanitizer checks (e.g., for faster CI on draft PRs)
+result = validate_report(str(report_path), source="sanitize", strict=False)
+
+# Run specific actions only
+result = validate_report(
+    str(report_path), 
+    actions=["remove_unused_measures", "cleanup_invalid_bookmarks"],
+    strict=False
+)
+
+# Run only expression rules
+result = validate_report(str(report_path), source="rules", strict=False)
+```
 
 ## 4. Configure Your CI Pipeline
 
@@ -209,21 +235,33 @@ steps:
 1. **Pull Request**: When a developer opens a PR, the pipeline runs.
 2. **Validation**: The script scans all reports and runs `validate_report`.
 3. **Configuration Loading**: 
-   - `validate_report` loads `pbir-rules.yaml`.
-   - Sees `include_sanitizer_defaults: true`.
-   - Loads your `pbir-sanitize.yaml` (with all its `include`/`exclude` customizations).
-   - Combines them with your explicit rules.
-4. **Result**: Build fails only if any `error` level rules are violated.
+   - Loads `pbir-sanitize.yaml` for sanitizer checks (with action severities).
+   - Loads `pbir-rules.yaml` for expression rules.
+   - Runs both by default (use `source` to filter).
+4. **Result**: Build fails only if any `error` level violations are found.
 
-## Auto-fixing
+## Auto-fixing (Local Only)
 
-If validation fails, the developer can simply run:
+!!! warning "Do not run sanitize in CI/CD"
+    Running sanitization as an automated fix in CI/CD is not recommended because:
+
+    - It modifies code without explicit developer review
+    - It can cause commit loops or merge conflicts
+    - Some actions (like removing measures) may need human judgment if defaults are too aggressive
+
+**Recommended approach:** Run sanitization locally to fix issues flagged by CI:
 
 ```bash
-# Developer runs locally to fix issues
+# Developer runs locally to fix sanitizer issues
 pbir-utils sanitize "src/SalesReport.Report"
 git add .
 git commit -m "Fix validation errors"
 ```
 
-Because validation uses the SAME `pbir-sanitize.yaml` as the standard, running `sanitize` locally is guaranteed to fix all sanitizer-related issues. Expression rules (like `ensure_visual_title`) require manual fixing in Power BI Desktop.
+Because validation uses the SAME `pbir-sanitize.yaml` for checks, running `sanitize` locally is guaranteed to fix all sanitizer-related issues. Expression rules (like `ensure_visual_title`) require manual fixing in Power BI Desktop.
+
+!!! tip "Preview before applying"
+    Use `--dry-run` first to preview what changes will be made:
+    ```bash
+    pbir-utils sanitize "src/SalesReport.Report" --dry-run
+    ```

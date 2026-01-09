@@ -1,54 +1,74 @@
 # Sanitize Configuration
 # This file defines the default sanitization pipeline and available actions.
+# Each action can have a severity level (error, warning, info) for validation.
 
 definitions:
+  # ============================================
+  # Data Integrity Actions (warning severity)
+  # ============================================
   cleanup_invalid_bookmarks:
     description: Clean up invalid bookmarks
+    severity: warning
 
   remove_unused_bookmarks:
     description: Remove unused bookmarks
+    severity: warning
 
   remove_unused_custom_visuals:
     description: Remove unused custom visuals
-
-  disable_show_items_with_no_data:
-    description: Disable 'Show items with no data'
-
-  remove_hidden_visuals_never_shown:
-    description: Remove hidden visuals that are never shown
-
-  set_first_page_as_active:
-    description: Set the first non-hidden page as active
-
-  remove_empty_pages:
-    description: Remove empty pages and clean up rogue folders
-
-  reset_filter_pane_width:
-    description: Reset filter pane width
+    severity: warning
 
   remove_unused_measures:
     description: Remove unused measures
+    severity: warning
     implementation: remove_measures
     params:
       check_visual_usage: true
 
+  remove_hidden_visuals_never_shown:
+    description: Remove hidden visuals that are never shown
+    severity: warning
+
+  remove_empty_pages:
+    description: Remove empty pages and clean up rogue folders
+    severity: warning
+
+  # ============================================
+  # Cosmetic/Preference Actions (info severity)
+  # ============================================
+  disable_show_items_with_no_data:
+    description: Disable 'Show items with no data'
+    severity: info
+
+  set_first_page_as_active:
+    description: Set the first non-hidden page as active
+    severity: info
+
+  reset_filter_pane_width:
+    description: Reset filter pane width
+    severity: info
+
   hide_tooltip_pages:
     description: Hide tooltip pages
+    severity: info
     implementation: hide_pages_by_type
     params:
       page_type: Tooltip
 
   hide_drillthrough_pages:
     description: Hide drillthrough pages
+    severity: info
     implementation: hide_pages_by_type
     params:
       page_type: Drillthrough
 
   standardize_pbir_folders:
     description: Standardize PBIR folder names
+    severity: info
 
   set_page_size_16_9:
     description: Set page size to 16:9 (1280x720)
+    severity: info
     implementation: set_page_size
     params:
       width: 1280
@@ -57,6 +77,7 @@ definitions:
 
   expand_filter_pane:
     description: Expand filter pane
+    severity: info
     implementation: configure_filter_pane
     params:
       expanded: true
@@ -64,12 +85,14 @@ definitions:
 
   hide_filter_pane:
     description: Hide filter pane
+    severity: info
     implementation: configure_filter_pane
     params:
       visible: false
 
   collapse_filter_pane:
     description: Collapse filter pane
+    severity: info
     implementation: configure_filter_pane
     params:
       expanded: false
@@ -77,36 +100,42 @@ definitions:
 
   sort_filters_selected_top:
     description: Sort filters with selected on top
+    severity: info
     implementation: sort_report_filters
     params:
       sort_order: SelectedFilterTop
 
   sort_filters_ascending:
     description: Sort filters in ascending order
+    severity: info
     implementation: sort_report_filters
     params:
       sort_order: Ascending
 
   clear_all_report_filters:
     description: Clear all report-level filter conditions
+    severity: info
     implementation: clear_filters
     params:
       clear_all: true
 
   set_display_option_fit_to_page:
     description: Set all pages to FitToPage display
+    severity: info
     implementation: set_page_display_option
     params:
       display_option: FitToPage
 
   set_display_option_fit_to_width:
     description: Set all pages to FitToWidth display
+    severity: info
     implementation: set_page_display_option
     params:
       display_option: FitToWidth
 
   set_display_option_actual_size:
     description: Set all pages to ActualSize display
+    severity: info
     implementation: set_page_display_option
     params:
       display_option: ActualSize

@@ -479,7 +479,7 @@ async def run_validation(request: ValidateRequest):
     Sanitize actions are run in dry-run mode to check if changes would be made.
     """
     from pbir_utils.rule_engine import validate_report
-    from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
+    from pbir_utils.sanitize_config import load_config as load_sanitize_config
     from pbir_utils.console_utils import console
 
     all_results = {}
@@ -491,6 +491,7 @@ async def run_validation(request: ValidateRequest):
             result = await run_in_threadpool(
                 validate_report,
                 request.report_path,
+                source="rules",
                 rules=request.expression_rules,
                 strict=False,
             )
@@ -510,27 +511,36 @@ async def run_validation(request: ValidateRequest):
 
     # 2. Run sanitize action dry-run checks
     if request.sanitize_actions:
+        # Load sanitize config to get action severities
+        san_cfg = await run_in_threadpool(
+            load_sanitize_config, report_path=request.report_path
+        )
+
         with console.suppress_all():
-            results = await run_in_threadpool(
-                sanitize_powerbi_report,
+            result = await run_in_threadpool(
+                validate_report,
                 request.report_path,
+                source="sanitize",
                 actions=request.sanitize_actions,
-                dry_run=True,
+                strict=False,
             )
 
-        # Actions that would change = violations
-        for action_id, would_change in results.items():
-            all_results[action_id] = not would_change
-            if would_change:
-                all_violations.append(
-                    ViolationInfo(
-                        rule_id=action_id,
-                        rule_name=action_id.replace("_", " ").title(),
-                        severity="warning",
-                        message="Would make changes",
-                        rule_type="sanitizer",
-                    )
+        all_results.update(result.results)
+        for v in result.violations:
+            # Get severity from sanitize config
+            action_id = v.get("rule_id", "")
+            action_spec = san_cfg.definitions.get(action_id)
+            severity = action_spec.severity if action_spec else "warning"
+
+            all_violations.append(
+                ViolationInfo(
+                    rule_id=action_id,
+                    rule_name=v.get("rule_name", action_id.replace("_", " ").title()),
+                    severity=severity,
+                    message=v.get("message", "Would make changes"),
+                    rule_type="sanitizer",
                 )
+            )
 
     # Calculate counts
     passed = sum(1 for v in all_results.values() if v)

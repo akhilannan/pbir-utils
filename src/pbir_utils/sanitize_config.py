@@ -21,6 +21,7 @@ class ActionSpec:
     disabled: bool | None = (
         None  # If True, action is skipped unless explicitly included
     )
+    severity: str = "warning"  # Severity level for validation: error, warning, info
 
     @classmethod
     def from_definition(cls, action_id: str, definition: dict | None) -> "ActionSpec":
@@ -33,6 +34,7 @@ class ActionSpec:
             params=definition.get("params", {}),
             description=definition.get("description"),
             disabled=definition.get("disabled"),
+            severity=definition.get("severity", "warning"),
         )
 
     @property
@@ -148,6 +150,11 @@ def _merge_configs(default: dict, user: dict) -> SanitizeConfig:
                     user_spec.disabled
                     if user_spec.disabled is not None
                     else spec.disabled
+                ),
+                severity=(
+                    user_spec.severity
+                    if user_spec.severity != "warning"
+                    else spec.severity
                 ),
             )
         else:

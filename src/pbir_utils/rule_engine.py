@@ -350,21 +350,29 @@ def _evaluate_expression_rule(
 
 def validate_report(
     report_path: str,
-    rules: list[str] | None = None,
     *,
-    config: str | Path | dict | None = None,
+    # Source filtering
+    source: str = "all",  # "all", "sanitize", "rules"
+    # Cherry-pick specific items
+    actions: list[str] | None = None,  # Sanitizer action IDs
+    rules: list[str] | None = None,  # Expression rule IDs
+    # Config paths
     sanitize_config: str | Path | None = None,
+    rules_config: str | Path | None = None,
+    # Output filtering
     severity: str | None = None,
     strict: bool = True,
 ) -> ValidationResult:
     """
-    Validate a Power BI report by running specified rules.
+    Validate a Power BI report by running sanitizer checks and/or expression rules.
 
     Args:
         report_path: Path to the report folder.
-        rules: List of rule IDs (backward compatible mode).
-        config: Config file path or dict (like pbir-rules.yaml).
+        source: Which checks to run - "all" (default), "sanitize", or "rules".
+        actions: Specific sanitizer action IDs to check.
+        rules: Specific expression rule IDs to run.
         sanitize_config: Custom sanitize config path (default: auto-discovered).
+        rules_config: Custom rules config path (default: auto-discovered).
         severity: Minimum severity to check ("info", "warning", "error").
         strict: If True (default), raise exception on error violations.
 
@@ -376,80 +384,130 @@ def validate_report(
         ValidationError: If strict=True and any error violations found
                         (or warnings if fail_on_warning option is set).
     """
-    # Load configuration
-    if isinstance(config, dict):
-        # Direct dict config
-        from .rule_config import _merge_configs
+    from .sanitize_config import load_config as load_sanitize_config
+    from .rule_config import RuleSpec
 
-        cfg = _merge_configs({}, config, report_path, sanitize_config=sanitize_config)
-    else:
-        cfg = load_rules(
-            config_path=config, report_path=report_path, sanitize_config=sanitize_config
-        )
-
-    # Filter to specific rules if provided
-    if rules is not None:
-        cfg.rules = [r for r in cfg.rules if r.id in rules]
-
-    # Filter by severity
     severity_order = {"info": 0, "warning": 1, "error": 2}
-    if severity:
-        min_severity = severity_order.get(severity, 0)
-        cfg.rules = [
-            r for r in cfg.rules if severity_order.get(r.severity, 0) >= min_severity
-        ]
 
-    # Load PBIR context for expression rules
-    pbir_context = load_pbir_context(report_path)
-
-    # Get available sanitizer actions
-    available_actions = get_available_actions()
-
-    # Execute rules
     results: dict[str, bool] = {}
     all_violations: list[dict] = []
+    fail_on_warning = False
 
     report_name = Path(report_path).name
     console.print_heading(f"Validating {report_name}")
 
-    for rule in cfg.rules:
-        if rule.is_expression_rule:
-            passed, violations = _evaluate_expression_rule(rule, pbir_context)
-            results[rule.id] = passed
+    # ========================================
+    # Run sanitizer checks if source includes them
+    # ========================================
+    if source in ("all", "sanitize"):
+        # Load sanitize config
+        san_cfg = load_sanitize_config(
+            config_path=sanitize_config, report_path=report_path
+        )
 
-            if passed:
-                _print_rule_result(rule, True)
-            else:
-                _print_rule_result(rule, False, violations)
-                for v in violations:
-                    all_violations.append(
-                        {
-                            "rule_id": rule.id,
-                            "rule_name": rule.display_name,
-                            "severity": rule.severity,
-                            **v,
-                        }
-                    )
+        # Determine which actions to check
+        if actions:
+            # Cherry-pick specific actions
+            action_specs = [
+                san_cfg.definitions.get(a) or san_cfg.definitions.get(a)
+                for a in actions
+                if a in san_cfg.definitions
+            ]
         else:
-            # Sanitizer-based rule
-            passed, violations = _evaluate_sanitizer_rule(
-                rule, report_path, available_actions
-            )
-            results[rule.id] = passed
+            # Use all active actions from config
+            action_specs = san_cfg.actions
 
-            if passed:
-                _print_rule_result(rule, True)
-            else:
-                _print_rule_result(rule, False, violations)
-                for v in violations:
-                    all_violations.append(
-                        {
-                            "rule_id": rule.id,
-                            "rule_name": rule.display_name,
-                            "severity": rule.severity,
-                            **v,
-                        }
-                    )
+        # Filter by severity
+        if severity:
+            min_severity = severity_order.get(severity, 0)
+            action_specs = [
+                a
+                for a in action_specs
+                if a and severity_order.get(a.severity, 0) >= min_severity
+            ]
+
+        # Get available sanitizer actions
+        available_actions = get_available_actions()
+
+        # Run each sanitizer action as a check
+        if action_specs:
+            console.print("\n[Sanitizer Checks]")
+            for action in action_specs:
+                if action is None:
+                    continue
+                # Create a RuleSpec from ActionSpec for evaluation
+                rule = RuleSpec(
+                    id=action.id,
+                    description=action.description,
+                    severity=action.severity,
+                )
+                passed, violations = _evaluate_sanitizer_rule(
+                    rule, report_path, available_actions
+                )
+                results[action.id] = passed
+
+                if passed:
+                    _print_rule_result(rule, True)
+                else:
+                    _print_rule_result(rule, False, violations)
+                    for v in violations:
+                        all_violations.append(
+                            {
+                                "rule_id": action.id,
+                                "rule_name": action.display_name,
+                                "severity": action.severity,
+                                **v,
+                            }
+                        )
+
+    # ========================================
+    # Run expression rules if source includes them
+    # ========================================
+    if source in ("all", "rules"):
+        # Load rules config
+        rules_cfg = load_rules(config_path=rules_config, report_path=report_path)
+        fail_on_warning = rules_cfg.fail_on_warning
+
+        # Determine which rules to run
+        if rules:
+            # Cherry-pick specific rules
+            rule_specs = [r for r in rules_cfg.rules if r.id in rules]
+        else:
+            # Use all rules from config
+            rule_specs = rules_cfg.rules
+
+        # Filter by severity
+        if severity:
+            min_severity = severity_order.get(severity, 0)
+            rule_specs = [
+                r
+                for r in rule_specs
+                if severity_order.get(r.severity, 0) >= min_severity
+            ]
+
+        # Load PBIR context for expression rules
+        pbir_context = load_pbir_context(report_path)
+
+        # Run each expression rule
+        if rule_specs:
+            console.print("\n[Expression Rules]")
+            for rule in rule_specs:
+                passed, violations = _evaluate_expression_rule(rule, pbir_context)
+                results[rule.id] = passed
+
+                if passed:
+                    _print_rule_result(rule, True)
+                else:
+                    _print_rule_result(rule, False, violations)
+                    for v in violations:
+                        all_violations.append(
+                            {
+                                "rule_id": rule.id,
+                                "rule_name": rule.display_name,
+                                "severity": rule.severity,
+                                **v,
+                            }
+                        )
 
     # Print summary
     _print_summary(results, all_violations)
@@ -458,7 +516,7 @@ def validate_report(
     if strict and all_violations:
         # Check if any violations should cause failure
         fail_severities = {"error"}
-        if cfg.fail_on_warning:
+        if fail_on_warning:
             fail_severities.add("warning")
 
         failing_violations = [

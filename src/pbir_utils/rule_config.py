@@ -67,16 +67,6 @@ class RulesConfig:
         """If True, warnings are treated as failures in strict mode."""
         return self.options.get("fail_on_warning", False)
 
-    @property
-    def include_sanitizer_defaults(self) -> bool:
-        """If True, auto-include all default sanitizer actions as rules."""
-        return self.options.get("include_sanitizer_defaults", False)
-
-    @property
-    def default_sanitizer_severity(self) -> str:
-        """Default severity for auto-included sanitizer rules."""
-        return self.options.get("default_sanitizer_severity", "warning")
-
     def get_rule_ids(self) -> list[str]:
         """Get list of rule IDs in execution order."""
         return [r.id for r in self.rules]
@@ -121,9 +111,6 @@ def _parse_definitions(raw_definitions: dict) -> dict[str, RuleSpec]:
 def _merge_configs(
     default: dict,
     user: dict,
-    report_path: str | None = None,
-    *,
-    sanitize_config: str | None = None,
 ) -> RulesConfig:
     """
     Merge user config with default.
@@ -135,10 +122,9 @@ def _merge_configs(
        - If user 'rules' exists: REPLACE with user list
        - If user 'include' exists: APPEND to list
        - If user 'exclude' exists: REMOVE from list
-       - If options.include_sanitizer_defaults: AUTO-INCLUDE all sanitizer defaults
     3. Options: MERGE (user overrides default)
     """
-    # Merge options first (needed for include_sanitizer_defaults check)
+    # Merge options
     options = {**default.get("options", {}), **user.get("options", {})}
 
     # 1. Merge definitions
@@ -189,33 +175,6 @@ def _merge_configs(
         # No explicit rules list -> include ALL defined rules
         rule_ids = list(merged_definitions.keys())
 
-    # Check if we should auto-include sanitizer defaults
-    include_sanitizer_defaults = options.get("include_sanitizer_defaults", False)
-    default_sanitizer_severity = options.get("default_sanitizer_severity", "warning")
-
-    if include_sanitizer_defaults:
-        from .sanitize_config import load_config
-
-        # Load FULL merged sanitizer config (defaults + user pbir-sanitize.yaml)
-        # Use explicit sanitize_config path if provided, else auto-discover
-        san_cfg = load_config(
-            config_path=sanitize_config,
-            report_path=report_path if sanitize_config is None else None,
-        )
-
-        # Add all ACTIVE actions from the sanitizer config as rules
-        for action in san_cfg.actions:
-            action_id = action.id
-            if action_id and action_id not in rule_ids:
-                rule_ids.append(action_id)
-                # Create implicit definition from ActionSpec
-                if action_id not in merged_definitions:
-                    merged_definitions[action_id] = RuleSpec(
-                        id=action_id,
-                        description=action.description,
-                        severity=default_sanitizer_severity,  # Use configured default severity
-                    )
-
     # Apply 'include' (append)
     include_ids = user.get("include", [])
     for rule_id in include_ids:
@@ -235,8 +194,8 @@ def _merge_configs(
             if not rule_spec.disabled or rule_id in include_ids:
                 rules.append(rule_spec)
         else:
-            # Rule not in definitions - create implicit spec (sanitizer-based)
-            rules.append(RuleSpec(id=rule_id, severity=default_sanitizer_severity))
+            # Rule not in definitions - skip unknown rules
+            pass
 
     return RulesConfig(
         rules=rules,
@@ -249,7 +208,6 @@ def _merge_configs(
 def load_rules(
     config_path: str | Path | None = None,
     report_path: str | None = None,
-    sanitize_config: str | Path | None = None,
 ) -> RulesConfig:
     """
     Load and merge rules configuration.
@@ -257,7 +215,6 @@ def load_rules(
     Args:
         config_path: Explicit path to config file (overrides auto-discovery)
         report_path: Report path for config discovery
-        sanitize_config: Custom sanitize config path (default: auto-discovered)
 
     Returns:
         Merged RulesConfig
@@ -283,4 +240,4 @@ def load_rules(
 
     user = _load_yaml(user_path) if user_path and user_path.exists() else {}
 
-    return _merge_configs(default, user, report_path, sanitize_config=sanitize_config)
+    return _merge_configs(default, user)
