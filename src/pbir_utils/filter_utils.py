@@ -757,7 +757,7 @@ def reset_filter_pane_width(
     console.print_action_heading("Resetting filter pane width", dry_run)
 
     pages_dir = Path(report_path) / "definition" / "pages"
-    pages_modified = 0
+    modified_pages = []
 
     def _remove_width_property(page_data: dict, file_path: str) -> bool:
         objects = page_data.get("objects", {})
@@ -783,21 +783,39 @@ def reset_filter_pane_width(
 
         return True
 
+    def _check_and_track(page_data: dict, file_path: str) -> bool:
+        result = _remove_width_property(page_data, file_path)
+        if result:
+            page_name = page_data.get("displayName", Path(file_path).parent.name)
+            modified_pages.append(page_name)
+        return result
+
     results = process_json_files(
-        pages_dir, "page.json", _remove_width_property, process=True, dry_run=dry_run
+        pages_dir, "page.json", _check_and_track, process=True, dry_run=dry_run
     )
 
     pages_modified = results if isinstance(results, int) else len(results)
 
     if pages_modified > 0:
-        if dry_run:
-            console.print_dry_run(
-                f"Would reset filter pane width on {pages_modified} page(s)."
-            )
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would reset filter pane width on {pages_modified} page(s)."
+                )
+            else:
+                console.print_success(
+                    f"Reset filter pane width on {pages_modified} page(s)."
+                )
         else:
-            console.print_success(
-                f"Reset filter pane width on {pages_modified} page(s)."
-            )
+            for page_name in modified_pages:
+                if dry_run:
+                    console.print_dry_run(
+                        f"Would reset filter pane width on page: {page_name}"
+                    )
+                else:
+                    console.print_success(
+                        f"Reset filter pane width on page: {page_name}"
+                    )
         return True
     else:
         console.print_info("No pages found with filter pane width set.")

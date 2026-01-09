@@ -90,33 +90,53 @@ def disable_show_items_with_no_data(
     """
     console.print_action_heading("Disabling 'Show items with no data'", dry_run)
 
-    def _remove_show_all(data: dict, _: str) -> bool:
+    modified_visuals = []
+
+    def _remove_show_all(data: dict, file_path: str) -> bool:
         if isinstance(data, dict):
             if "showAll" in data:
                 del data["showAll"]
                 return True
-            return any(_remove_show_all(value, _) for value in data.values())
+            return any(_remove_show_all(value, file_path) for value in data.values())
         elif isinstance(data, list):
-            return any(_remove_show_all(item, _) for item in data)
+            return any(_remove_show_all(item, file_path) for item in data)
         return False
+
+    def _check_and_track(data: dict, file_path: str) -> bool:
+        result = _remove_show_all(data, file_path)
+        if result:
+            visual_name = Path(file_path).parent.name
+            modified_visuals.append(visual_name)
+        return result
 
     visuals_modified = process_json_files(
         Path(report_path) / "definition" / "pages",
         "visual.json",
-        _remove_show_all,
+        _check_and_track,
         process=True,
         dry_run=dry_run,
     )
 
     if visuals_modified > 0:
-        if dry_run:
-            console.print_dry_run(
-                f"Would disable 'Show items with no data' for {visuals_modified} visual(s)."
-            )
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would disable 'Show items with no data' for {visuals_modified} visual(s)."
+                )
+            else:
+                console.print_success(
+                    f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
+                )
         else:
-            console.print_success(
-                f"Disabled 'Show items with no data' for {visuals_modified} visual(s)."
-            )
+            for visual_name in modified_visuals:
+                if dry_run:
+                    console.print_dry_run(
+                        f"Would disable 'Show items with no data' for visual: {visual_name}"
+                    )
+                else:
+                    console.print_success(
+                        f"Disabled 'Show items with no data' for visual: {visual_name}"
+                    )
         return True
     else:
         console.print_info("No visuals found with 'Show items with no data' enabled.")
@@ -409,20 +429,21 @@ def remove_hidden_visuals_never_shown(
     )
 
     if len(visuals_to_remove) > 0 or bookmarks_updated > 0:
-        if dry_run:
-            console.print_dry_run(
-                f"Would remove {len(visuals_to_remove)} visuals (including groups and their children)"
-            )
-            if bookmarks_updated > 0:
+        if summary:
+            if dry_run:
                 console.print_dry_run(
-                    f"Would update {bookmarks_updated} bookmark files"
+                    f"Would remove {len(visuals_to_remove)} visuals (including groups and their children)"
                 )
-        else:
-            console.print_success(
-                f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
-            )
-            if bookmarks_updated > 0:
-                console.print_success(f"Updated {bookmarks_updated} bookmark files")
+                if bookmarks_updated > 0:
+                    console.print_dry_run(
+                        f"Would update {bookmarks_updated} bookmark files"
+                    )
+            else:
+                console.print_success(
+                    f"Removed {len(visuals_to_remove)} visuals (including groups and their children)"
+                )
+                if bookmarks_updated > 0:
+                    console.print_success(f"Updated {bookmarks_updated} bookmark files")
         return True
     else:
         console.print_info("No hidden visuals removed.")

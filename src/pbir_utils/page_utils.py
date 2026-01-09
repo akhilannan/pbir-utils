@@ -214,10 +214,6 @@ def remove_empty_pages(
             folders_to_remove.append(folder_name)
 
     if folders_to_remove:
-        if not summary:
-            console.print_info(
-                f"Removing empty and rogue page folders: {', '.join(folders_to_remove)}"
-            )
         for folder in folders_to_remove:
             folder_path = pages_dir / folder
             if not dry_run:

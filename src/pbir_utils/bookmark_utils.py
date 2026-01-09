@@ -119,10 +119,13 @@ def remove_unused_bookmarks(
             console.print_dry_run("Would remove empty bookmarks folder")
 
     if removed_bookmarks > 0:
-        if dry_run:
-            console.print_dry_run(f"Would remove {removed_bookmarks} unused bookmarks")
-        else:
-            console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would remove {removed_bookmarks} unused bookmarks"
+                )
+            else:
+                console.print_success(f"Removed {removed_bookmarks} unused bookmarks")
     elif bookmarks_data["items"]:
         console.print_info("No unused bookmarks found.")
 
