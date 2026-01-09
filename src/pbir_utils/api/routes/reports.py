@@ -179,7 +179,7 @@ async def run_actions(request: RunActionRequest):
     from pbir_utils.console_utils import console
 
     output_lines = []
-    with console.capture_output() as queue:
+    with console.stream_output() as queue:
         try:
             await run_in_threadpool(
                 sanitize_powerbi_report,
@@ -237,7 +237,7 @@ async def run_actions_stream(
             pass  # Fall back to default config on error
 
     async def generate():
-        with console.capture_output() as queue:
+        with console.stream_output() as queue:
 
             def run():
                 if custom_config:
@@ -470,6 +470,41 @@ async def list_expression_rules(report_path: str = None):
     )
 
 
+@router.post("/validate/config", response_model=RulesResponse)
+async def load_custom_rules_config(file: UploadFile):
+    """Parse and merge a custom pbir-rules.yaml file with defaults."""
+    from pbir_utils.rule_config import (
+        get_default_rules_path,
+        _load_yaml,
+        _merge_configs,
+    )
+
+    try:
+        content = await file.read()
+        user_config = yaml.safe_load(content) or {}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {e}")
+
+    # Load default config and merge with user config
+    default_path = get_default_rules_path()
+    default_config = _load_yaml(default_path) if default_path.exists() else {}
+    merged = _merge_configs(default_config, user_config)
+
+    # Filter to expression-based rules only (same as list_expression_rules)
+    rules = [
+        RuleInfo(
+            id=r.id,
+            description=r.description or r.display_name,
+            severity=r.severity,
+            scope=r.scope,
+        )
+        for r in merged.rules
+        if r.is_expression_rule
+    ]
+
+    return RulesResponse(rules=rules, config_path=file.filename)
+
+
 @router.post("/validate/run", response_model=ValidateResponse)
 async def run_validation(request: ValidateRequest):
     """
@@ -478,6 +513,9 @@ async def run_validation(request: ValidateRequest):
     Expression rules evaluate conditions on report structure.
     Sanitize actions are run in dry-run mode to check if changes would be made.
     """
+    import base64
+    import tempfile
+    from pathlib import Path
     from pbir_utils.rule_engine import validate_report
     from pbir_utils.sanitize_config import load_config as load_sanitize_config
     from pbir_utils.console_utils import console
@@ -485,62 +523,89 @@ async def run_validation(request: ValidateRequest):
     all_results = {}
     all_violations = []
 
-    # 1. Run expression rules
-    if request.expression_rules:
-        with console.suppress_all():
-            result = await run_in_threadpool(
-                validate_report,
-                request.report_path,
-                source="rules",
-                rules=request.expression_rules,
-                strict=False,
+    # Decode custom rules config if provided
+    rules_config_path = None
+    temp_file = None
+    if request.rules_config_yaml:
+        try:
+            yaml_content = base64.b64decode(request.rules_config_yaml).decode("utf-8")
+            # Write to temp file for validate_report
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
             )
-        all_results.update(result.results)
-        for v in result.violations:
-            all_violations.append(
-                ViolationInfo(
-                    rule_id=v.get("rule_id", ""),
-                    rule_name=v.get("rule_name", ""),
-                    severity=v.get("severity", "warning"),
-                    message=v.get("message", ""),
-                    rule_type="expression",
-                    page_name=v.get("page_name"),
-                    visual_name=v.get("visual_name"),
+            temp_file.write(yaml_content)
+            temp_file.close()
+            rules_config_path = temp_file.name
+        except Exception:
+            pass  # Fall back to default config on error
+
+    try:
+        # 1. Run expression rules
+        if request.expression_rules:
+            with console.suppress_all():
+                result = await run_in_threadpool(
+                    validate_report,
+                    request.report_path,
+                    source="rules",
+                    rules=request.expression_rules,
+                    rules_config=rules_config_path,
+                    strict=False,
                 )
-            )
-
-    # 2. Run sanitize action dry-run checks
-    if request.sanitize_actions:
-        # Load sanitize config to get action severities
-        san_cfg = await run_in_threadpool(
-            load_sanitize_config, report_path=request.report_path
-        )
-
-        with console.suppress_all():
-            result = await run_in_threadpool(
-                validate_report,
-                request.report_path,
-                source="sanitize",
-                actions=request.sanitize_actions,
-                strict=False,
-            )
-
-        all_results.update(result.results)
-        for v in result.violations:
-            # Get severity from sanitize config
-            action_id = v.get("rule_id", "")
-            action_spec = san_cfg.definitions.get(action_id)
-            severity = action_spec.severity if action_spec else "warning"
-
-            all_violations.append(
-                ViolationInfo(
-                    rule_id=action_id,
-                    rule_name=v.get("rule_name", action_id.replace("_", " ").title()),
-                    severity=severity,
-                    message=v.get("message", "Would make changes"),
-                    rule_type="sanitizer",
+            all_results.update(result.results)
+            for v in result.violations:
+                all_violations.append(
+                    ViolationInfo(
+                        rule_id=v.get("rule_id", ""),
+                        rule_name=v.get("rule_name", ""),
+                        severity=v.get("severity", "warning"),
+                        message=v.get("message", ""),
+                        rule_type="expression",
+                        page_name=v.get("page_name"),
+                        visual_name=v.get("visual_name"),
+                    )
                 )
+
+        # 2. Run sanitize action dry-run checks (only if include_sanitizer is True)
+        if request.include_sanitizer and request.sanitize_actions:
+            # Load sanitize config to get action severities
+            san_cfg = await run_in_threadpool(
+                load_sanitize_config, report_path=request.report_path
             )
+
+            with console.suppress_all():
+                result = await run_in_threadpool(
+                    validate_report,
+                    request.report_path,
+                    source="sanitize",
+                    actions=request.sanitize_actions,
+                    strict=False,
+                )
+
+            all_results.update(result.results)
+            for v in result.violations:
+                # Get severity from sanitize config
+                action_id = v.get("rule_id", "")
+                action_spec = san_cfg.definitions.get(action_id)
+                severity = action_spec.severity if action_spec else "warning"
+
+                all_violations.append(
+                    ViolationInfo(
+                        rule_id=action_id,
+                        rule_name=v.get(
+                            "rule_name", action_id.replace("_", " ").title()
+                        ),
+                        severity=severity,
+                        message=v.get("message", "Would make changes"),
+                        rule_type="sanitizer",
+                    )
+                )
+    finally:
+        # Cleanup temp file
+        if temp_file:
+            try:
+                Path(temp_file.name).unlink(missing_ok=True)
+            except Exception:
+                pass
 
     # Calculate counts
     passed = sum(1 for v in all_results.values() if v)
@@ -555,3 +620,130 @@ async def run_validation(request: ValidateRequest):
         results=all_results,
         violations=all_violations,
     )
+
+
+@router.get("/validate/run/stream")
+async def run_validation_stream(
+    report_path: str,
+    expression_rules: str = None,
+    sanitize_actions: str = None,
+    include_sanitizer: bool = True,
+    rules_config_yaml: str = None,
+    sanitize_config_yaml: str = None,
+):
+    """
+    Run validation with SSE streaming output.
+
+    Uses Server-Sent Events to stream console output in real-time.
+    Same as CLI output behavior.
+    """
+    import base64
+    import tempfile
+    from pathlib import Path
+    from pbir_utils.rule_engine import validate_report
+    from pbir_utils.console_utils import console
+
+    # Parse comma-separated lists
+    expr_rules_list = expression_rules.split(",") if expression_rules else []
+    sanitize_actions_list = (
+        sanitize_actions.split(",") if sanitize_actions and include_sanitizer else []
+    )
+
+    # Decode custom rules config if provided
+    rules_config_path = None
+    rules_temp_file = None
+    if rules_config_yaml:
+        try:
+            yaml_content = base64.b64decode(rules_config_yaml).decode("utf-8")
+            rules_temp_file = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+            )
+            rules_temp_file.write(yaml_content)
+            rules_temp_file.close()
+            rules_config_path = rules_temp_file.name
+        except Exception:
+            pass
+
+    # Decode custom sanitize config if provided
+    sanitize_config_path = None
+    sanitize_temp_file = None
+    if sanitize_config_yaml:
+        try:
+            yaml_content = base64.b64decode(sanitize_config_yaml).decode("utf-8")
+            sanitize_temp_file = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+            )
+            sanitize_temp_file.write(yaml_content)
+            sanitize_temp_file.close()
+            sanitize_config_path = sanitize_temp_file.name
+        except Exception:
+            pass
+
+    async def generate():
+        all_results = {}
+        all_violations = []
+
+        with console.stream_output() as queue:
+
+            def run():
+                nonlocal all_results, all_violations
+
+                try:
+                    # Run validation with both rules and sanitizer actions
+                    result = validate_report(
+                        report_path,
+                        source="all",
+                        rules=expr_rules_list if expr_rules_list else None,
+                        actions=(
+                            sanitize_actions_list if sanitize_actions_list else None
+                        ),
+                        rules_config=rules_config_path,
+                        sanitize_config=sanitize_config_path,
+                        strict=False,
+                    )
+                    all_results.update(result.results)
+                    all_violations.extend(result.violations)
+
+                except Exception as e:
+                    # Error will be captured in console output
+                    pass
+
+            thread = threading.Thread(target=run)
+            thread.start()
+
+            while thread.is_alive() or not queue.empty():
+                try:
+                    msg = queue.get_nowait()
+                    yield {"event": "message", "data": json.dumps(msg)}
+                except Empty:
+                    await asyncio.sleep(0.05)
+
+            # Send final summary
+            passed = sum(1 for v in all_results.values() if v)
+            failed = sum(1 for v in all_results.values() if not v)
+            error_count = sum(1 for v in all_violations if v.get("severity") == "error")
+            warning_count = sum(
+                1 for v in all_violations if v.get("severity") == "warning"
+            )
+
+            summary = {
+                "passed": passed,
+                "failed": failed,
+                "error_count": error_count,
+                "warning_count": warning_count,
+            }
+            yield {"event": "complete", "data": json.dumps(summary)}
+
+        # Cleanup temp files
+        if rules_temp_file:
+            try:
+                Path(rules_temp_file.name).unlink(missing_ok=True)
+            except Exception:
+                pass
+        if sanitize_temp_file:
+            try:
+                Path(sanitize_temp_file.name).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    return EventSourceResponse(generate())

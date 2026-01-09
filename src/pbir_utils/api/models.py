@@ -102,6 +102,8 @@ class ValidateRequest(BaseModel):
     report_path: str
     expression_rules: list[str] | None = None
     sanitize_actions: list[str] | None = None
+    rules_config_yaml: str | None = None  # Base64 encoded custom rules YAML
+    include_sanitizer: bool = True  # Whether to include sanitizer action checks
 
 
 class ViolationInfo(BaseModel):

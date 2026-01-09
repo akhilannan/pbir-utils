@@ -726,12 +726,26 @@
                 <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')">
                     <span class="chevron">▶</span>
                     <span class="section-title">🔍 VALIDATE</span>
+                    <span class="config-indicator" id="rules-config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding: 8px 16px;">
                         <button class="action-btn primary" onclick="runCheck()" id="check-btn" disabled>
                             ✓ Check
                         </button>
+                    </div>
+                    <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
+                        <input type="file" id="rules-config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomRulesConfig(this)">
+                        <button class="export-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center;">
+                            📄 Load Custom Rules Config
+                        </button>
+                        <button class="export-btn" id="reset-rules-config-btn" onclick="resetRulesConfig()" style="width: 100%; justify-content: center; margin-top: 4px; display: none;">
+                            ↩ Reset to Defaults
+                        </button>
+                    </div>
+                    <div class="action-item" style="border-bottom: 1px solid var(--border-color); margin-bottom: 8px; padding-bottom: 8px;">
+                        <input type="checkbox" id="include-sanitizer-checks" checked>
+                        <label for="include-sanitizer-checks" style="cursor: pointer;">Include sanitizer action checks</label>
                     </div>
                     <div id="rules-list"></div>
                 </div>

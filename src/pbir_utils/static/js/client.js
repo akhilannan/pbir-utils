@@ -12,6 +12,8 @@ var activePageId = null;
 var currentConfigPath = null;
 var customConfigYaml = null;
 var expressionRules = [];  // Validation rules
+var customRulesConfigYaml = null;  // Custom rules YAML content
+var currentRulesConfigPath = null;  // Custom rules config filename
 
 
 // DOM Elements
@@ -505,7 +507,7 @@ function renderExpressionRules() {
         return;
     }
 
-    var html = expressionRules.map(function(r) {
+    var html = expressionRules.map(function (r) {
         var desc = r.description || r.id.replace(/_/g, ' ');
         var badge = r.severity[0].toUpperCase();
         return `
@@ -526,9 +528,16 @@ async function runCheck() {
     }
 
     // Get selected expression rules
-    var exprRules = Array.from(document.querySelectorAll('#rules-list input:checked')).map(function(cb) { return cb.value; });
+    var exprRules = Array.from(document.querySelectorAll('#rules-list input:checked')).map(function (cb) { return cb.value; });
     // Get selected sanitize actions from ACTIONS panel
     var sanitizeActions = Array.from(selectedActions);
+    // Check if sanitizer checks should be included
+    var includeSanitizer = document.getElementById('include-sanitizer-checks')?.checked ?? true;
+
+    // If not including sanitizer, clear the actions
+    if (!includeSanitizer) {
+        sanitizeActions = [];
+    }
 
     if (exprRules.length === 0 && sanitizeActions.length === 0) {
         showValidationToast(0, 0, 0, 0, 'warning');
@@ -539,40 +548,145 @@ async function runCheck() {
     var btn = document.getElementById('check-btn');
     btn.disabled = true;
     btn.innerHTML = '⏳ Checking...';
-    appendOutput('info', 'Checking ' + exprRules.length + ' rules + ' + sanitizeActions.length + ' actions...');
 
-    try {
-        var response = await fetch('/api/reports/validate/run', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                report_path: currentReportPath,
-                expression_rules: exprRules.length ? exprRules : null,
-                sanitize_actions: sanitizeActions.length ? sanitizeActions : null
-            })
-        });
+    // Build SSE URL with query parameters
+    var url = '/api/reports/validate/run/stream?report_path=' + encodeURIComponent(currentReportPath);
 
-        var result = await response.json();
+    if (exprRules.length > 0) {
+        url += '&expression_rules=' + encodeURIComponent(exprRules.join(','));
+    }
+    if (sanitizeActions.length > 0) {
+        url += '&sanitize_actions=' + encodeURIComponent(sanitizeActions.join(','));
+    }
+    url += '&include_sanitizer=' + includeSanitizer;
 
-        // Show popup
-        showValidationToast(result.passed, result.failed, result.warning_count, result.error_count);
+    // Add custom rules config if loaded (base64 encoded)
+    if (customRulesConfigYaml) {
+        var encoded = btoa(unescape(encodeURIComponent(customRulesConfigYaml)));
+        url += '&rules_config_yaml=' + encodeURIComponent(encoded);
+    }
 
-        // Output summary
-        appendOutput(result.failed ? 'warning' : 'success', 
-            'Check complete: ' + result.passed + ' passed, ' + result.failed + ' failed');
+    // Add custom sanitize config if loaded from Actions panel (base64 encoded)
+    if (customConfigYaml) {
+        var encodedSanitize = btoa(unescape(encodeURIComponent(customConfigYaml)));
+        url += '&sanitize_config_yaml=' + encodeURIComponent(encodedSanitize);
+    }
 
-        // Output violations
-        for (var i = 0; i < result.violations.length; i++) {
-            var v = result.violations[i];
-            var details = v.page_name ? ' (Page: ' + v.page_name + ')' : '';
-            appendOutput(v.severity, '  [' + v.severity.toUpperCase() + '] ' + v.rule_name + ': ' + v.message + details);
+    var eventSource = new EventSource(url);
+
+    eventSource.onmessage = function (event) {
+        var data = JSON.parse(event.data);
+        var message = data.message || '';
+
+        // Detect color type from message content (badges like [PASS], [WARNING], etc.)
+        var type = data.type || 'info';
+        if (message.indexOf('[PASS]') !== -1) {
+            type = 'success';
+        } else if (message.indexOf('[WARNING]') !== -1) {
+            type = 'warning';
+        } else if (message.indexOf('[ERROR]') !== -1) {
+            type = 'error';
+        } else if (message.indexOf('[INFO]') !== -1) {
+            type = 'info';
         }
 
-    } catch (e) {
-        appendOutput('error', 'Check error: ' + e.message);
-    } finally {
+        appendOutput(type, message);
+    };
+
+    eventSource.addEventListener('complete', function (event) {
+        eventSource.close();
+        var summary = JSON.parse(event.data);
+
+        appendOutput('info', '');
+        appendOutput(summary.failed > 0 ? 'warning' : 'success',
+            'Check complete: ' + summary.passed + ' passed, ' + summary.failed + ' failed');
+
+        showValidationToast(summary.passed, summary.failed, summary.warning_count, summary.error_count);
+
         btn.disabled = false;
         btn.innerHTML = '✓ Check';
+    });
+
+    eventSource.onerror = function () {
+        eventSource.close();
+        appendOutput('error', 'Connection lost during validation');
+        btn.disabled = false;
+        btn.innerHTML = '✓ Check';
+    };
+}
+
+async function loadCustomRulesConfig(input) {
+    if (!input.files || !input.files[0]) return;
+
+    var file = input.files[0];
+
+    // Read file content for later use during validation
+    var yamlContent = await file.text();
+
+    var formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        var response = await fetch('/api/reports/validate/config', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            var error = await response.json();
+            throw new Error(error.detail || 'Failed to load rules config');
+        }
+
+        var data = await response.json();
+
+        // Store config for validation
+        currentRulesConfigPath = file.name;
+        customRulesConfigYaml = yamlContent;
+
+        // Render new rules from config
+        expressionRules = data.rules.map(function (r) {
+            return {
+                id: r.id,
+                description: r.description,
+                severity: r.severity,
+                scope: r.scope
+            };
+        });
+        renderExpressionRules();
+        updateRulesConfigIndicator();
+        appendOutput('success', 'Loaded custom rules config: ' + file.name);
+
+    } catch (e) {
+        appendOutput('error', 'Failed to load rules config: ' + e.message);
+    }
+
+    // Reset file input so same file can be selected again
+    input.value = '';
+}
+
+async function resetRulesConfig() {
+    currentRulesConfigPath = null;
+    customRulesConfigYaml = null;
+    await loadExpressionRules(currentReportPath);
+    updateRulesConfigIndicator();
+    appendOutput('info', 'Reset to default rules configuration');
+}
+
+function updateRulesConfigIndicator() {
+    var indicator = document.getElementById('rules-config-indicator');
+    if (indicator) {
+        if (currentRulesConfigPath) {
+            indicator.textContent = '📄 ' + currentRulesConfigPath;
+            indicator.title = 'Custom config: ' + currentRulesConfigPath;
+            indicator.style.display = 'inline-block';
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+    // Show/hide reset button based on custom config
+    var resetBtn = document.getElementById('reset-rules-config-btn');
+    if (resetBtn) {
+        resetBtn.style.display = currentRulesConfigPath ? 'block' : 'none';
     }
 }
 
@@ -584,13 +698,13 @@ function showValidationToast(passed, failed, warnings, errors) {
     var type = errors > 0 ? 'error' : (failed > 0 ? 'warning' : 'success');
     var toast = document.createElement('div');
     toast.className = 'validation-toast ' + type;
-    toast.innerHTML = 
+    toast.innerHTML =
         '<div style="font-weight:600;margin-bottom:4px;">Validation Complete</div>' +
         '<div>✓ ' + passed + ' passed &nbsp; ✗ ' + failed + ' failed</div>' +
         (errors ? '<div style="color:var(--error-color);">🔴 ' + errors + ' error(s)</div>' : '') +
         (warnings ? '<div style="color:var(--warning-color);">🟡 ' + warnings + ' warning(s)</div>' : '');
     document.body.appendChild(toast);
-    setTimeout(function() { toast.remove(); }, 5000);
+    setTimeout(function () { toast.remove(); }, 5000);
 }
 
 // ============ CSV Export ============
@@ -643,7 +757,7 @@ function downloadWireframeHTML(filteredOnly) {
 function appendOutput(type, message) {
     var line = document.createElement('div');
     line.className = 'output-line ' + type;
-    line.textContent = '> ' + message;
+    line.textContent = message;
     outputContent.appendChild(line);
     outputContent.scrollTop = outputContent.scrollHeight;
 }

@@ -537,9 +537,9 @@ def _print_rule_result(
 ):
     """Print formatted rule result."""
     if passed:
-        # Green [PASS] badge
+        # Green [PASS] badge - use console for SSE broadcast
         badge = console._format("[PASS]", console.GREEN, console.BOLD)
-        print(f"{badge} {rule.display_name}")
+        console.print(f"{badge} {rule.display_name}")
     else:
         # Colored badge based on severity
         severity_upper = rule.severity.upper()
@@ -549,7 +549,7 @@ def _print_rule_result(
             badge = console._format(f"[{severity_upper}]", console.YELLOW, console.BOLD)
         else:
             badge = console._format(f"[{severity_upper}]", console.BLUE, console.BOLD)
-        print(f"{badge} {rule.display_name}")
+        console.print(f"{badge} {rule.display_name}")
 
         # Print violation details (indented) - only if they add new information
         if violations:

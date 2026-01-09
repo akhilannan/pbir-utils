@@ -1,8 +1,8 @@
 import os
+import re
 import sys
 from contextlib import contextmanager
 from queue import Queue
-from typing import Optional
 
 
 class ConsoleUtils:
@@ -29,7 +29,9 @@ class ConsoleUtils:
     def __init__(self):
         self.use_colors = self._should_use_colors()
         self._suppress_heading_output = False
-        self._broadcast_queues: list[Queue] = []
+        self._suppress_external = False  # Suppresses external SSE broadcasts
+        self._internal_queues: list[Queue] = []  # For internal capture (rule_engine)
+        self._external_queues: list[Queue] = []  # For SSE streaming (API)
 
     def _should_use_colors(self) -> bool:
         """
@@ -53,31 +55,57 @@ class ConsoleUtils:
         # but we are sticking to standard ANSI for now as per plan.
         return is_a_tty
 
+    def _strip_ansi(self, text: str) -> str:
+        """Strip ANSI escape codes from text for SSE broadcasts."""
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        return ansi_escape.sub("", text)
+
     def _broadcast(self, msg_type: str, message: str) -> None:
-        """Broadcast message to all connected SSE clients."""
-        for q in self._broadcast_queues:
+        """Broadcast message to all connected queues."""
+        # Strip ANSI codes for HTML display
+        clean_message = self._strip_ansi(message)
+        msg = {"type": msg_type, "message": clean_message}
+
+        # Internal queues always receive (for capture_output in rule_engine)
+        for q in self._internal_queues:
             try:
-                q.put_nowait({"type": msg_type, "message": message})
+                q.put_nowait(msg)
             except Exception:  # nosec B110
-                pass  # Queue full or closed, skip silently
+                pass
+
+        # External queues (SSE) are suppressed during suppress_all()
+        if not self._suppress_external:
+            for q in self._external_queues:
+                try:
+                    q.put_nowait(msg)
+                except Exception:  # nosec B110
+                    pass
 
     @contextmanager
     def capture_output(self):
         """
-        Context manager for API to hook into console logs.
-
-        Usage:
-            with console.capture_output() as queue:
-                # Run actions - all print_* calls will also go to queue
-                sanitize_powerbi_report(...)
-                # queue.get_nowait() returns {"type": "...", "message": "..."}
+        Internal capture for collecting messages (e.g., for violation details).
+        These queues receive messages even during suppress_all().
         """
         q: Queue = Queue()
-        self._broadcast_queues.append(q)
+        self._internal_queues.append(q)
         try:
             yield q
         finally:
-            self._broadcast_queues.remove(q)
+            self._internal_queues.remove(q)
+
+    @contextmanager
+    def stream_output(self):
+        """
+        External SSE streaming output.
+        These queues are silenced during suppress_all() so SSE matches CLI.
+        """
+        q: Queue = Queue()
+        self._external_queues.append(q)
+        try:
+            yield q
+        finally:
+            self._external_queues.remove(q)
 
     def _format(self, text: str, color: str = "", style: str = "") -> str:
         if not self.use_colors:
@@ -103,18 +131,23 @@ class ConsoleUtils:
 
     @contextmanager
     def suppress_all(self):
-        """Context manager to temporarily suppress all console output."""
+        """
+        Suppress console output (stdout/stderr) and external SSE broadcasts.
+        Internal capture queues still receive messages for violation collection.
+        """
         import io
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
         sys.stdout = io.StringIO()
         sys.stderr = io.StringIO()
+        self._suppress_external = True
         try:
             yield
         finally:
             sys.stdout = old_stdout
             sys.stderr = old_stderr
+            self._suppress_external = False
 
     def print_action_heading(self, action_name: str, dry_run: bool = False):
         """
