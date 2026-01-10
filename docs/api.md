@@ -13,29 +13,219 @@ import pbir_utils as pbir
 
 ---
 
-## Batch Update Attributes
+## Sanitize Power BI Report
 
-Performs a batch update on all components of a PBIR project by processing JSON files. Updates table and column references based on mappings provided in a CSV file.
+A powerful utility to clean up and optimize Power BI reports.
 
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `directory_path` | str | Path to the root directory of the PBIR project |
-| `csv_path` | str | Path to the `Attribute_Mapping.csv` file |
-| `dry_run` | bool | If `True`, simulate changes without modifying files. Default: `False` |
+| `report_path` | str | Path to the report folder |
+| `actions` | list | Sanitization actions to perform |
+| `dry_run` | bool | Simulate changes without modifying files |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
-### CSV Format
+### Available Actions
 
-Please refer to the [CLI Reference](cli.md#csv-format) for the required CSV format and column definitions.
+Please refer to the [CLI Reference](cli.md#available-actions) for the complete list of available sanitization actions and their descriptions.
+
+!!! tip "Additional Actions via YAML"
+    More actions are available through YAML configuration, including `set_page_size_16_9`, `expand_filter_pane`, `collapse_filter_pane`, `hide_filter_pane`, `sort_filters_ascending`, `clear_all_report_filters`, and display option actions. See the [CLI Reference](cli.md#yaml-configuration) for configuration details.
 
 ### Example
 
 ```python
-pbir.batch_update_pbir_project(
-    directory_path=r"C:\DEV\Power BI Report",
-    csv_path=r"C:\DEV\Attribute_Mapping.csv",
-    dry_run=True
+pbir.sanitize_powerbi_report(
+    r"C:\DEV\MyReport.Report",
+    [
+        "cleanup_invalid_bookmarks",
+        "remove_unused_measures",
+        "remove_unused_bookmarks",
+        "remove_unused_custom_visuals",
+        "disable_show_items_with_no_data",
+        "hide_tooltip_pages",
+        "set_first_page_as_active",
+        "remove_empty_pages",
+        "remove_hidden_visuals_never_shown",
+        "standardize_pbir_folders",
+    ],
+    dry_run=True,
+)
+```
+
+---
+
+## Individual Sanitization Functions
+
+You can also call specific sanitization actions independently:
+
+```python
+# Remove unused bookmarks
+pbir.remove_unused_bookmarks(report_path, dry_run=True)
+
+# Remove hidden visuals
+pbir.remove_hidden_visuals_never_shown(report_path, dry_run=True)
+
+# Set first page as active
+pbir.set_first_page_as_active(report_path, dry_run=True)
+
+# Remove empty pages
+pbir.remove_empty_pages(report_path, dry_run=True)
+
+# Cleanup invalid bookmarks
+pbir.cleanup_invalid_bookmarks(report_path, dry_run=True)
+
+# Standardize folder names
+pbir.standardize_pbir_folders(report_path, dry_run=True)
+
+# Set page display option
+pbir.set_page_display_option(report_path, display_option="FitToPage", dry_run=True)
+```
+
+!!! warning "Backup Your Reports"
+    Always backup your report or use version control before running sanitization. Some actions are irreversible. Use `dry_run=True` to preview changes.
+
+---
+
+## Validate Report
+
+Validates a Power BI report against configurable checks. By default, runs both sanitizer checks and expression rules.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the report folder |
+| `source` | str | Which checks to run: `"all"` (default), `"sanitize"`, or `"rules"` |
+| `actions` | list | Specific sanitizer action IDs to check (from `pbir-sanitize.yaml`) |
+| `rules` | list | Specific expression rule IDs to run (from `pbir-rules.yaml`) |
+| `sanitize_config` | str/Path | Custom sanitize config path (default: auto-discovered) |
+| `rules_config` | str/Path | Custom rules config path (default: auto-discovered) |
+| `severity` | str | Minimum severity to check (`info`, `warning`, `error`) |
+| `strict` | bool | Raise exception on error violations. Default: `True` |
+
+### Returns
+
+`ValidationResult` object with:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `passed` | int | Number of checks that passed |
+| `failed` | int | Number of checks that failed |
+| `error_count` | int | Violations with `severity=error` |
+| `warning_count` | int | Violations with `severity=warning` |
+| `info_count` | int | Violations with `severity=info` |
+| `has_errors` | bool | `True` if any errors exist |
+| `has_warnings` | bool | `True` if any warnings exist |
+| `results` | dict | Check ID → passed (bool) |
+| `violations` | list | Full violation details |
+
+### Raises
+
+- `ValidationError`: If `strict=True` and any error violations found (or warnings if `fail_on_warning: true` in config).
+
+### Example
+
+```python
+from pbir_utils import validate_report, ValidationError
+
+# Run all checks (default)
+result = validate_report(r"C:\Reports\MyReport.Report", strict=False)
+print(result)  # "5 passed, 0 errors, 9 warnings, 3 info"
+
+# Run only sanitizer checks
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    source="sanitize",
+    strict=False
+)
+
+# Run only expression rules
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    source="rules",
+    strict=False
+)
+
+# Run specific sanitizer actions only
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    actions=["remove_unused_measures", "cleanup_invalid_bookmarks"],
+    strict=False
+)
+
+# Run specific expression rules only
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    rules=["reduce_pages", "reduce_visuals_on_page"],
+    strict=False
+)
+
+# Filter by minimum severity
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    severity="warning",  # Only warning and error
+    strict=False
+)
+
+# Use custom config files
+result = validate_report(
+    r"C:\Reports\MyReport.Report",
+    sanitize_config="custom-sanitize.yaml",
+    rules_config="custom-rules.yaml",
+    strict=False
+)
+
+# Access counts directly
+if result.has_errors:
+    print("Build failed!")
+print(f"Warnings: {result.warning_count}")
+```
+
+### Handling ValidationError
+
+```python
+from pbir_utils import validate_report, ValidationError
+
+try:
+    result = validate_report(r"C:\Reports\MyReport.Report", strict=True)
+except ValidationError as e:
+    print(f"Validation failed: {e}")
+    for v in e.violations:
+        print(f"  - {v['rule_id']}: {v['message']}")
+```
+
+For configuration details, see [Validate Report CLI Reference](cli.md#validate-report).
+
+
+## Display Report Wireframes
+
+Generates a static HTML wireframe of the report layout and opens it in the default web browser.
+
+This function creates a temporary HTML file containing the wireframe visualization. The output includes rich interactive features: dark mode toggle, zoom controls (25%-200%), visual count badges, dimension tooltips, search/filter, copy ID, and visual hide/unhide.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `pages` | list | Page names to include (empty = all pages) |
+| `visual_types` | list | Visual types to include (empty = all types) |
+| `visual_ids` | list | Visual IDs to include (empty = all visuals) |
+| `show_hidden` | bool | Include hidden visuals in the output. Default: `True` |
+
+!!! note "Filter Logic"
+    The `pages`, `visual_types`, and `visual_ids` parameters use AND logic. Only visuals matching **all** specified criteria are shown.
+
+### Example
+
+```python
+pbir.display_report_wireframes(
+    report_path=r"C:\DEV\MyReport.Report",
+    pages=["Overview"],
+    visual_types=["slicer"],
+    show_hidden=True
 )
 ```
 
@@ -97,33 +287,29 @@ pbir.export_pbir_metadata_to_csv(
 
 ---
 
-## Display Report Wireframes
+## Batch Update Attributes
 
-Generates a static HTML wireframe of the report layout and opens it in the default web browser.
-
-This function creates a temporary HTML file containing the wireframe visualization. The output includes rich interactive features: dark mode toggle, zoom controls (25%-200%), visual count badges, dimension tooltips, search/filter, copy ID, and visual hide/unhide.
+Performs a batch update on all components of a PBIR project by processing JSON files. Updates table and column references based on mappings provided in a CSV file.
 
 ### Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `report_path` | str | Path to the PBIR report folder |
-| `pages` | list | Page names to include (empty = all pages) |
-| `visual_types` | list | Visual types to include (empty = all types) |
-| `visual_ids` | list | Visual IDs to include (empty = all visuals) |
-| `show_hidden` | bool | Include hidden visuals in the output. Default: `True` |
+| `directory_path` | str | Path to the root directory of the PBIR project |
+| `csv_path` | str | Path to the `Attribute_Mapping.csv` file |
+| `dry_run` | bool | If `True`, simulate changes without modifying files. Default: `False` |
 
-!!! note "Filter Logic"
-    The `pages`, `visual_types`, and `visual_ids` parameters use AND logic. Only visuals matching **all** specified criteria are shown.
+### CSV Format
+
+Please refer to the [CLI Reference](cli.md#csv-format) for the required CSV format and column definitions.
 
 ### Example
 
 ```python
-pbir.display_report_wireframes(
-    report_path=r"C:\DEV\MyReport.Report",
-    pages=["Overview"],
-    visual_types=["slicer"],
-    show_hidden=True
+pbir.batch_update_pbir_project(
+    directory_path=r"C:\DEV\Power BI Report",
+    csv_path=r"C:\DEV\Attribute_Mapping.csv",
+    dry_run=True
 )
 ```
 
@@ -561,189 +747,3 @@ pbir.set_page_size(
 ```
 
 ---
-
-## Sanitize Power BI Report
-
-A powerful utility to clean up and optimize Power BI reports.
-
-### Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `report_path` | str | Path to the report folder |
-| `actions` | list | Sanitization actions to perform |
-| `dry_run` | bool | Simulate changes without modifying files |
-| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
-
-### Available Actions
-
-Please refer to the [CLI Reference](cli.md#available-actions) for the complete list of available sanitization actions and their descriptions.
-
-!!! tip "Additional Actions via YAML"
-    More actions are available through YAML configuration, including `set_page_size_16_9`, `expand_filter_pane`, `collapse_filter_pane`, `hide_filter_pane`, `sort_filters_ascending`, `clear_all_report_filters`, and display option actions. See the [CLI Reference](cli.md#yaml-configuration) for configuration details.
-
-### Example
-
-```python
-pbir.sanitize_powerbi_report(
-    r"C:\DEV\MyReport.Report",
-    [
-        "cleanup_invalid_bookmarks",
-        "remove_unused_measures",
-        "remove_unused_bookmarks",
-        "remove_unused_custom_visuals",
-        "disable_show_items_with_no_data",
-        "hide_tooltip_pages",
-        "set_first_page_as_active",
-        "remove_empty_pages",
-        "remove_hidden_visuals_never_shown",
-        "standardize_pbir_folders",
-    ],
-    dry_run=True,
-)
-```
-
----
-
-## Individual Sanitization Functions
-
-You can also call specific sanitization actions independently:
-
-```python
-# Remove unused bookmarks
-pbir.remove_unused_bookmarks(report_path, dry_run=True)
-
-# Remove hidden visuals
-pbir.remove_hidden_visuals_never_shown(report_path, dry_run=True)
-
-# Set first page as active
-pbir.set_first_page_as_active(report_path, dry_run=True)
-
-# Remove empty pages
-pbir.remove_empty_pages(report_path, dry_run=True)
-
-# Cleanup invalid bookmarks
-pbir.cleanup_invalid_bookmarks(report_path, dry_run=True)
-
-# Standardize folder names
-pbir.standardize_pbir_folders(report_path, dry_run=True)
-
-# Set page display option
-pbir.set_page_display_option(report_path, display_option="FitToPage", dry_run=True)
-```
-
-!!! warning "Backup Your Reports"
-    Always backup your report or use version control before running sanitization. Some actions are irreversible. Use `dry_run=True` to preview changes.
-
----
-
-## Validate Report
-
-Validates a Power BI report against configurable checks. By default, runs both sanitizer checks and expression rules.
-
-### Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `report_path` | str | Path to the report folder |
-| `source` | str | Which checks to run: `"all"` (default), `"sanitize"`, or `"rules"` |
-| `actions` | list | Specific sanitizer action IDs to check (from `pbir-sanitize.yaml`) |
-| `rules` | list | Specific expression rule IDs to run (from `pbir-rules.yaml`) |
-| `sanitize_config` | str/Path | Custom sanitize config path (default: auto-discovered) |
-| `rules_config` | str/Path | Custom rules config path (default: auto-discovered) |
-| `severity` | str | Minimum severity to check (`info`, `warning`, `error`) |
-| `strict` | bool | Raise exception on error violations. Default: `True` |
-
-### Returns
-
-`ValidationResult` object with:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `passed` | int | Number of checks that passed |
-| `failed` | int | Number of checks that failed |
-| `error_count` | int | Violations with `severity=error` |
-| `warning_count` | int | Violations with `severity=warning` |
-| `info_count` | int | Violations with `severity=info` |
-| `has_errors` | bool | `True` if any errors exist |
-| `has_warnings` | bool | `True` if any warnings exist |
-| `results` | dict | Check ID → passed (bool) |
-| `violations` | list | Full violation details |
-
-### Raises
-
-- `ValidationError`: If `strict=True` and any error violations found (or warnings if `fail_on_warning: true` in config).
-
-### Example
-
-```python
-from pbir_utils import validate_report, ValidationError
-
-# Run all checks (default)
-result = validate_report(r"C:\Reports\MyReport.Report", strict=False)
-print(result)  # "5 passed, 0 errors, 9 warnings, 3 info"
-
-# Run only sanitizer checks
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    source="sanitize",
-    strict=False
-)
-
-# Run only expression rules
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    source="rules",
-    strict=False
-)
-
-# Run specific sanitizer actions only
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    actions=["remove_unused_measures", "cleanup_invalid_bookmarks"],
-    strict=False
-)
-
-# Run specific expression rules only
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    rules=["reduce_pages", "reduce_visuals_on_page"],
-    strict=False
-)
-
-# Filter by minimum severity
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    severity="warning",  # Only warning and error
-    strict=False
-)
-
-# Use custom config files
-result = validate_report(
-    r"C:\Reports\MyReport.Report",
-    sanitize_config="custom-sanitize.yaml",
-    rules_config="custom-rules.yaml",
-    strict=False
-)
-
-# Access counts directly
-if result.has_errors:
-    print("Build failed!")
-print(f"Warnings: {result.warning_count}")
-```
-
-### Handling ValidationError
-
-```python
-from pbir_utils import validate_report, ValidationError
-
-try:
-    result = validate_report(r"C:\Reports\MyReport.Report", strict=True)
-except ValidationError as e:
-    print(f"Validation failed: {e}")
-    for v in e.violations:
-        print(f"  - {v['rule_id']}: {v['message']}")
-```
-
-For configuration details, see [Validate Report CLI Reference](cli.md#validate-report).
-

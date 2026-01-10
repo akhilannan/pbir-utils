@@ -69,7 +69,7 @@ definitions:
     scope: visual
     disabled: true
     expression: >
-      visual.get("visual", {}).get("visualType") == "textbox" or not re.search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(visual.get("visual", {}).get("objects", {})))
+      visual.get("visual", {}).get("visualType") == "textbox" or not re_search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(visual.get("visual", {}).get("objects", {})))
 
 # NOTE: No explicit 'rules:' list needed!
 # When omitted, ALL rules from 'definitions' are run automatically.
