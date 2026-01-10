@@ -4,16 +4,16 @@ Rule engine for validating Power BI reports.
 Provides expression-based and sanitizer-based rule evaluation.
 """
 
-import json
+import logging
 import re  # Added for regex support in rules
-import textwrap
 from pathlib import Path
-from typing import Any
 
 from .common import load_json, iter_pages, iter_visuals
 from .console_utils import console
-from .rule_config import RuleSpec, RulesConfig, load_rules
+from .rule_config import RuleSpec, load_rules
 from .pbir_report_sanitizer import sanitize_powerbi_report, get_available_actions
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationError(Exception):
@@ -330,8 +330,11 @@ def _evaluate_expression_rule(
                                 "visual_type": visual_type,
                             }
                         )
-                except Exception:
-                    pass  # Skip visuals that don't match expression structure
+                except Exception as e:
+                    # Skip visuals that don't match expression structure
+                    logger.debug(
+                        "Skipping visual %s: %s", visual.get("name", "unknown"), e
+                    )
 
     elif rule.scope == "measure":
         # Evaluate per measure (iterate entities -> measures)
@@ -356,8 +359,11 @@ def _evaluate_expression_rule(
                                 "entity_name": entity_name,
                             }
                         )
-                except Exception:
-                    pass  # Skip measures that don't match expression structure
+                except Exception as e:
+                    # Skip measures that don't match expression structure
+                    logger.debug(
+                        "Skipping measure %s: %s", measure.get("name", "unknown"), e
+                    )
 
     elif rule.scope == "bookmark":
         # Evaluate per bookmark
@@ -374,8 +380,11 @@ def _evaluate_expression_rule(
                             "bookmark_name": bookmark_name,
                         }
                     )
-            except Exception:
-                pass  # Skip bookmarks that don't match expression structure
+            except Exception as e:
+                # Skip bookmarks that don't match expression structure
+                logger.debug(
+                    "Skipping bookmark %s: %s", bookmark.get("name", "unknown"), e
+                )
 
     passed = len(violations) == 0
     return passed, violations

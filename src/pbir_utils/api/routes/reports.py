@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 import json
+import logging
 import threading
 from queue import Empty
 
@@ -26,6 +27,8 @@ from ..models import (
     ViolationInfo,
     ValidateResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -216,8 +219,8 @@ async def run_actions_stream(
             user_config = yaml.safe_load(yaml_content) or {}
             default_config = _load_yaml(get_default_config_path())
             custom_config = _merge_configs(default_config, user_config)
-        except Exception:
-            pass  # Fall back to default config on error
+        except Exception as e:
+            logger.debug("Failed to merge custom config: %s", e)
 
     async def generate():
         with console.stream_output() as queue:
@@ -503,8 +506,8 @@ async def run_validation(request: ValidateRequest):
             temp_file.write(yaml_content)
             temp_file.close()
             rules_config_path = temp_file.name
-        except Exception:
-            pass  # Fall back to default config on error
+        except Exception as e:
+            logger.debug("Failed to decode rules config: %s", e)
 
     try:
         # 1. Run expression rules
@@ -571,8 +574,8 @@ async def run_validation(request: ValidateRequest):
         if temp_file:
             try:
                 Path(temp_file.name).unlink(missing_ok=True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to cleanup temp file: %s", e)
 
     # Calculate counts
     passed = sum(1 for v in all_results.values() if v)
@@ -628,8 +631,8 @@ async def run_validation_stream(
             rules_temp_file.write(yaml_content)
             rules_temp_file.close()
             rules_config_path = rules_temp_file.name
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to decode rules config: %s", e)
 
     # Decode custom sanitize config if provided
     sanitize_config_path = None
@@ -643,8 +646,8 @@ async def run_validation_stream(
             sanitize_temp_file.write(yaml_content)
             sanitize_temp_file.close()
             sanitize_config_path = sanitize_temp_file.name
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to decode sanitize config: %s", e)
 
     async def generate():
         all_results = {}
@@ -673,7 +676,7 @@ async def run_validation_stream(
 
                 except Exception as e:
                     # Error will be captured in console output
-                    pass
+                    logger.debug("Validation error: %s", e)
 
             thread = threading.Thread(target=run)
             thread.start()
@@ -705,12 +708,12 @@ async def run_validation_stream(
         if rules_temp_file:
             try:
                 Path(rules_temp_file.name).unlink(missing_ok=True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to cleanup rules temp file: %s", e)
         if sanitize_temp_file:
             try:
                 Path(sanitize_temp_file.name).unlink(missing_ok=True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to cleanup sanitize temp file: %s", e)
 
     return EventSourceResponse(generate())

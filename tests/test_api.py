@@ -1,7 +1,6 @@
 """Tests for the PBIR-Utils API endpoints."""
 
 import pytest
-from pathlib import Path
 
 
 @pytest.fixture

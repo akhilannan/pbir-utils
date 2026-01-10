@@ -7,7 +7,6 @@ from pbir_utils.rule_config import (
     RulesConfig,
     load_rules,
     find_user_rules,
-    get_default_rules_path,
     _merge_configs,
 )
 

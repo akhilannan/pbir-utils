@@ -159,8 +159,8 @@ def handle(args):
             }
             print(json.dumps(output, indent=2))
         else:
-            # Console mode
-            results = validate_report(
+            # Console mode - function prints output directly
+            validate_report(
                 report_path,
                 source=args.source,
                 actions=args.actions,

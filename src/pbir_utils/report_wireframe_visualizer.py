@@ -4,8 +4,6 @@ import tempfile
 import webbrowser
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from .common import (
     iter_pages,
     load_json,
@@ -15,6 +13,8 @@ from .common import (
 )
 from .metadata_extractor import _get_page_order
 from .console_utils import console
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_coordinate(value) -> float:
