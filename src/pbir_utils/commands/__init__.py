@@ -17,7 +17,9 @@ from . import (
 
 # All command modules for registration
 ALL_COMMANDS = [
+    ui,
     sanitize,
+    validate,
     extract_metadata,
     visualize,
     batch_update,
@@ -25,8 +27,6 @@ ALL_COMMANDS = [
     measures,
     filters,
     pages,
-    ui,
-    validate,
 ]
 
 
