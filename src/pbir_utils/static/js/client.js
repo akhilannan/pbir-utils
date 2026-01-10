@@ -3,6 +3,10 @@
  * Handles file browsing, action execution, and SSE streaming
  */
 
+// Constants
+var SIDEBAR_MIN_WIDTH = 150;
+var OUTPUT_PANEL_MIN_HEIGHT = 50;
+
 // State
 var currentReportPath = null;
 var selectedActions = new Set();
@@ -91,11 +95,7 @@ function renderFileList(data) {
     fileList.innerHTML = html;
 }
 
-function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// Note: escapeHtml is provided by wireframe.js which is always loaded first
 
 // ============ Report Loading ============
 
@@ -808,7 +808,7 @@ document.addEventListener('mousemove', function (e) {
         var newHeight = startResizeHeight + (startResizeY - e.clientY);
 
         // Constraints
-        if (newHeight < 50) newHeight = 50;
+        if (newHeight < OUTPUT_PANEL_MIN_HEIGHT) newHeight = OUTPUT_PANEL_MIN_HEIGHT;
         if (newHeight > window.innerHeight - 100) newHeight = window.innerHeight - 100;
 
         panel.style.height = newHeight + 'px';
@@ -816,7 +816,7 @@ document.addEventListener('mousemove', function (e) {
         var newWidth = startResizeWidth + (e.clientX - startResizeX);
 
         // Constraints
-        if (newWidth < 150) newWidth = 150;
+        if (newWidth < SIDEBAR_MIN_WIDTH) newWidth = SIDEBAR_MIN_WIDTH;
         if (newWidth > window.innerWidth - 100) newWidth = window.innerWidth - 100;
 
         document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');

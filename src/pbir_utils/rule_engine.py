@@ -196,27 +196,27 @@ def _evaluate_sanitizer_rule(
     return True, []
 
 
-def _evaluate_expression_rule(
-    rule: RuleSpec,
-    pbir_context: dict,
-) -> tuple[bool, list[dict]]:
+def _create_safe_evaluator(context: dict):
     """
-    Evaluate expression-based rule using Python eval with safe context.
+    Create a simpleeval evaluator with safe functions and context.
 
-    Returns:
-        (passed: bool, violations: list of violation dicts)
+    Uses simpleeval instead of Python's eval() for security:
+    - Parses expressions into AST, never executes arbitrary code
+    - Strict whitelist of operations and functions
+    - Safe for CI/CD pipelines where config may come from PRs
     """
-    violations = []
+    from simpleeval import EvalWithCompoundTypes
 
-    # Safe builtins for expression evaluation
-    safe_builtins = {
+    # Create evaluator with compound type support (lists, dicts)
+    evaluator = EvalWithCompoundTypes()
+
+    # Add safe functions
+    evaluator.functions = {
         "len": len,
         "str": str,
         "int": int,
         "float": float,
         "bool": bool,
-        "list": list,
-        "dict": dict,
         "sum": sum,
         "min": min,
         "max": max,
@@ -224,22 +224,63 @@ def _evaluate_expression_rule(
         "all": all,
         "abs": abs,
         "round": round,
-        "True": True,
-        "False": False,
-        "False": False,
-        "None": None,
-        "re": re,  # Allow regex in expressions
+        "sorted": sorted,
+        "reversed": lambda x: list(reversed(x)),
+        # Regex support via re module functions
+        "re_match": lambda pattern, string: (
+            bool(re.match(pattern, string)) if string else False
+        ),
+        "re_search": lambda pattern, string: (
+            bool(re.search(pattern, string)) if string else False
+        ),
     }
 
+    # Add context as names (variables available in expressions)
+    evaluator.names = context
+
+    return evaluator
+
+
+def _safe_eval(expression: str, context: dict):
+    """
+    Safely evaluate an expression using simpleeval.
+
+    Args:
+        expression: The expression string to evaluate
+        context: Dict of variables available in the expression
+
+    Returns:
+        The result of evaluating the expression
+    """
+    evaluator = _create_safe_evaluator(context)
+    return evaluator.eval(expression.strip())
+
+
+def _evaluate_expression_rule(
+    rule: RuleSpec,
+    pbir_context: dict,
+) -> tuple[bool, list[dict]]:
+    """
+    Evaluate expression-based rule using simpleeval (safe, no code execution).
+
+    Returns:
+        (passed: bool, violations: list of violation dicts)
+    """
+    violations = []
+
     # Build base context with params
-    base_context = {**pbir_context, **rule.params, **safe_builtins}
+    base_context = {
+        **pbir_context,
+        **rule.params,
+        "True": True,
+        "False": False,
+        "None": None,
+    }
 
     if rule.scope == "report":
         # Evaluate once for entire report
         try:
-            result = eval(
-                rule.expression.strip(), {"__builtins__": {}}, base_context
-            )  # nosec
+            result = _safe_eval(rule.expression, base_context)
             if not result:
                 violations.append(
                     {
@@ -254,9 +295,7 @@ def _evaluate_expression_rule(
         for page in pbir_context.get("pages", []):
             page_context = {**base_context, "page": page}
             try:
-                result = eval(
-                    rule.expression.strip(), {"__builtins__": {}}, page_context
-                )  # nosec
+                result = _safe_eval(rule.expression, page_context)
                 if not result:
                     page_name = page.get("displayName", page.get("name", "Unknown"))
                     violations.append(
@@ -276,9 +315,7 @@ def _evaluate_expression_rule(
             for visual in page.get("visuals", []):
                 visual_context = {**base_context, "visual": visual, "page": page}
                 try:
-                    result = eval(
-                        rule.expression.strip(), {"__builtins__": {}}, visual_context
-                    )  # nosec
+                    result = _safe_eval(rule.expression, visual_context)
                     if not result:
                         visual_type = visual.get("visual", {}).get(
                             "visualType", "unknown"
@@ -308,9 +345,7 @@ def _evaluate_expression_rule(
                     "entity": entity,
                 }
                 try:
-                    result = eval(
-                        rule.expression.strip(), {"__builtins__": {}}, measure_context
-                    )  # nosec
+                    result = _safe_eval(rule.expression, measure_context)
                     if not result:
                         measure_name = measure.get("name", "unknown")
                         violations.append(
@@ -329,9 +364,7 @@ def _evaluate_expression_rule(
         for bookmark in pbir_context.get("bookmarks", []):
             bookmark_context = {**base_context, "bookmark": bookmark}
             try:
-                result = eval(
-                    rule.expression.strip(), {"__builtins__": {}}, bookmark_context
-                )  # nosec
+                result = _safe_eval(rule.expression, bookmark_context)
                 if not result:
                     bookmark_name = bookmark.get("name", "unknown")
                     violations.append(

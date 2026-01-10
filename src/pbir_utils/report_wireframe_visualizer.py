@@ -1,7 +1,10 @@
+import logging
 import os
 import tempfile
 import webbrowser
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from .common import (
     iter_pages,
@@ -238,8 +241,12 @@ def get_wireframe_data(
             try:
                 bookmark_data = load_json(str(bookmark_file))
                 _extract_field_usage(bookmark_data, "Bookmarks", field_usage)
-            except Exception:  # nosec B110
-                pass
+            except Exception as e:
+                logger.debug(
+                    "Failed to extract field usage from bookmark %s: %s",
+                    bookmark_file,
+                    e,
+                )
 
     # 1b. Extract fields from report-level filters
     report_json = definition_path / "report.json"
@@ -249,8 +256,8 @@ def get_wireframe_data(
             filter_config = report_data.get("filterConfig", {})
             if filter_config:
                 _extract_field_usage(filter_config, "Filters", field_usage)
-        except Exception:  # nosec B110
-            pass
+        except Exception as e:
+            logger.debug("Failed to load report-level filters: %s", e)
 
     # 1c. Extract fields from page filters and page visuals
     for page_id, page_folder_path, page_data in iter_pages(report_path):
@@ -299,8 +306,8 @@ def get_wireframe_data(
                     "visuals": adjusted_visuals,
                 }
             )
-        except Exception:  # nosec B110
-            pass  # Skip problematic pages silently for API use
+        except Exception as e:
+            logger.debug("Failed to process page %s: %s", page_id, e)
 
     if not pages_data:
         return None
@@ -323,8 +330,10 @@ def get_wireframe_data(
         order_map = {pid: idx for idx, pid in enumerate(page_order)}
 
         filtered_pages.sort(key=lambda x: order_map.get(x["id"], 999))
-    except Exception:  # nosec B110
-        pass  # Fallback to extraction order
+    except Exception as e:
+        logger.debug(
+            "Failed to get page order, falling back to extraction order: %s", e
+        )
 
     # 4. Handle Hidden Visuals for Final Output
     if not show_hidden:
@@ -367,7 +376,7 @@ def display_report_wireframes(
         show_hidden (bool, optional): Show hidden visuals. Defaults to True.
     """
     console.print_action_heading("Generating report wireframes", False)
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
+    from .template_utils import render_wireframe_html
 
     # Get wireframe data using the extracted function
     data = get_wireframe_data(report_path, pages, visual_types, visual_ids, show_hidden)
@@ -378,20 +387,7 @@ def display_report_wireframes(
 
     # Render Template
     try:
-        template_dir = Path(__file__).parent / "templates"
-        static_dir = Path(__file__).parent / "static"
-        env = Environment(
-            loader=FileSystemLoader([template_dir, static_dir]),
-            autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
-        )
-        template = env.get_template("wireframe.html.j2")
-
-        html_content = template.render(
-            report_name=data["report_name"],
-            pages=data["pages"],
-            fields_index=data["fields_index"],
-            active_page_id=data["active_page_id"],
-        )
+        html_content = render_wireframe_html(data)
 
         # Save and Open
         fd, path = tempfile.mkstemp(
@@ -404,4 +400,5 @@ def display_report_wireframes(
         webbrowser.open(f"file://{path}")
 
     except Exception as e:
+        logger.error("Failed to render wireframe: %s", e)
         console.print_error(f"Failed to render wireframe: {e}")

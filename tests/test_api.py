@@ -124,6 +124,26 @@ def test_browse_file_returns_400(api_client, tmp_path):
     assert "not a directory" in response.json()["detail"].lower()
 
 
+def test_browse_excluded_path_returns_403(api_client):
+    """Test that browsing excluded system paths returns 403."""
+    import platform
+
+    if platform.system().lower() == "windows":
+        excluded_path = "C:\\Windows"
+    else:
+        excluded_path = "/etc"
+
+    response = api_client.get(f"/api/browse?path={excluded_path}")
+    assert response.status_code == 403
+    assert "restricted" in response.json()["detail"].lower()
+
+
+def test_browse_normal_path_allowed(api_client, tmp_path):
+    """Test that normal (non-excluded) paths are still allowed."""
+    response = api_client.get(f"/api/browse?path={tmp_path}")
+    assert response.status_code == 200
+
+
 # ============ Wireframe Endpoints ============
 
 
@@ -268,6 +288,17 @@ def test_visuals_csv_download(api_client, sample_report):
     content = response.text
     assert "Visual Type" in content
     assert "card" in content
+
+
+def test_wireframe_html_download(api_client, sample_report):
+    """Test downloading wireframe as HTML file."""
+    response = api_client.get(
+        f"/api/reports/wireframe/html?report_path={sample_report}"
+    )
+    assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
+    assert "attachment" in response.headers.get("content-disposition", "")
+    assert "<html" in response.text.lower()
 
 
 # ============ Console Broadcast ============

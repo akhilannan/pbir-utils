@@ -806,7 +806,7 @@ exclude:
 | `measure` | `measure`, `entity` | Current measure object and its parent entity |
 | `bookmark` | `bookmark` | Current bookmark object |
 
-**Available functions:** `len()`, `sum()`, `min()`, `max()`, `any()`, `all()`, `re` (regex module)
+**Available functions:** `len()`, `sum()`, `min()`, `max()`, `any()`, `all()`, `sorted()`, `reversed()`, `re_match(pattern, string)`, `re_search(pattern, string)`
 
 #### Writing Expression Rules
 

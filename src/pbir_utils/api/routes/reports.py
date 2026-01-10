@@ -53,26 +53,9 @@ async def get_wireframe(request: WireframeRequest):
         )
 
     # Render wireframe content template
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-    from pathlib import Path
+    from pbir_utils.template_utils import render_wireframe_content
 
-    # Assuming templates are in parent of api/routes/.. -> src/pbir_utils/templates
-    # Actually file is pbir_utils/api/routes/reports.py
-    # Templates are pbir_utils/templates
-    template_dir = Path(__file__).parent.parent.parent / "templates"
-
-    env = Environment(
-        loader=FileSystemLoader(template_dir),
-        autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
-    )
-    template = env.get_template("wireframe_content.html.j2")
-
-    html_content = template.render(
-        report_name=data["report_name"],
-        pages=data["pages"],
-        fields_index=data["fields_index"],
-        active_page_id=data["active_page_id"],
-    )
+    html_content = render_wireframe_content(data)
 
     data["html_content"] = html_content
 
@@ -390,10 +373,8 @@ async def download_wireframe_html(report_path: str, visual_ids: str = None):
         report_path: Path to the PBIR report folder.
         visual_ids: Optional comma-separated list of visual IDs to filter by (WYSIWYG export).
     """
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-    from pathlib import Path
-
     from pbir_utils.report_wireframe_visualizer import get_wireframe_data
+    from pbir_utils.template_utils import render_wireframe_html
 
     # Parse visual IDs filter (for WYSIWYG filtered export)
     visual_id_list = visual_ids.split(",") if visual_ids else None
@@ -411,21 +392,7 @@ async def download_wireframe_html(report_path: str, visual_ids: str = None):
         )
 
     # Render the full standalone wireframe HTML template
-    template_dir = Path(__file__).parent.parent.parent / "templates"
-    static_dir = Path(__file__).parent.parent.parent / "static"
-
-    env = Environment(
-        loader=FileSystemLoader([template_dir, static_dir]),
-        autoescape=select_autoescape(["html", "htm", "xml", "j2"]),
-    )
-    template = env.get_template("wireframe.html.j2")
-
-    html_content = template.render(
-        report_name=data["report_name"],
-        pages=data["pages"],
-        fields_index=data["fields_index"],
-        active_page_id=data["active_page_id"],
-    )
+    html_content = render_wireframe_html(data)
 
     # Generate filename from report name
     report_name = data["report_name"].replace(" ", "_")

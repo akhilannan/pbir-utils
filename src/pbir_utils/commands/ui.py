@@ -1,5 +1,7 @@
 """UI command for PBIR Utils CLI."""
 
+__all__ = ["register", "handle"]
+
 from pathlib import Path
 
 

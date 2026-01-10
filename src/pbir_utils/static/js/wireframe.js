@@ -1,11 +1,16 @@
 // Mode detection: API mode loads data dynamically from backend
 var API_MODE = typeof API_MODE !== 'undefined' ? API_MODE : false;
 
-var currentZoom = 1;
-var minZoom = 0.25;
-var maxZoom = 2;
-var zoomStep = 0.25;
+// Constants
+var MIN_ZOOM = 0.25;
+var MAX_ZOOM = 2;
+var ZOOM_STEP = 0.25;
+var FIELDS_PANE_MIN_WIDTH = 200;
+var FIELDS_PANE_MAX_WIDTH = 600;
+var SEARCH_DEBOUNCE_MS = 150;
 
+// State
+var currentZoom = 1;
 var initialPageLoaded = false;
 
 /* Performance: Cached DOM References */
@@ -60,15 +65,15 @@ function openPage(pageId, skipTracking) {
 
 /* Zoom Controls */
 function zoomIn() {
-    if (currentZoom < maxZoom) {
-        currentZoom = Math.min(maxZoom, currentZoom + zoomStep);
+    if (currentZoom < MAX_ZOOM) {
+        currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
         applyZoom();
     }
 }
 
 function zoomOut() {
-    if (currentZoom > minZoom) {
-        currentZoom = Math.max(minZoom, currentZoom - zoomStep);
+    if (currentZoom > MIN_ZOOM) {
+        currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
         applyZoom();
     }
 }
@@ -858,7 +863,7 @@ function searchFields() {
             filterVisuals();
         }
         updateResetButtonState();
-    }, 150);
+    }, SEARCH_DEBOUNCE_MS);
 }
 
 function applySearchFieldFilter(matchingFieldKeys) {
@@ -1133,9 +1138,9 @@ document.addEventListener('mousemove', function (e) {
     // Dragging left edge: moving left increases width, moving right decreases width
     var newWidth = fieldsPaneStartWidth - (e.clientX - fieldsPaneStartX);
 
-    // Constraints (matching CSS min-width and max-width)
-    if (newWidth < 200) newWidth = 200;
-    if (newWidth > 600) newWidth = 600;
+    // Constraints (using defined constants)
+    if (newWidth < FIELDS_PANE_MIN_WIDTH) newWidth = FIELDS_PANE_MIN_WIDTH;
+    if (newWidth > FIELDS_PANE_MAX_WIDTH) newWidth = FIELDS_PANE_MAX_WIDTH;
 
     document.documentElement.style.setProperty('--fields-pane-width', newWidth + 'px');
 });

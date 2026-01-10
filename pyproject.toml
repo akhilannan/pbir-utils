@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "jinja2",
     "pyyaml",
+    "simpleeval",
 ]
 dynamic = ["version"]
 
