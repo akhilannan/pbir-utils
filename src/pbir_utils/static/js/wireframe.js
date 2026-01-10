@@ -645,6 +645,10 @@ function toggleFieldsPane() {
     var isCollapsed = pane.classList.toggle('collapsed');
     btn.classList.toggle('pane-collapsed', isCollapsed);
 
+    // Update ARIA state
+    btn.setAttribute('aria-expanded', !isCollapsed);
+    btn.setAttribute('aria-label', isCollapsed ? 'Expand Fields Pane' : 'Collapse Fields Pane');
+
     // Save preference
     localStorage.setItem('wireframe-fields-pane', isCollapsed ? 'collapsed' : 'expanded');
 }
@@ -663,8 +667,8 @@ function initFieldsPane() {
 
         html += '<div class="table-item" data-table="' + escapeHtml(tableName) + '">';
         html += '<div class="table-header">';
-        html += '<span class="table-expand-icon" onclick="event.stopPropagation(); toggleTable(\'' + escapeHtml(tableName) + '\')">▶</span>';
-        html += '<div class="table-header-content" onclick="toggleTableSelection(\'' + escapeHtml(tableName) + '\')" onmouseenter="showTableTooltip(event, \'' + escapeHtml(tableName) + '\')" onmouseleave="hideTableTooltip()">';
+        html += '<span class="table-expand-icon" onclick="event.stopPropagation(); toggleTable(\'' + escapeHtml(tableName) + '\')" aria-hidden="true">▶</span>';
+        html += '<div class="table-header-content" role="button" tabindex="0" aria-expanded="false" onclick="toggleTableSelection(\'' + escapeHtml(tableName) + '\')" onkeydown="handleTableKey(event, \'' + escapeHtml(tableName) + '\')" onmouseenter="showTableTooltip(event, \'' + escapeHtml(tableName) + '\')" onmouseleave="hideTableTooltip()">';
         html += '<svg class="table-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="9" y2="21" stroke="currentColor" stroke-width="2"/></svg>';
         html += '<span class="table-name">' + escapeHtml(tableName) + '</span>';
         html += '<span class="table-count">' + tableData.visualCount + '</span>';
@@ -676,7 +680,7 @@ function initFieldsPane() {
         tableData.columns.forEach(function (col) {
             var fieldKey = tableName + '.' + col;
             var count = (fieldsIndex.fieldToVisuals[fieldKey] || []).length;
-            html += '<div class="field-item" data-field="' + escapeHtml(fieldKey) + '" onclick="toggleFieldSelection(\'' + escapeHtml(fieldKey) + '\')" onmouseenter="showFieldTooltip(event, \'' + escapeHtml(tableName) + '\', \'' + escapeHtml(col) + '\')" onmouseleave="hideFieldTooltip()">';
+            html += '<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="' + escapeHtml(fieldKey) + '" onclick="toggleFieldSelection(\'' + escapeHtml(fieldKey) + '\')" onkeydown="handleFieldKey(event, \'' + escapeHtml(fieldKey) + '\')" onmouseenter="showFieldTooltip(event, \'' + escapeHtml(tableName) + '\', \'' + escapeHtml(col) + '\')" onmouseleave="hideFieldTooltip()">';
             html += '<span class="field-icon column-icon" title="Column">⊟</span>';
             html += '<span class="field-name">' + escapeHtml(col) + '</span>';
             html += '<span class="field-count">(' + count + ')</span>';
@@ -687,7 +691,7 @@ function initFieldsPane() {
         tableData.measures.forEach(function (meas) {
             var fieldKey = tableName + '.' + meas;
             var count = (fieldsIndex.fieldToVisuals[fieldKey] || []).length;
-            html += '<div class="field-item" data-field="' + escapeHtml(fieldKey) + '" onclick="toggleFieldSelection(\'' + escapeHtml(fieldKey) + '\')" onmouseenter="showFieldTooltip(event, \'' + escapeHtml(tableName) + '\', \'' + escapeHtml(meas) + '\')" onmouseleave="hideFieldTooltip()">';
+            html += '<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="' + escapeHtml(fieldKey) + '" onclick="toggleFieldSelection(\'' + escapeHtml(fieldKey) + '\')" onkeydown="handleFieldKey(event, \'' + escapeHtml(fieldKey) + '\')" onmouseenter="showFieldTooltip(event, \'' + escapeHtml(tableName) + '\', \'' + escapeHtml(meas) + '\')" onmouseleave="hideFieldTooltip()">';
             html += '<span class="field-icon measure-icon" title="Measure">Σ</span>';
             html += '<span class="field-name">' + escapeHtml(meas) + '</span>';
             html += '<span class="field-count">(' + count + ')</span>';
@@ -709,6 +713,32 @@ function initFieldsPane() {
     } else {
         // Default is collapsed, ensure button class is set
         btn.classList.add('pane-collapsed');
+    }
+}
+
+function handleTableKey(event, tableName) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleTableSelection(tableName);
+    } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        var tableItem = document.querySelector('.table-item[data-table="' + tableName + '"]');
+        if (tableItem && !tableItem.classList.contains('expanded')) {
+            tableItem.classList.add('expanded');
+        }
+    } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        var tableItem = document.querySelector('.table-item[data-table="' + tableName + '"]');
+        if (tableItem && tableItem.classList.contains('expanded')) {
+            tableItem.classList.remove('expanded');
+        }
+    }
+}
+
+function handleFieldKey(event, fieldKey) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleFieldSelection(fieldKey);
     }
 }
 
@@ -767,7 +797,14 @@ function toggleTableSelection(tableName) {
             if (fieldItem) fieldItem.classList.remove('selected');
         } else {
             selectedFields.add(fieldKey);
-            if (fieldItem) fieldItem.classList.add('selected');
+            if (fieldItem) {
+                fieldItem.classList.add('selected');
+                fieldItem.setAttribute('aria-checked', 'true');
+            }
+        }
+
+        if (fieldItem && !selectedFields.has(fieldKey)) {
+            fieldItem.setAttribute('aria-checked', 'false');
         }
     });
 
@@ -775,6 +812,7 @@ function toggleTableSelection(tableName) {
     var tableItem = document.querySelector('.table-item[data-table="' + tableName + '"]');
     if (tableItem && !allSelected) {
         tableItem.classList.add('expanded');
+        // Update aria-expanded on header content if possible
     }
 
     updateFieldsFooter();
@@ -791,10 +829,16 @@ function toggleFieldSelection(fieldKey) {
 
     if (wasSelected) {
         selectedFields.delete(fieldKey);
-        if (fieldItem) fieldItem.classList.remove('selected');
+        if (fieldItem) {
+            fieldItem.classList.remove('selected');
+            fieldItem.setAttribute('aria-checked', 'false');
+        }
     } else {
         selectedFields.add(fieldKey);
-        if (fieldItem) fieldItem.classList.add('selected');
+        if (fieldItem) {
+            fieldItem.classList.add('selected');
+            fieldItem.setAttribute('aria-checked', 'true');
+        }
     }
 
     updateFieldsFooter();

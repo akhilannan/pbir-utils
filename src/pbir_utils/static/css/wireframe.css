@@ -796,7 +796,7 @@
             right: var(--fields-pane-width);
             top: 50%;
             transform: translateY(-50%);
-            width: 24px;
+            width: 16px;
             height: 60px;
             background-color: var(--card-bg);
             backdrop-filter: blur(16px);
@@ -812,6 +812,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0;
             font-size: 14px;
         }
 

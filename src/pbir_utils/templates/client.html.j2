@@ -87,7 +87,7 @@
             left: var(--sidebar-width);
             top: 50%;
             transform: translateY(-50%);
-            width: 24px;
+            width: 16px;
             height: 60px;
             background: var(--card-bg);
             backdrop-filter: blur(16px);
@@ -98,6 +98,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0;
             color: var(--text-secondary);
             z-index: 90;
             transition: left 0.25s ease, background 0.15s, color 0.15s;
@@ -126,6 +127,11 @@
 
         .sidebar.collapsed + .sidebar-toggle .chevron {
             transform: rotate(180deg);
+        }
+        
+        .sidebar-toggle:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
         }
 
         .sidebar-section {
@@ -162,11 +168,17 @@
             transition: background 0.15s, color 0.15s;
             flex-shrink: 0;
             background: rgba(0,0,0,0.02);
+            outline: none;
         }
 
-        .sidebar-section-header:hover {
+        .sidebar-section-header:hover, .sidebar-section-header:focus-visible {
             background: var(--hover-bg);
             color: var(--text-primary);
+        }
+        
+        .sidebar-section-header:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -2px;
         }
 
         .sidebar-section-header .chevron {
@@ -528,11 +540,11 @@
         /* Output Toggle Button */
         .output-toggle {
             position: absolute;
-            top: -20px;
+            top: -16px;
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
-            height: 20px;
+            height: 16px;
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
@@ -560,6 +572,11 @@
             color: white;
         }
 
+        .output-toggle:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
         .output-panel.collapsed .output-toggle:hover {
             background: var(--accent-hover);
         }
@@ -567,11 +584,11 @@
         /* Rotate chevron based on state */
         .output-toggle .chevron {
             transition: transform 0.2s ease;
-            transform: rotate(180deg); 
+            transform: rotate(0deg); 
         }
         
         .output-panel.collapsed .output-toggle .chevron {
-            transform: rotate(0deg);
+            transform: rotate(180deg);
         }
 
         .output-header {
@@ -686,11 +703,11 @@
         <aside class="sidebar" id="sidebar">
             <!-- File Browser -->
             <div class="sidebar-section file-browser" id="section-reports">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-reports')">
-                    <span class="chevron">▶</span>
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-reports')" onkeydown="handleSectionKey(event, 'section-reports')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-reports-content">
+                    <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">📁 REPORTS</span>
                 </div>
-                <div class="sidebar-section-content">
+                <div class="sidebar-section-content" id="section-reports-content">
                     <div class="breadcrumb" id="breadcrumb"></div>
                     <div id="file-list"></div>
                 </div>
@@ -698,12 +715,12 @@
 
             <!-- Actions -->
             <div class="sidebar-section actions-panel" id="section-actions">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')">
-                    <span class="chevron">▶</span>
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')" onkeydown="handleSectionKey(event, 'section-actions')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-actions-content">
+                    <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">⚡ ACTIONS</span>
                     <span class="config-indicator" id="config-indicator"></span>
                 </div>
-                <div class="sidebar-section-content">
+                <div class="sidebar-section-content" id="section-actions-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; position: sticky; top: 0; background: var(--sidebar-bg); z-index: 1;">
                         <button class="action-btn primary" onclick="runActions(false)" id="run-btn" disabled>▶ Run</button>
                         <button class="action-btn secondary" onclick="runActions(true)" id="dry-run-btn" disabled>👁 Dry Run</button>
@@ -723,12 +740,12 @@
 
             <!-- Validate -->
             <div class="sidebar-section validation-panel" id="section-validate">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')">
-                    <span class="chevron">▶</span>
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')" onkeydown="handleSectionKey(event, 'section-validate')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-validate-content">
+                    <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">🔍 VALIDATE</span>
                     <span class="config-indicator" id="rules-config-indicator"></span>
                 </div>
-                <div class="sidebar-section-content">
+                <div class="sidebar-section-content" id="section-validate-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding: 8px 16px;">
                         <button class="action-btn primary" onclick="runCheck()" id="check-btn" disabled>
                             ✓ Check
@@ -753,11 +770,11 @@
 
             <!-- Export -->
             <div class="sidebar-section" id="section-export">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')">
-                    <span class="chevron">▶</span>
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')" onkeydown="handleSectionKey(event, 'section-export')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-export-content">
+                    <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">📥 EXPORT</span>
                 </div>
-                <div class="sidebar-section-content" style="padding: 8px 12px;">
+                <div class="sidebar-section-content" style="padding: 8px 12px;" id="section-export-content">
                     <div class="export-buttons">
                         <button class="export-btn" onclick="downloadCSV('attributes', true)" id="export-meta-btn" disabled
                             title="Export attributes for visuals currently visible in the wireframe (respects UI view and search & selection)">
@@ -777,8 +794,8 @@
             
             <div class="sidebar-resizer" onmousedown="initSidebarResize(event)"></div>
         </aside>
-        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
-            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar" aria-label="Toggle Sidebar" aria-expanded="true" aria-controls="sidebar">
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
         </button>
@@ -797,11 +814,11 @@
 
             <!-- Output Console -->
             <div class="output-panel" id="output-panel">
-                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel">
-            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-        </button>
+                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel" aria-label="Toggle Output Panel" aria-expanded="true" aria-controls="output-panel">
+                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
                 <div class="output-resizer" id="output-resizer" onmousedown="initOutputResize(event)"></div>
                 <div class="output-header">
                     <div class="output-header-left">

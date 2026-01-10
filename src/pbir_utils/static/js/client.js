@@ -834,8 +834,21 @@ document.addEventListener('mouseup', function (e) {
 function toggleSidebarSection(sectionId) {
     var section = document.getElementById(sectionId);
     if (section) {
-        section.classList.toggle('collapsed');
+        var isCollapsed = section.classList.toggle('collapsed');
         savePanelState();
+
+        // Update aria-expanded on header
+        var header = section.querySelector('.sidebar-section-header');
+        if (header) {
+            header.setAttribute('aria-expanded', !isCollapsed);
+        }
+    }
+}
+
+function handleSectionKey(event, sectionId) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleSidebarSection(sectionId);
     }
 }
 
@@ -844,9 +857,16 @@ function toggleOutputPanel(event) {
     if (event && event.target.tagName === 'BUTTON' && !event.target.classList.contains('output-toggle')) return;
 
     var panel = document.getElementById('output-panel');
+    var btn = document.getElementById('output-toggle');
+
     if (panel) {
-        panel.classList.toggle('collapsed');
+        var isCollapsed = panel.classList.toggle('collapsed');
         savePanelState();
+
+        if (btn) {
+            btn.setAttribute('aria-expanded', !isCollapsed);
+            btn.setAttribute('aria-label', isCollapsed ? 'Expand Output Panel' : 'Collapse Output Panel');
+        }
     }
 }
 
@@ -889,7 +909,26 @@ function restorePanelState() {
                 document.documentElement.style.setProperty('--sidebar-width', state.sidebarWidth);
             }
 
-            if (state.sidebar) document.getElementById('sidebar')?.classList.add('collapsed');
+            if (state.sidebar) {
+                document.getElementById('sidebar')?.classList.add('collapsed');
+                document.getElementById('sidebar-toggle')?.setAttribute('aria-expanded', 'false');
+            }
+
+            // Sync aria attributes for restored sections
+            ['reports', 'actions', 'validate', 'export'].forEach(function (key) {
+                if (state[key]) {
+                    var sectionId = 'section-' + key;
+                    var section = document.getElementById(sectionId);
+                    if (section) {
+                        var header = section.querySelector('.sidebar-section-header');
+                        if (header) header.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+
+            if (state.output && outputPanel) {
+                document.getElementById('output-toggle')?.setAttribute('aria-expanded', 'false');
+            }
         }
     } catch (e) {
         // Ignore localStorage errors
@@ -898,9 +937,16 @@ function restorePanelState() {
 
 function toggleSidebar() {
     var sidebar = document.getElementById('sidebar');
+    var btn = document.getElementById('sidebar-toggle');
+
     if (sidebar) {
-        sidebar.classList.toggle('collapsed');
+        var isCollapsed = sidebar.classList.toggle('collapsed');
         savePanelState();
+
+        if (btn) {
+            btn.setAttribute('aria-expanded', !isCollapsed);
+            btn.setAttribute('aria-label', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+        }
     }
 }
 
