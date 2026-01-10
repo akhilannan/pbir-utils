@@ -421,6 +421,7 @@ function updateRunButtons() {
 }
 
 async function runActions(dryRun) {
+    ensureOutputPanelVisible();
     if (!currentReportPath) {
         appendOutput('warning', 'Please open a report first');
         showToast('⚠️ Please open a report first', 3000);
@@ -522,6 +523,7 @@ function renderExpressionRules() {
 }
 
 async function runCheck() {
+    ensureOutputPanelVisible();
     if (!currentReportPath) {
         showToast('⚠️ Please open a report first', 3000);
         return;
@@ -540,7 +542,6 @@ async function runCheck() {
     }
 
     if (exprRules.length === 0 && sanitizeActions.length === 0) {
-        showValidationToast(0, 0, 0, 0, 'warning');
         appendOutput('warning', 'No rules or actions selected for validation');
         return;
     }
@@ -595,10 +596,6 @@ async function runCheck() {
 
     eventSource.addEventListener('complete', function (event) {
         eventSource.close();
-        var summary = JSON.parse(event.data);
-
-        showValidationToast(summary.passed, summary.failed, summary.warning_count, summary.error_count);
-
         btn.disabled = false;
         btn.innerHTML = '✓ Check';
     });
@@ -686,22 +683,7 @@ function updateRulesConfigIndicator() {
     }
 }
 
-function showValidationToast(passed, failed, warnings, errors) {
-    // Remove existing validation toast
-    var existing = document.querySelector('.validation-toast');
-    if (existing) existing.remove();
 
-    var type = errors > 0 ? 'error' : (failed > 0 ? 'warning' : 'success');
-    var toast = document.createElement('div');
-    toast.className = 'validation-toast ' + type;
-    toast.innerHTML =
-        '<div style="font-weight:600;margin-bottom:4px;">Validation Complete</div>' +
-        '<div>✓ ' + passed + ' passed &nbsp; ✗ ' + failed + ' failed</div>' +
-        (errors ? '<div style="color:var(--error-color);">🔴 ' + errors + ' error(s)</div>' : '') +
-        (warnings ? '<div style="color:var(--warning-color);">🟡 ' + warnings + ' warning(s)</div>' : '');
-    document.body.appendChild(toast);
-    setTimeout(function () { toast.remove(); }, 5000);
-}
 
 // ============ CSV Export ============
 
@@ -749,6 +731,14 @@ function downloadWireframeHTML(filteredOnly) {
 }
 
 // ============ Output Console ============
+
+function ensureOutputPanelVisible() {
+    var panel = document.getElementById('output-panel');
+    if (panel && panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed');
+        savePanelState();
+    }
+}
 
 function appendOutput(type, message) {
     var line = document.createElement('div');
