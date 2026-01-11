@@ -816,6 +816,11 @@
             font-size: 14px;
         }
 
+        .pbir-wireframe .fields-pane-toggle svg {
+            width: 10px;
+            height: 10px;
+        }
+
         .pbir-wireframe .fields-pane-toggle.resizing {
             transition: none;
         }

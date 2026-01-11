@@ -38,8 +38,13 @@ async def get_wireframe(request: WireframeRequest):
     """
     Get wireframe data for a report.
 
-    Runs in thread pool to avoid blocking on large reports.
+    Args:
+        request: WireframeRequest containing report path and filters.
+
+    Returns:
+        WireframeResponse with HTML content and page metadata.
     """
+    logger.info("Generating wireframe for: %s", request.report_path)
     from pbir_utils.report_wireframe_visualizer import get_wireframe_data
 
     data = await run_in_threadpool(
@@ -70,9 +75,13 @@ async def list_actions(report_path: str = None):
     """
     List all available sanitize actions from config.
 
+    Args:
+        report_path: Optional path to report for loading custom config.
+
     If report_path is provided, checks for pbir-sanitize.yaml in that location.
     Returns all defined actions with their descriptions and default status.
     """
+    logger.debug("Listing actions (report_path=%s)", report_path)
     from pbir_utils.sanitize_config import load_config, find_user_config
 
     from ..models import ActionInfo
@@ -140,9 +149,36 @@ async def load_custom_config(file: UploadFile):
 
     try:
         content = await file.read()
+        logger.info("Loading custom config from upload: %s", file.filename)
         user_config = yaml.safe_load(content) or {}
+
+        # Validate structure: Sanitizer config must NOT look like a Rules config
+        if "rules" in user_config:
+            raise ValueError(
+                "Invalid Sanitizer config: Found 'rules' key. "
+                "Did you try to load a Rules configuration file?"
+            )
+
+        # Check definitions for rule-specific keys
+        if "definitions" in user_config:
+            for def_id, def_data in user_config["definitions"].items():
+                if "expression" in def_data:
+                    raise ValueError(
+                        f"Invalid Sanitizer config: Definition '{def_id}' contains 'expression'. "
+                        "This looks like a Rules configuration."
+                    )
+
+        # Strict validation: Must contain at least one valid Sanitizer key
+        valid_keys = {"actions", "definitions", "include", "exclude", "options"}
+        if not any(k in user_config for k in valid_keys):
+            raise ValueError(
+                "Invalid Sanitizer config: No valid keys found. "
+                f"Expected one of: {', '.join(valid_keys)}"
+            )
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid YAML: {e}")
+        logger.error("Failed to parse custom config: %s", e)
+        raise HTTPException(status_code=400, detail=f"Invalid Config: {e}")
 
     # Load default config and merge with user config
     default_config = _load_yaml(get_default_config_path())
@@ -451,9 +487,36 @@ async def load_custom_rules_config(file: UploadFile):
 
     try:
         content = await file.read()
+        logger.info("Loading custom rules config from upload: %s", file.filename)
         user_config = yaml.safe_load(content) or {}
+
+        # Validate structure: Rules config must NOT look like a Sanitizer config
+        if "actions" in user_config:
+            raise ValueError(
+                "Invalid Rules config: Found 'actions' key. "
+                "Did you try to load a Sanitizer configuration file?"
+            )
+
+        # Check definitions for action-specific keys
+        if "definitions" in user_config:
+            for def_id, def_data in user_config["definitions"].items():
+                if "implementation" in def_data:
+                    raise ValueError(
+                        f"Invalid Rules config: Definition '{def_id}' contains 'implementation'. "
+                        "This looks like a Sanitizer configuration."
+                    )
+
+        # Strict validation: Must contain at least one valid Rules key
+        valid_keys = {"rules", "definitions", "include", "exclude", "options"}
+        if not any(k in user_config for k in valid_keys):
+            raise ValueError(
+                "Invalid Rules config: No valid keys found. "
+                f"Expected one of: {', '.join(valid_keys)}"
+            )
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid YAML: {e}")
+        logger.error("Failed to parse custom rules config: %s", e)
+        raise HTTPException(status_code=400, detail=f"Invalid Config: {e}")
 
     # Load default config and merge with user config
     default_path = get_default_rules_path()

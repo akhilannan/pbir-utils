@@ -123,6 +123,8 @@
 
         .sidebar-toggle .chevron {
             transition: transform 0.2s ease;
+            width: 10px;
+            height: 10px;
         }
 
         .sidebar.collapsed + .sidebar-toggle .chevron {
@@ -287,8 +289,9 @@
         .action-item {
             padding: 6px 16px;
             font-size: 13px;
+            line-height: 1.4;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
             color: var(--text-primary);
         }
@@ -299,6 +302,7 @@
 
         .action-item input[type="checkbox"] {
             margin: 0;
+            margin-top: 2px; /* Align with first line of text */
             accent-color: var(--accent-color);
         }
 
@@ -388,29 +392,52 @@
         }
 
         .config-indicator {
-            display: none;
-            padding: 2px 6px;
+            display: none; /* JS toggles this */
+            align-items: center;
+            gap: 4px;
+            padding: 2px 4px 2px 8px;
             font-size: 10px;
             background: var(--accent-color);
             color: white;
-            border-radius: 4px;
+            border-radius: 10px; /* Pill shape */
             white-space: nowrap;
+            max-width: 150px;
+            margin-left: auto; /* Push to right */
+        }
+
+        .config-name {
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 120px;
-            cursor: help;
+            max-width: 100px;
+        }
+
+        .config-reset {
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .config-reset:hover {
+            background: rgba(0,0,0,0.3);
         }
 
         /* Validation Panel */
         .rule-item {
             padding: 6px 16px;
             font-size: 13px;
+            line-height: 1.4;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
         }
         .rule-item:hover { background: var(--hover-bg); }
-        .rule-item input[type="checkbox"] { margin: 0; accent-color: var(--accent-color); }
+        .rule-item input[type="checkbox"] { margin: 0; margin-top: 2px; accent-color: var(--accent-color); }
 
         .severity-badge {
             font-size: 10px;
@@ -584,6 +611,10 @@
         /* Rotate chevron based on state */
         .output-toggle .chevron {
             transition: transform 0.2s ease;
+            width: 10px;
+            height: 10px;
+            font-size: 14px;
+            line-height: 1;
             transform: rotate(0deg); 
         }
         
@@ -728,10 +759,7 @@
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomConfig(this)">
                         <button class="export-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center;">
-                            📄 Load Custom Config
-                        </button>
-                        <button class="export-btn" id="reset-config-btn" onclick="resetConfig()" style="width: 100%; justify-content: center; margin-top: 4px; display: none;">
-                            ↩ Reset to Defaults
+                            📄 Load Sanitizer Config
                         </button>
                     </div>
                     <div id="actions-list"></div>
@@ -754,10 +782,7 @@
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="rules-config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomRulesConfig(this)">
                         <button class="export-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center;">
-                            📄 Load Custom Rules Config
-                        </button>
-                        <button class="export-btn" id="reset-rules-config-btn" onclick="resetRulesConfig()" style="width: 100%; justify-content: center; margin-top: 4px; display: none;">
-                            ↩ Reset to Defaults
+                            📄 Load Rules Config
                         </button>
                     </div>
                     <div class="action-item" style="border-bottom: 1px solid var(--border-color); margin-bottom: 8px; padding-bottom: 8px;">

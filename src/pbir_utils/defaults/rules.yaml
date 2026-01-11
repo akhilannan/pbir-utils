@@ -14,7 +14,7 @@ definitions:
   # ============================================
 
   reduce_pages:
-    description: "Reports with too many pages are harder to navigate"
+    description: "Limit report page count"
     severity: info
     scope: report
     params:
@@ -23,7 +23,7 @@ definitions:
       len(pages) <= max_pages
 
   reduce_visuals_on_page:
-    description: "Too many visuals on a page degrades rendering performance"
+    description: "Limit visuals per page"
     severity: info
     scope: page
     params:
@@ -35,7 +35,7 @@ definitions:
            and v.get("visual", {}).get("visualType") not in excluded_types]) <= max_visuals
 
   reduce_objects_within_visuals:
-    description: "Visuals with more data fields degrade performance"
+    description: "Limit data fields per visual"
     severity: info
     scope: visual
     params:
@@ -44,7 +44,7 @@ definitions:
       len(visual.get("visual", {}).get("query", {}).get("queryState", {}).get("Values", {}).get("projections", [])) <= max_fields
 
   reduce_topn_filters:
-    description: "TopN filters are expensive; avoid overuse"
+    description: "Limit TopN filter usage"
     severity: info
     scope: visual
     params:
@@ -54,7 +54,7 @@ definitions:
            if f.get("type") == "TopN"]) <= max_topn_filters
 
   reduce_advanced_filters:
-    description: "Advanced filters can impact query performance"
+    description: "Limit advanced filter usage"
     severity: info
     scope: visual
     params:

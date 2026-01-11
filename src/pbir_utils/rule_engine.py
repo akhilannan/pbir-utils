@@ -451,9 +451,7 @@ def validate_report(
         if actions:
             # Cherry-pick specific actions
             action_specs = [
-                san_cfg.definitions.get(a) or san_cfg.definitions.get(a)
-                for a in actions
-                if a in san_cfg.definitions
+                san_cfg.definitions.get(a) for a in actions if a in san_cfg.definitions
             ]
         else:
             # Use all active actions from config

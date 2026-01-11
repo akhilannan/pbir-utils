@@ -1,5 +1,6 @@
 """File browser API routes."""
 
+import logging
 import platform
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 from ..models import BrowseResponse, FileItem
 
 router = APIRouter(prefix="/browse", tags=["browse"])
+logger = logging.getLogger(__name__)
 
 # Exclusion patterns for sensitive directories
 # These paths are blocked from browsing for security
@@ -53,9 +55,11 @@ def _is_path_excluded(resolved: Path) -> bool:
         # Case-insensitive on Windows
         if system == "windows":
             if resolved_str.lower().startswith(excluded_path.lower()):
+                logger.warning("Access denied to excluded path: %s", resolved)
                 return True
         else:
             if resolved_str.startswith(excluded_path):
+                logger.warning("Access denied to excluded path: %s", resolved)
                 return True
     return False
 
@@ -81,6 +85,7 @@ async def browse_directory(path: str = None):
             raise HTTPException(
                 status_code=403, detail="Access to this path is restricted"
             )
+        logger.info("Browsing directory: %s", resolved)
     else:
         # Default to user's home directory
         resolved = Path.home()
@@ -107,6 +112,7 @@ async def browse_directory(path: str = None):
                 # Skip items we can't access
                 continue
     except PermissionError:
+        logger.error("Permission denied accessing: %s", resolved)
         raise HTTPException(status_code=403, detail="Permission denied")
 
     # Sort: directories first, then by name (case-insensitive)

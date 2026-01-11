@@ -4,30 +4,28 @@
  */
 
 // Constants
-var SIDEBAR_MIN_WIDTH = 150;
-var OUTPUT_PANEL_MIN_HEIGHT = 50;
+const SIDEBAR_MIN_WIDTH = 150;
+const OUTPUT_PANEL_MIN_HEIGHT = 50;
 
 // State
-var currentReportPath = null;
-var selectedActions = new Set();
-var reportDirtyState = false;
-var fieldsIndex = null;
-var activePageId = null;
-var currentConfigPath = null;
-var customConfigYaml = null;
-var expressionRules = [];  // Validation rules
-var customRulesConfigYaml = null;  // Custom rules YAML content
-var currentRulesConfigPath = null;  // Custom rules config filename
+// currentReportPath, fieldsIndex are defined in template
+const selectedActions = new Set();
+let reportDirtyState = false;
+let currentConfigPath = null;
+let customConfigYaml = null;
+let expressionRules = [];  // Validation rules
+let customRulesConfigYaml = null;  // Custom rules YAML content
+let currentRulesConfigPath = null;  // Custom rules config filename
 
 
 // DOM Elements
-var welcomeState = document.getElementById('welcome-state');
-var wireframeContainer = document.getElementById('wireframe-container');
-var outputContent = document.getElementById('output-content');
-var dirtyBanner = document.getElementById('dirty-banner');
+const welcomeState = document.getElementById('welcome-state');
+const wireframeContainer = document.getElementById('wireframe-container');
+const outputContent = document.getElementById('output-content');
+const dirtyBanner = document.getElementById('dirty-banner');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
     loadActions();
     browseDirectory(null);
 
@@ -41,50 +39,50 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function browseDirectory(path) {
     try {
-        var url = '/api/browse';
+        let url = '/api/browse';
         if (path) {
-            url += '?path=' + encodeURIComponent(path);
+            url += `?path=${encodeURIComponent(path)}`;
         }
-        var response = await fetch(url);
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to browse');
-        var data = await response.json();
+        const data = await response.json();
         renderFileList(data);
     } catch (e) {
-        appendOutput('error', 'Failed to browse: ' + e.message);
+        appendOutput('error', `Failed to browse: ${e.message}`);
     }
 }
 
 function renderFileList(data) {
-    var breadcrumb = document.getElementById('breadcrumb');
-    var fileList = document.getElementById('file-list');
+    const breadcrumb = document.getElementById('breadcrumb');
+    const fileList = document.getElementById('file-list');
 
     // Breadcrumb
-    var crumbs = data.current_path.split(/[\/\\]/).filter(Boolean);
-    var builtPath = '';
-    breadcrumb.innerHTML = crumbs.map(function (crumb) {
-        builtPath += crumb + '/';
-        var safePath = builtPath.replace(/'/g, "\\'");
+    const crumbs = data.current_path.split(/[\/\\]/).filter(Boolean);
+    let builtPath = '';
+    breadcrumb.innerHTML = crumbs.map(crumb => {
+        builtPath += `${crumb}/`;
+        const safePath = builtPath.replace(/'/g, "\\'");
         return `<span class="breadcrumb-item" onclick="browseDirectory('${safePath}')">${crumb}</span>`;
     }).join(' / ');
 
     // Parent directory
-    var html = '';
+    let html = '';
     if (data.parent_path) {
-        var safeParent = data.parent_path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+        const safeParent = data.parent_path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
         html += `<div class="file-item" onclick="browseDirectory('${safeParent}')">📂 ..</div>`;
     }
 
     // Items
-    html += data.items.map(function (item) {
-        var icon = item.is_report ? '📊' : (item.is_dir ? '📁' : '📄');
-        var isActive = currentReportPath && item.path === currentReportPath;
-        var cls = `file-item${item.is_report ? ' report' : ''}${isActive ? ' active' : ''}`;
+    html += data.items.map(item => {
+        const icon = item.is_report ? '📊' : (item.is_dir ? '📁' : '📄');
+        const isActive = currentReportPath && item.path === currentReportPath;
+        const cls = `file-item${item.is_report ? ' report' : ''}${isActive ? ' active' : ''}`;
 
-        var onclick = '';
+        let onclick = '';
         if (item.is_report || item.is_dir) {
-            var safePath = item.path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
-            var func = item.is_report ? 'loadReport' : 'browseDirectory';
-            onclick = `${func}('${safePath}')`;
+            const safePath = item.path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+            const func = item.is_report ? 'loadReport' : 'browseDirectory';
+            onclick = `${func}(' ${safePath}')`;
         }
 
         return onclick
@@ -101,26 +99,26 @@ function renderFileList(data) {
 
 async function loadReport(reportPath, preserveActions) {
     try {
-        appendOutput('info', 'Loading report: ' + reportPath);
+        appendOutput('info', `Loading report: ${reportPath}`);
 
         // Save current selection if requested
-        var savedActions = null;
+        let savedActions = null;
         if (preserveActions) {
             savedActions = new Set(selectedActions);
         }
 
-        var response = await fetch('/api/reports/wireframe', {
+        const response = await fetch('/api/reports/wireframe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ report_path: reportPath })
         });
 
         if (!response.ok) {
-            var error = await response.json();
+            const error = await response.json();
             throw new Error(error.detail || 'Failed to load');
         }
 
-        var data = await response.json();
+        const data = await response.json();
         currentReportPath = reportPath;
 
         // Update global state for wireframe.js
@@ -138,7 +136,7 @@ async function loadReport(reportPath, preserveActions) {
         document.getElementById('export-html-btn').disabled = false;
 
         setDirtyState(false);
-        appendOutput('success', 'Report loaded: ' + data.report_name);
+        appendOutput('success', `Report loaded: ${data.report_name}`);
 
         // Reload actions with report path to pick up report-specific config
         await loadActions(reportPath);
@@ -152,11 +150,11 @@ async function loadReport(reportPath, preserveActions) {
         await loadExpressionRules(reportPath);
 
         // Navigate file browser to show and highlight the loaded report
-        var parentPath = reportPath.replace(/[\\/][^\\/]+$/, '');
+        const parentPath = reportPath.replace(/[\\/][^\\/]+$/, '');
         browseDirectory(parentPath);
 
     } catch (e) {
-        appendOutput('error', 'Failed to load report: ' + e.message);
+        appendOutput('error', `Failed to load report: ${e.message}`);
     }
 }
 
@@ -170,9 +168,9 @@ function renderWireframe(data) {
     }
 
     // Move tooltips to document.body (must be outside wireframe-container to avoid overflow clipping)
-    var tooltipIds = ['tooltip', 'page-tooltip', 'field-tooltip', 'table-tooltip'];
-    tooltipIds.forEach(function (id) {
-        var el = document.getElementById(id);
+    const tooltipIds = ['tooltip', 'page-tooltip', 'field-tooltip', 'table-tooltip'];
+    tooltipIds.forEach(id => {
+        const el = document.getElementById(id);
         if (el) {
             document.body.appendChild(el);
         }
@@ -193,7 +191,7 @@ function renderWireframe(data) {
     setupVisualEventDelegation();
 
     // Set theme from localStorage
-    var savedTheme = localStorage.getItem('wireframeTheme');
+    const savedTheme = localStorage.getItem('wireframeTheme');
     if (savedTheme === 'dark') {
         document.body.setAttribute('data-theme', 'dark');
     }
@@ -204,28 +202,28 @@ function renderWireframe(data) {
 
 async function loadActions(reportPath) {
     try {
-        var url = '/api/reports/actions';
+        let url = '/api/reports/actions';
         if (reportPath) {
-            url += '?report_path=' + encodeURIComponent(reportPath);
+            url += `?report_path=${encodeURIComponent(reportPath)}`;
         }
-        var response = await fetch(url);
-        var data = await response.json();
+        const response = await fetch(url);
+        const data = await response.json();
         currentConfigPath = data.config_path;
         customConfigYaml = null;  // Reset custom config when loading from report
         renderActions(data.actions);
         updateConfigIndicator();
     } catch (e) {
-        appendOutput('error', 'Failed to load actions: ' + e.message);
+        appendOutput('error', `Failed to load actions: ${e.message}`);
     }
 }
 
 function renderActions(actions) {
     selectedActions.clear();
-    var html = '';
+    let html = '';
 
     // Split actions
-    var defaultActions = actions.filter(function (a) { return a.is_default; });
-    var additionalActions = actions.filter(function (a) { return !a.is_default; });
+    const defaultActions = actions.filter(a => a.is_default);
+    const additionalActions = actions.filter(a => !a.is_default);
 
     // --- Default Actions Section ---
     if (defaultActions.length > 0) {
@@ -237,9 +235,9 @@ function renderActions(actions) {
             </div>
         </div>`;
 
-        html += defaultActions.map(function (action, i) {
+        html += defaultActions.map((action, i) => {
             selectedActions.add(action.id); // Auto-select default
-            var description = action.description || action.id.replace(/_/g, ' ');
+            const description = action.description || action.id.replace(/_/g, ' ');
             return `
             <div class="action-item" title="${escapeHtml(action.id)}">
                 <input type="checkbox" id="action-def-${i}" value="${action.id}" checked
@@ -259,8 +257,8 @@ function renderActions(actions) {
             </div>
         </div>`;
 
-        html += additionalActions.map(function (action, i) {
-            var description = action.description || action.id.replace(/_/g, ' ');
+        html += additionalActions.map((action, i) => {
+            const description = action.description || action.id.replace(/_/g, ' ');
             return `
             <div class="action-item additional" title="${escapeHtml(action.id)}">
                 <input type="checkbox" id="action-add-${i}" value="${action.id}"
@@ -278,9 +276,9 @@ function renderActions(actions) {
 
 function restoreActionSelection(savedSet) {
     selectedActions.clear();
-    var checkboxes = document.querySelectorAll('.action-checkbox-default, .action-checkbox-additional');
+    const checkboxes = document.querySelectorAll('.action-checkbox-default, .action-checkbox-additional');
 
-    checkboxes.forEach(function (cb) {
+    checkboxes.forEach(cb => {
         cb.checked = savedSet.has(cb.value);
         if (cb.checked) {
             selectedActions.add(cb.value);
@@ -292,74 +290,75 @@ function restoreActionSelection(savedSet) {
 }
 
 function updateConfigIndicator() {
-    var indicator = document.getElementById('config-indicator');
+    const indicator = document.getElementById('config-indicator');
     if (indicator) {
         if (currentConfigPath) {
-            var fileName = currentConfigPath.split(/[\\/]/).pop();
-            indicator.textContent = '📄 ' + fileName;
-            indicator.title = 'Custom config: ' + currentConfigPath;
-            indicator.style.display = 'inline-block';
+            const fileName = currentConfigPath.split(/[\\/]/).pop();
+            indicator.innerHTML = `
+                <span class="config-name">📄 ${fileName}</span>
+                <span class="config-reset" onclick="resetConfig(event)" title="Reset to Defaults">×</span>
+            `;
+            indicator.title = `Custom config: ${currentConfigPath}`;
+            indicator.style.display = 'inline-flex';
         } else {
             indicator.style.display = 'none';
         }
-    }
-    // Show/hide reset button based on custom config
-    var resetBtn = document.getElementById('reset-config-btn');
-    if (resetBtn) {
-        resetBtn.style.display = currentConfigPath ? 'block' : 'none';
     }
 }
 
 async function loadCustomConfig(input) {
     if (!input.files || !input.files[0]) return;
 
-    var file = input.files[0];
+    const file = input.files[0];
 
     // Read file content for later use during execution
-    var yamlContent = await file.text();
+    const yamlContent = await file.text();
 
-    var formData = new FormData();
+    const formData = new FormData();
     formData.append('file', file);
 
     try {
-        var response = await fetch('/api/reports/config', {
+        const response = await fetch('/api/reports/config', {
             method: 'POST',
             body: formData
         });
 
         if (!response.ok) {
-            var error = await response.json();
+            const error = await response.json();
             throw new Error(error.detail || 'Failed to load config');
         }
 
-        var data = await response.json();
+        const data = await response.json();
 
         // Store config for execution
         currentConfigPath = file.name;
         customConfigYaml = yamlContent;
 
         // Render new actions from config
-        var actions = data.actions.map(function (id) {
-            var def = data.definitions[id];
+        const actions = data.actions.map(id => {
+            const def = data.definitions[id];
             return {
-                id: id,
+                id,
                 description: def ? def.description : id.replace(/_/g, ' '),
                 is_default: true
             };
         });
         renderActions(actions);
         updateConfigIndicator();
-        appendOutput('success', 'Loaded custom config: ' + file.name);
+        ensureOutputPanelVisible();
+        appendOutput('success', `Loaded custom config: ${file.name}`);
 
     } catch (e) {
-        appendOutput('error', 'Failed to load config: ' + e.message);
+        ensureOutputPanelVisible();
+        appendOutput('error', `Failed to load config: ${e.message}`);
     }
 
     // Reset file input so same file can be selected again
     input.value = '';
 }
 
-async function resetConfig() {
+async function resetConfig(event) {
+    if (event) event.stopPropagation();
     currentConfigPath = null;
     customConfigYaml = null;
     await loadActions(currentReportPath);
@@ -373,23 +372,23 @@ function updateSelectAllState() {
 }
 
 function updateGroupState(type) {
-    var checkboxes = Array.from(document.querySelectorAll('.action-checkbox-' + type));
-    var selectAll = document.getElementById('select-all-' + type);
+    const checkboxes = Array.from(document.querySelectorAll(`.action-checkbox-${type}`));
+    const selectAll = document.getElementById(`select-all-${type}`);
 
     if (!checkboxes.length || !selectAll) return;
 
-    var allChecked = checkboxes.every(function (cb) { return cb.checked; });
-    var anyChecked = checkboxes.some(function (cb) { return cb.checked; });
+    const allChecked = checkboxes.every(cb => cb.checked);
+    const anyChecked = checkboxes.some(cb => cb.checked);
 
     selectAll.checked = allChecked;
     selectAll.indeterminate = !allChecked && anyChecked;
 }
 
 function toggleGroup(type, source) {
-    var checkboxes = document.querySelectorAll('.action-checkbox-' + type);
-    var isChecked = source.checked;
+    const checkboxes = document.querySelectorAll(`.action-checkbox-${type}`);
+    const isChecked = source.checked;
 
-    checkboxes.forEach(function (cb) {
+    checkboxes.forEach(cb => {
         cb.checked = isChecked;
         if (isChecked) {
             selectedActions.add(cb.value);
@@ -412,9 +411,9 @@ function toggleAction(action) {
 }
 
 function updateRunButtons() {
-    var hasActions = selectedActions.size > 0;
-    var runBtn = document.getElementById('run-btn');
-    var dryRunBtn = document.getElementById('dry-run-btn');
+    const hasActions = selectedActions.size > 0;
+    const runBtn = document.getElementById('run-btn');
+    const dryRunBtn = document.getElementById('dry-run-btn');
 
     if (runBtn) runBtn.disabled = !hasActions;
     if (dryRunBtn) dryRunBtn.disabled = !hasActions;
@@ -435,7 +434,7 @@ async function runActions(dryRun) {
 
     // Confirmation for actual run
     if (!dryRun) {
-        var confirmed = confirm(
+        const confirmed = confirm(
             "Are you sure you want to run this?\n\n" +
             "This action cannot be undone from the application.\n" +
             "Please ensure you have a backup or the report is checked into git."
@@ -443,27 +442,27 @@ async function runActions(dryRun) {
         if (!confirmed) return;
     }
 
-    var actions = Array.from(selectedActions).join(',');
-    var url = '/api/reports/run/stream?path=' + encodeURIComponent(currentReportPath) +
-        '&actions=' + encodeURIComponent(actions) +
-        '&dry_run=' + dryRun;
+    const actions = Array.from(selectedActions).join(',');
+    let url = `/api/reports/run/stream?path=${encodeURIComponent(currentReportPath)}` +
+        `&actions=${encodeURIComponent(actions)}` +
+        `&dry_run=${dryRun}`;
 
     // Pass custom config if loaded
     if (customConfigYaml) {
-        var encoded = btoa(unescape(encodeURIComponent(customConfigYaml)));
-        url += '&config_yaml=' + encodeURIComponent(encoded);
+        const encoded = btoa(unescape(encodeURIComponent(customConfigYaml)));
+        url += `&config_yaml=${encodeURIComponent(encoded)}`;
     }
 
-    appendOutput('info', (dryRun ? '[DRY RUN] ' : '') + 'Running: ' + actions);
+    appendOutput('info', (dryRun ? '[DRY RUN] ' : '') + `Running: ${actions}`);
 
-    var eventSource = new EventSource(url);
+    const eventSource = new EventSource(url);
 
-    eventSource.onmessage = function (event) {
-        var data = JSON.parse(event.data);
+    eventSource.onmessage = event => {
+        const data = JSON.parse(event.data);
         appendOutput(data.type || 'info', data.message);
     };
 
-    eventSource.addEventListener('complete', async function () {
+    eventSource.addEventListener('complete', async () => {
         eventSource.close();
         appendOutput('success', 'Actions completed');
 
@@ -474,7 +473,7 @@ async function runActions(dryRun) {
         }
     });
 
-    eventSource.onerror = function () {
+    eventSource.onerror = () => {
         eventSource.close();
         setDirtyState(true, 'Action may have failed. Report might be in inconsistent state.');
         appendOutput('error', 'Connection lost');
@@ -486,9 +485,9 @@ async function runActions(dryRun) {
 async function loadExpressionRules(reportPath) {
     if (!reportPath) return;
     try {
-        var url = '/api/reports/validate/rules?report_path=' + encodeURIComponent(reportPath);
-        var response = await fetch(url);
-        var data = await response.json();
+        const url = `/api/reports/validate/rules?report_path=${encodeURIComponent(reportPath)}`;
+        const response = await fetch(url);
+        const data = await response.json();
         expressionRules = data.rules || [];
         renderExpressionRules();
         document.getElementById('check-btn').disabled = false;
@@ -500,7 +499,7 @@ async function loadExpressionRules(reportPath) {
 }
 
 function renderExpressionRules() {
-    var container = document.getElementById('rules-list');
+    const container = document.getElementById('rules-list');
     if (!container) return;
 
     if (!expressionRules.length) {
@@ -508,14 +507,14 @@ function renderExpressionRules() {
         return;
     }
 
-    var html = expressionRules.map(function (r) {
-        var desc = r.description || r.id.replace(/_/g, ' ');
-        var badge = r.severity[0].toUpperCase();
+    const html = expressionRules.map(r => {
+        const desc = r.description || r.id.replace(/_/g, ' ');
+        const badge = r.severity[0].toUpperCase();
         return `
             <div class="rule-item">
                 <input type="checkbox" id="rule-${r.id}" value="${r.id}" checked>
                 <label for="rule-${r.id}" style="flex:1;cursor:pointer;">${escapeHtml(desc)}</label>
-                <span class="severity-badge ${r.severity}">${badge}</span>
+                <span class="severity-badge ${r.severity}" title="Severity: ${r.severity}">${badge}</span>
             </div>`;
     }).join('');
 
@@ -530,11 +529,11 @@ async function runCheck() {
     }
 
     // Get selected expression rules
-    var exprRules = Array.from(document.querySelectorAll('#rules-list input:checked')).map(function (cb) { return cb.value; });
+    const exprRules = Array.from(document.querySelectorAll('#rules-list input:checked')).map(cb => cb.value);
     // Get selected sanitize actions from ACTIONS panel
-    var sanitizeActions = Array.from(selectedActions);
+    let sanitizeActions = Array.from(selectedActions);
     // Check if sanitizer checks should be included
-    var includeSanitizer = document.getElementById('include-sanitizer-checks')?.checked ?? true;
+    const includeSanitizer = document.getElementById('include-sanitizer-checks')?.checked ?? true;
 
     // If not including sanitizer, clear the actions
     if (!includeSanitizer) {
@@ -546,41 +545,41 @@ async function runCheck() {
         return;
     }
 
-    var btn = document.getElementById('check-btn');
+    const btn = document.getElementById('check-btn');
     btn.disabled = true;
     btn.innerHTML = '⏳ Checking...';
 
     // Build SSE URL with query parameters
-    var url = '/api/reports/validate/run/stream?report_path=' + encodeURIComponent(currentReportPath);
+    let url = `/api/reports/validate/run/stream?report_path=${encodeURIComponent(currentReportPath)}`;
 
     if (exprRules.length > 0) {
-        url += '&expression_rules=' + encodeURIComponent(exprRules.join(','));
+        url += `&expression_rules=${encodeURIComponent(exprRules.join(','))}`;
     }
     if (sanitizeActions.length > 0) {
-        url += '&sanitize_actions=' + encodeURIComponent(sanitizeActions.join(','));
+        url += `&sanitize_actions=${encodeURIComponent(sanitizeActions.join(','))}`;
     }
-    url += '&include_sanitizer=' + includeSanitizer;
+    url += `&include_sanitizer=${includeSanitizer}`;
 
     // Add custom rules config if loaded (base64 encoded)
     if (customRulesConfigYaml) {
-        var encoded = btoa(unescape(encodeURIComponent(customRulesConfigYaml)));
-        url += '&rules_config_yaml=' + encodeURIComponent(encoded);
+        const encoded = btoa(unescape(encodeURIComponent(customRulesConfigYaml)));
+        url += `&rules_config_yaml=${encodeURIComponent(encoded)}`;
     }
 
     // Add custom sanitize config if loaded from Actions panel (base64 encoded)
     if (customConfigYaml) {
-        var encodedSanitize = btoa(unescape(encodeURIComponent(customConfigYaml)));
-        url += '&sanitize_config_yaml=' + encodeURIComponent(encodedSanitize);
+        const encodedSanitize = btoa(unescape(encodeURIComponent(customConfigYaml)));
+        url += `&sanitize_config_yaml=${encodeURIComponent(encodedSanitize)}`;
     }
 
-    var eventSource = new EventSource(url);
+    const eventSource = new EventSource(url);
 
-    eventSource.onmessage = function (event) {
-        var data = JSON.parse(event.data);
-        var message = data.message || '';
+    eventSource.onmessage = event => {
+        const data = JSON.parse(event.data);
+        const message = data.message || '';
 
         // Detect color type from message content (badges like [PASS], [WARNING], etc.)
-        var type = data.type || 'info';
+        let type = data.type || 'info';
         if (message.indexOf('[PASS]') !== -1) {
             type = 'success';
         } else if (message.indexOf('[WARNING]') !== -1) {
@@ -594,13 +593,13 @@ async function runCheck() {
         appendOutput(type, message);
     };
 
-    eventSource.addEventListener('complete', function (event) {
+    eventSource.addEventListener('complete', event => {
         eventSource.close();
         btn.disabled = false;
         btn.innerHTML = '✓ Check';
     });
 
-    eventSource.onerror = function () {
+    eventSource.onerror = () => {
         eventSource.close();
         appendOutput('error', 'Connection lost during validation');
         btn.disabled = false;
@@ -611,53 +610,54 @@ async function runCheck() {
 async function loadCustomRulesConfig(input) {
     if (!input.files || !input.files[0]) return;
 
-    var file = input.files[0];
+    const file = input.files[0];
 
     // Read file content for later use during validation
-    var yamlContent = await file.text();
+    const yamlContent = await file.text();
 
-    var formData = new FormData();
+    const formData = new FormData();
     formData.append('file', file);
 
     try {
-        var response = await fetch('/api/reports/validate/config', {
+        const response = await fetch('/api/reports/validate/config', {
             method: 'POST',
             body: formData
         });
 
         if (!response.ok) {
-            var error = await response.json();
+            const error = await response.json();
             throw new Error(error.detail || 'Failed to load rules config');
         }
 
-        var data = await response.json();
+        const data = await response.json();
 
         // Store config for validation
         currentRulesConfigPath = file.name;
         customRulesConfigYaml = yamlContent;
 
         // Render new rules from config
-        expressionRules = data.rules.map(function (r) {
-            return {
-                id: r.id,
-                description: r.description,
-                severity: r.severity,
-                scope: r.scope
-            };
-        });
+        expressionRules = data.rules.map(r => ({
+            id: r.id,
+            description: r.description,
+            severity: r.severity,
+            scope: r.scope
+        }));
         renderExpressionRules();
         updateRulesConfigIndicator();
-        appendOutput('success', 'Loaded custom rules config: ' + file.name);
+        ensureOutputPanelVisible();
+        appendOutput('success', `Loaded custom rules config: ${file.name}`);
 
     } catch (e) {
-        appendOutput('error', 'Failed to load rules config: ' + e.message);
+        ensureOutputPanelVisible();
+        appendOutput('error', `Failed to load rules config: ${e.message}`);
     }
 
     // Reset file input so same file can be selected again
     input.value = '';
 }
 
-async function resetRulesConfig() {
+async function resetRulesConfig(event) {
+    if (event) event.stopPropagation();
     currentRulesConfigPath = null;
     customRulesConfigYaml = null;
     await loadExpressionRules(currentReportPath);
@@ -666,20 +666,19 @@ async function resetRulesConfig() {
 }
 
 function updateRulesConfigIndicator() {
-    var indicator = document.getElementById('rules-config-indicator');
+    const indicator = document.getElementById('rules-config-indicator');
     if (indicator) {
         if (currentRulesConfigPath) {
-            indicator.textContent = '📄 ' + currentRulesConfigPath;
-            indicator.title = 'Custom config: ' + currentRulesConfigPath;
-            indicator.style.display = 'inline-block';
+            const fileName = currentRulesConfigPath.split(/[\\/]/).pop();
+            indicator.innerHTML = `
+                <span class="config-name">📄 ${fileName}</span>
+                <span class="config-reset" onclick="resetRulesConfig(event)" title="Reset to Defaults">×</span>
+            `;
+            indicator.title = `Custom rules config: ${currentRulesConfigPath}`;
+            indicator.style.display = 'inline-flex';
         } else {
             indicator.style.display = 'none';
         }
-    }
-    // Show/hide reset button based on custom config
-    var resetBtn = document.getElementById('reset-rules-config-btn');
-    if (resetBtn) {
-        resetBtn.style.display = currentRulesConfigPath ? 'block' : 'none';
     }
 }
 
@@ -690,50 +689,50 @@ function updateRulesConfigIndicator() {
 function downloadCSV(type, filteredOnly) {
     if (!currentReportPath) return;
 
-    var url = '/api/reports/' + (type === 'visuals' ? 'visuals' : 'metadata') + '/csv' +
-        '?report_path=' + encodeURIComponent(currentReportPath);
+    let url = `/api/reports/${type === 'visuals' ? 'visuals' : 'metadata'}/csv` +
+        `?report_path=${encodeURIComponent(currentReportPath)}`;
 
     // Add visual IDs filter if exporting filtered view (WYSIWYG)
-    var isFiltered = false;
+    let isFiltered = false;
     if (filteredOnly && typeof getVisibleVisualIds === 'function' && typeof hasActiveFilters === 'function') {
         if (hasActiveFilters()) {
-            var visibleIds = getVisibleVisualIds();
+            const visibleIds = getVisibleVisualIds();
             if (visibleIds.length > 0) {
-                url += '&visual_ids=' + encodeURIComponent(visibleIds.join(','));
+                url += `&visual_ids=${encodeURIComponent(visibleIds.join(','))}`;
                 isFiltered = true;
             }
         }
     }
 
     window.open(url, '_blank');
-    appendOutput('info', 'Downloading ' + type + ' CSV' + (isFiltered ? ' (filtered)' : '') + '...');
+    appendOutput('info', `Downloading ${type} CSV${isFiltered ? ' (filtered)' : ''}...`);
 }
 
 function downloadWireframeHTML(filteredOnly) {
     if (!currentReportPath) return;
 
-    var url = '/api/reports/wireframe/html?report_path=' + encodeURIComponent(currentReportPath);
+    let url = `/api/reports/wireframe/html?report_path=${encodeURIComponent(currentReportPath)}`;
 
     // Add visual IDs filter if exporting filtered view (WYSIWYG)
-    var isFiltered = false;
+    let isFiltered = false;
     if (filteredOnly && typeof getVisibleVisualIds === 'function' && typeof hasActiveFilters === 'function') {
         if (hasActiveFilters()) {
-            var visibleIds = getVisibleVisualIds();
+            const visibleIds = getVisibleVisualIds();
             if (visibleIds.length > 0) {
-                url += '&visual_ids=' + encodeURIComponent(visibleIds.join(','));
+                url += `&visual_ids=${encodeURIComponent(visibleIds.join(','))}`;
                 isFiltered = true;
             }
         }
     }
 
     window.open(url, '_blank');
-    appendOutput('info', 'Downloading wireframe HTML' + (isFiltered ? ' (filtered)' : '') + '...');
+    appendOutput('info', `Downloading wireframe HTML${isFiltered ? ' (filtered)' : ''}...`);
 }
 
 // ============ Output Console ============
 
 function ensureOutputPanelVisible() {
-    var panel = document.getElementById('output-panel');
+    const panel = document.getElementById('output-panel');
     if (panel && panel.classList.contains('collapsed')) {
         panel.classList.remove('collapsed');
         savePanelState();
@@ -741,8 +740,8 @@ function ensureOutputPanelVisible() {
 }
 
 function appendOutput(type, message) {
-    var line = document.createElement('div');
-    line.className = 'output-line ' + type;
+    const line = document.createElement('div');
+    line.className = `output-line ${type}`;
     line.textContent = message;
     outputContent.appendChild(line);
     outputContent.scrollTop = outputContent.scrollHeight;
@@ -757,7 +756,7 @@ function clearOutput() {
 function setDirtyState(isDirty, message) {
     reportDirtyState = isDirty;
     if (isDirty) {
-        dirtyBanner.textContent = '⚠️ ' + (message || 'Report may need reload');
+        dirtyBanner.textContent = `⚠️ ${message || 'Report may need reload'}`;
         dirtyBanner.style.display = 'block';
     } else {
         dirtyBanner.style.display = 'none';
@@ -766,17 +765,17 @@ function setDirtyState(isDirty, message) {
 
 // ============ Resizing Logic ============
 
-var isResizingOutput = false;
-var isResizingSidebar = false;
-var startResizeY = 0;
-var startResizeX = 0;
-var startResizeHeight = 0;
-var startResizeWidth = 0;
+let isResizingOutput = false;
+let isResizingSidebar = false;
+let startResizeY = 0;
+let startResizeX = 0;
+let startResizeHeight = 0;
+let startResizeWidth = 0;
 
 function initOutputResize(e) {
     isResizingOutput = true;
     startResizeY = e.clientY;
-    var panel = document.getElementById('output-panel');
+    const panel = document.getElementById('output-panel');
     startResizeHeight = parseInt(getComputedStyle(panel).height, 10);
     document.body.style.cursor = 'row-resize';
     e.preventDefault();
@@ -785,64 +784,92 @@ function initOutputResize(e) {
 function initSidebarResize(e) {
     isResizingSidebar = true;
     startResizeX = e.clientX;
-    var sidebar = document.getElementById('sidebar');
+    const sidebar = document.getElementById('sidebar');
     startResizeWidth = sidebar.getBoundingClientRect().width;
     sidebar.classList.remove('transition-enabled'); // Disable transition for drag
     document.body.style.cursor = 'col-resize';
     e.preventDefault();
 }
 
-document.addEventListener('mousemove', function (e) {
+document.addEventListener('mousemove', e => {
     if (isResizingOutput) {
-        var panel = document.getElementById('output-panel');
-        var newHeight = startResizeHeight + (startResizeY - e.clientY);
+        const panel = document.getElementById('output-panel');
+        let newHeight = startResizeHeight + (startResizeY - e.clientY);
 
         // Constraints
         if (newHeight < OUTPUT_PANEL_MIN_HEIGHT) newHeight = OUTPUT_PANEL_MIN_HEIGHT;
-        if (newHeight > window.innerHeight - 100) newHeight = window.innerHeight - 100;
+        if (newHeight > window.innerHeight * 0.8) newHeight = window.innerHeight * 0.8;
 
-        panel.style.height = newHeight + 'px';
-    } else if (isResizingSidebar) {
-        var newWidth = startResizeWidth + (e.clientX - startResizeX);
+        panel.style.height = `${newHeight}px`;
+    }
+
+    if (isResizingSidebar) {
+        const sidebar = document.getElementById('sidebar');
+        let newWidth = startResizeWidth + (e.clientX - startResizeX);
 
         // Constraints
         if (newWidth < SIDEBAR_MIN_WIDTH) newWidth = SIDEBAR_MIN_WIDTH;
-        if (newWidth > window.innerWidth - 100) newWidth = window.innerWidth - 100;
+        if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
 
-        document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+        sidebar.style.width = `${newWidth}px`;
     }
 });
 
-document.addEventListener('mouseup', function (e) {
+document.addEventListener('mouseup', () => {
     if (isResizingOutput) {
         isResizingOutput = false;
-        document.body.style.cursor = '';
+        document.body.style.cursor = 'default';
         savePanelState();
-    } else if (isResizingSidebar) {
+    }
+    if (isResizingSidebar) {
         isResizingSidebar = false;
-        document.body.style.cursor = '';
-        var sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.classList.add('transition-enabled');
+        document.body.style.cursor = 'default';
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.add('transition-enabled'); // Re-enable transition
         savePanelState();
     }
 });
 
+function toggleOutputPanel() {
+    const panel = document.getElementById('output-panel');
+    const btn = document.getElementById('output-toggle');
+    const isCollapsed = panel.classList.toggle('collapsed');
 
+    if (btn) {
+        btn.setAttribute('aria-expanded', !isCollapsed);
+        btn.setAttribute('aria-label', isCollapsed ? 'Expand Output Panel' : 'Collapse Output Panel');
+    }
+    savePanelState();
+}
 
-// ============ Collapsible Panels ============
+// ============ Sidebar Logic ============
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-toggle');
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+
+    if (btn) {
+        btn.setAttribute('aria-expanded', !isCollapsed);
+        btn.setAttribute('aria-label', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+    }
+    savePanelState();
+}
 
 function toggleSidebarSection(sectionId) {
-    var section = document.getElementById(sectionId);
-    if (section) {
-        var isCollapsed = section.classList.toggle('collapsed');
-        savePanelState();
+    const section = document.getElementById(sectionId);
+    if (!section) return;
 
-        // Update aria-expanded on header
-        var header = section.querySelector('.sidebar-section-header');
-        if (header) {
-            header.setAttribute('aria-expanded', !isCollapsed);
-        }
-    }
+    const header = section.querySelector('.sidebar-section-header');
+
+    // Toggle collapsed state
+    const isCollapsed = section.classList.toggle('collapsed');
+
+    // Update ARIA attributes
+    if (header) header.setAttribute('aria-expanded', !isCollapsed);
+
+    // Save state preference if needed (optional)
+    localStorage.setItem(`section-${sectionId}-collapsed`, isCollapsed);
 }
 
 function handleSectionKey(event, sectionId) {
@@ -852,114 +879,77 @@ function handleSectionKey(event, sectionId) {
     }
 }
 
-function toggleOutputPanel(event) {
-    // Don't toggle if clicking the Clear button
-    if (event && event.target.tagName === 'BUTTON' && !event.target.classList.contains('output-toggle')) return;
-
-    var panel = document.getElementById('output-panel');
-    var btn = document.getElementById('output-toggle');
-
-    if (panel) {
-        var isCollapsed = panel.classList.toggle('collapsed');
-        savePanelState();
-
-        if (btn) {
-            btn.setAttribute('aria-expanded', !isCollapsed);
-            btn.setAttribute('aria-label', isCollapsed ? 'Expand Output Panel' : 'Collapse Output Panel');
+function restoreSidebarSectionState() {
+    ['section-reports', 'section-actions', 'section-validate', 'section-export'].forEach(id => {
+        const isCollapsed = localStorage.getItem(`section-${id}-collapsed`) === 'true';
+        if (isCollapsed) {
+            const section = document.getElementById(id);
+            if (section) {
+                section.classList.add('collapsed');
+                const header = section.querySelector('.sidebar-section-header');
+                if (header) header.setAttribute('aria-expanded', 'false');
+            }
         }
-    }
+    });
 }
+// Call restore on load
+restoreSidebarSectionState();
 
 function savePanelState() {
-    var outputPanel = document.getElementById('output-panel');
-    var sidebar = document.getElementById('sidebar');
-    var sidebarWidth = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim();
+    const panel = document.getElementById('output-panel');
+    const sidebar = document.getElementById('sidebar');
 
-    var state = {
-        reports: document.getElementById('section-reports')?.classList.contains('collapsed'),
-        actions: document.getElementById('section-actions')?.classList.contains('collapsed'),
-        validate: document.getElementById('section-validate')?.classList.contains('collapsed'),
-        export: document.getElementById('section-export')?.classList.contains('collapsed'),
-        output: outputPanel?.classList.contains('collapsed'),
-        sidebar: sidebar?.classList.contains('collapsed'),
-        outputHeight: outputPanel ? outputPanel.style.height : null,
-        sidebarWidth: sidebarWidth
+    const state = {
+        outputHeight: panel.style.height,
+        outputCollapsed: panel.classList.contains('collapsed'),
+        sidebarWidth: sidebar.style.width,
+        sidebarCollapsed: sidebar.classList.contains('collapsed')
     };
-    localStorage.setItem('pbirUtilsPanelState', JSON.stringify(state));
+
+    localStorage.setItem('uiLayout', JSON.stringify(state));
 }
 
-function restorePanelState() {
-    try {
-        var saved = localStorage.getItem('pbirUtilsPanelState');
-        if (saved) {
-            var state = JSON.parse(saved);
-            if (state.reports) document.getElementById('section-reports')?.classList.add('collapsed');
-            if (state.actions) document.getElementById('section-actions')?.classList.add('collapsed');
-            if (state.validate) document.getElementById('section-validate')?.classList.add('collapsed');
-            if (state.export) document.getElementById('section-export')?.classList.add('collapsed');
+function loadPanelState() {
+    const saved = localStorage.getItem('uiLayout');
+    if (saved) {
+        try {
+            const state = JSON.parse(saved);
+            const panel = document.getElementById('output-panel');
+            const sidebar = document.getElementById('sidebar');
+            const outputBtn = document.getElementById('output-toggle');
+            const sidebarBtn = document.getElementById('sidebar-toggle');
 
-            var outputPanel = document.getElementById('output-panel');
-            if (state.output) {
-                outputPanel?.classList.add('collapsed');
-            } else if (state.outputHeight && outputPanel) {
-                outputPanel.style.height = state.outputHeight;
-            }
+            if (state.outputHeight) panel.style.height = state.outputHeight;
 
-            if (state.sidebarWidth) {
-                document.documentElement.style.setProperty('--sidebar-width', state.sidebarWidth);
-            }
-
-            if (state.sidebar) {
-                document.getElementById('sidebar')?.classList.add('collapsed');
-                document.getElementById('sidebar-toggle')?.setAttribute('aria-expanded', 'false');
-            }
-
-            // Sync aria attributes for restored sections
-            ['reports', 'actions', 'validate', 'export'].forEach(function (key) {
-                if (state[key]) {
-                    var sectionId = 'section-' + key;
-                    var section = document.getElementById(sectionId);
-                    if (section) {
-                        var header = section.querySelector('.sidebar-section-header');
-                        if (header) header.setAttribute('aria-expanded', 'false');
-                    }
+            if (state.outputCollapsed) {
+                panel.classList.add('collapsed');
+                if (outputBtn) {
+                    outputBtn.setAttribute('aria-expanded', 'false');
+                    outputBtn.setAttribute('aria-label', 'Expand Output Panel');
                 }
-            });
-
-            if (state.output && outputPanel) {
-                document.getElementById('output-toggle')?.setAttribute('aria-expanded', 'false');
+            } else if (outputBtn) {
+                outputBtn.setAttribute('aria-expanded', 'true');
+                outputBtn.setAttribute('aria-label', 'Collapse Output Panel');
             }
+
+            if (state.sidebarWidth) sidebar.style.width = state.sidebarWidth;
+
+            if (state.sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                if (sidebarBtn) {
+                    sidebarBtn.setAttribute('aria-expanded', 'false');
+                    sidebarBtn.setAttribute('aria-label', 'Expand Sidebar');
+                }
+            } else if (sidebarBtn) {
+                sidebarBtn.setAttribute('aria-expanded', 'true');
+                sidebarBtn.setAttribute('aria-label', 'Collapse Sidebar');
+            }
+
+        } catch (e) {
+            console.error('Failed to load layout:', e);
         }
-    } catch (e) {
-        // Ignore localStorage errors
     }
 }
 
-function toggleSidebar() {
-    var sidebar = document.getElementById('sidebar');
-    var btn = document.getElementById('sidebar-toggle');
-
-    if (sidebar) {
-        var isCollapsed = sidebar.classList.toggle('collapsed');
-        savePanelState();
-
-        if (btn) {
-            btn.setAttribute('aria-expanded', !isCollapsed);
-            btn.setAttribute('aria-label', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
-        }
-    }
-}
-
-function showToast(message, duration) {
-    duration = duration || 4000;
-    var toast = document.getElementById('toast');
-    if (!toast) return; // Toast not available yet
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(function () {
-        toast.classList.remove('show');
-    }, duration);
-}
-
-// Restore panel states on load
-document.addEventListener('DOMContentLoaded', restorePanelState);
+// Load layout on startup
+loadPanelState();

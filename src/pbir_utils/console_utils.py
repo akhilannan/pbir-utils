@@ -1,8 +1,15 @@
 import os
 import re
 import sys
+import threading
 from contextlib import contextmanager
 from queue import Queue
+from typing import Any, TextIO, Generator
+import logging
+
+
+# Global logger
+logger = logging.getLogger(__name__)
 
 
 class ConsoleUtils:
