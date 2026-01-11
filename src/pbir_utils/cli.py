@@ -4,10 +4,14 @@ import argparse
 from importlib.metadata import version
 
 from .commands import register_all
+from .version_check import check_for_updates
 
 
 def main():
     """Main entry point for the CLI."""
+    # Check for updates before doing anything else
+    check_for_updates()
+
     parser = argparse.ArgumentParser(
         description="PBIR Utilities CLI - A tool for managing Power BI Enhanced Report Format (PBIR) projects.",
         formatter_class=argparse.RawTextHelpFormatter,

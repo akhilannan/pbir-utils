@@ -952,3 +952,11 @@ include:
 2. **Report folder** (if `report_path` provided)
 
 Use `--config path/to/file.yaml` to specify explicitly.
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `PBIR_UTILS_NO_UPDATE_CHECK` | Set to `1`, `true`, or `yes` to disable the automatic version update check on CLI startup. |
