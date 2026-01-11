@@ -27,6 +27,7 @@ from ..models import (
     ViolationInfo,
     ValidateResponse,
 )
+from pbir_utils.common import validate_report_path
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,11 @@ async def get_wireframe(request: WireframeRequest):
     Returns:
         WireframeResponse with HTML content and page metadata.
     """
+    try:
+        request.report_path = str(validate_report_path(request.report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     logger.info("Generating wireframe for: %s", request.report_path)
     from pbir_utils.report_wireframe_visualizer import get_wireframe_data
 
@@ -81,6 +87,12 @@ async def list_actions(report_path: str = None):
     If report_path is provided, checks for pbir-sanitize.yaml in that location.
     Returns all defined actions with their descriptions and default status.
     """
+    if report_path:
+        try:
+            report_path = str(validate_report_path(report_path))
+        except (ValueError, FileNotFoundError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     logger.debug("Listing actions (report_path=%s)", report_path)
     from pbir_utils.sanitize_config import load_config, find_user_config
 
@@ -129,6 +141,12 @@ async def get_config(report_path: str = None):
 
     If report_path is provided, looks for pbir-sanitize.yaml in that location.
     """
+    if report_path:
+        try:
+            report_path = str(validate_report_path(report_path))
+        except (ValueError, FileNotFoundError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     from pbir_utils.sanitize_config import load_config
 
     config = load_config(report_path=report_path)
@@ -197,6 +215,11 @@ async def run_actions(request: RunActionRequest):
 
     For streaming output, use /run/stream instead.
     """
+    try:
+        request.report_path = str(validate_report_path(request.report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     from pbir_utils import sanitize_powerbi_report
     from pbir_utils.console_utils import console
 
@@ -235,6 +258,11 @@ async def run_actions_stream(
     Uses Server-Sent Events to stream console output in real-time.
     If config_yaml is provided (base64 encoded), it will be merged with defaults.
     """
+    try:
+        path = str(validate_report_path(path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     import base64
     from pbir_utils import sanitize_powerbi_report
     from pbir_utils.console_utils import console
@@ -319,6 +347,11 @@ async def download_metadata_csv(report_path: str, visual_ids: str = None):
         HEADER_FIELDS,
     )
 
+    try:
+        report_path = str(validate_report_path(report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Build filters from visual_ids if provided (WYSIWYG filtered export)
     # Note: HEADER_FIELDS uses "ID" for the visual identifier
     filters = None
@@ -360,6 +393,11 @@ async def download_visuals_csv(report_path: str, visual_ids: str = None):
 
     # Parse visual IDs filter (for WYSIWYG filtered export)
     visual_id_set = set(visual_ids.split(",")) if visual_ids else None
+
+    try:
+        report_path = str(validate_report_path(report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     def extract_visuals():
         metadata = []
@@ -418,6 +456,11 @@ async def download_wireframe_html(report_path: str, visual_ids: str = None):
     # Parse visual IDs filter (for WYSIWYG filtered export)
     visual_id_list = visual_ids.split(",") if visual_ids else None
 
+    try:
+        report_path = str(validate_report_path(report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Get wireframe data with optional filtering
     data = await run_in_threadpool(
         get_wireframe_data,
@@ -454,6 +497,12 @@ async def list_expression_rules(report_path: str = None):
 
     Excludes sanitizer-based rules since those are shown in the Actions panel.
     """
+    if report_path:
+        try:
+            report_path = str(validate_report_path(report_path))
+        except (ValueError, FileNotFoundError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     from pbir_utils.rule_config import load_rules, find_user_rules
 
     cfg = await run_in_threadpool(load_rules, report_path=report_path)
@@ -543,9 +592,14 @@ async def run_validation(request: ValidateRequest):
     """
     Run combined validation: expression rules + sanitize action checks.
 
-    Expression rules evaluate conditions on report structure.
+    Express rules evaluate conditions on report structure.
     Sanitize actions are run in dry-run mode to check if changes would be made.
     """
+    try:
+        request.report_path = str(validate_report_path(request.report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     import base64
     import tempfile
     from pathlib import Path
@@ -670,6 +724,11 @@ async def run_validation_stream(
     Uses Server-Sent Events to stream console output in real-time.
     Same as CLI output behavior.
     """
+    try:
+        report_path = str(validate_report_path(report_path))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     import base64
     import tempfile
     from pathlib import Path

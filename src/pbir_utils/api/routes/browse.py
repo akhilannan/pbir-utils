@@ -113,7 +113,9 @@ async def browse_directory(path: str = None):
                 continue
     except PermissionError:
         logger.error("Permission denied accessing: %s", resolved)
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=403, detail=f"Permission denied accessing: {resolved}"
+        )
 
     # Sort: directories first, then by name (case-insensitive)
     items.sort(key=lambda x: (not x.is_dir, x.name.lower()))

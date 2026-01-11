@@ -1,5 +1,6 @@
 from unittest.mock import patch
 import pytest
+from pathlib import Path
 
 from conftest import create_dummy_file
 from pbir_utils.common import (
@@ -411,10 +412,15 @@ class TestTraversePbirJson:
 class TestResolveReportPath:
     """Tests for resolve_report_path function."""
 
-    def test_resolve_with_provided_path(self):
-        """Test that provided path is returned as-is."""
-        result = resolve_report_path("C:\\Reports\\Test.Report")
-        assert result == "C:\\Reports\\Test.Report"
+    def test_resolve_with_provided_path(self, tmp_path):
+        """Test that provided path is returned as-is (if valid)."""
+        report_dir = tmp_path / "Valid.Report" / "definition"
+        report_dir.mkdir(parents=True)
+        (report_dir / "report.json").touch()
+        report_path = str(tmp_path / "Valid.Report")
+
+        result = resolve_report_path(report_path)
+        assert result == str(Path(report_path).resolve())
 
     def test_resolve_from_cwd_report_folder(self, tmp_path, monkeypatch):
         """Test resolving from CWD when in a .Report folder."""

@@ -113,6 +113,47 @@ def write_json(file_path: str | Path, data: dict) -> None:
         file.write(json_str)
 
 
+def validate_report_path(path_arg: str | Path | None) -> Path:
+    """
+    Validate that a path is a valid PBIR report folder.
+
+    Args:
+        path_arg: The path to check.
+
+    Returns:
+        Path: The resolved absolute path to the report folder.
+
+    Raises:
+        ValueError: If path_arg is None/empty.
+        FileNotFoundError: If path does not exist or is not a valid report folder.
+    """
+    if not path_arg:
+        # Check if CWD is a .Report folder
+        cwd = Path.cwd()
+        if cwd.name.lower().endswith(".report"):
+            return cwd
+        raise ValueError(
+            "Report path not provided and current directory is not a .Report folder."
+        )
+
+    path = Path(path_arg).resolve()
+
+    if not path.exists():
+        raise FileNotFoundError(f"Path not found: {path}")
+
+    if not path.is_dir():
+        raise FileNotFoundError(f"Path is not a directory: {path}")
+
+    # Strict validation: require definition/report.json to exist
+    report_json = path / "definition" / "report.json"
+    if not report_json.exists():
+        raise FileNotFoundError(
+            f"Path does not appear to be a valid PBIR report (missing definition/report.json): {path}"
+        )
+
+    return path
+
+
 def resolve_report_path(path_arg: str | None) -> str:
     """
     Resolves the report path.
@@ -121,17 +162,11 @@ def resolve_report_path(path_arg: str | None) -> str:
     If yes, returns CWD.
     Otherwise, exits with error.
     """
-    if path_arg:
-        return path_arg
-
-    cwd = Path.cwd()
-    if cwd.name.lower().endswith(".report"):
-        return str(cwd)
-
-    console.print_error(
-        "report_path not provided and current directory is not a .Report folder."
-    )
-    sys.exit(1)
+    try:
+        return str(validate_report_path(path_arg))
+    except (ValueError, FileNotFoundError) as e:
+        console.print_error(str(e))
+        sys.exit(1)
 
 
 def get_report_paths(directory_path: str, reports: list = None) -> list:

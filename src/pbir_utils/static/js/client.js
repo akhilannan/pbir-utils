@@ -44,7 +44,10 @@ async function browseDirectory(path) {
             url += `?path=${encodeURIComponent(path)}`;
         }
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to browse');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to browse');
+        }
         const data = await response.json();
         renderFileList(data);
     } catch (e) {
@@ -82,7 +85,7 @@ function renderFileList(data) {
         if (item.is_report || item.is_dir) {
             const safePath = item.path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
             const func = item.is_report ? 'loadReport' : 'browseDirectory';
-            onclick = `${func}(' ${safePath}')`;
+            onclick = `${func}('${safePath}')`;
         }
 
         return onclick

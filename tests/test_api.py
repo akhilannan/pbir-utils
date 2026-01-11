@@ -170,7 +170,7 @@ def test_wireframe_invalid_path(api_client):
     response = api_client.post(
         "/api/reports/wireframe", json={"report_path": "/invalid/path"}
     )
-    assert response.status_code == 404
+    assert response.status_code == 400
 
 
 def test_wireframe_with_page_filter(api_client, sample_report):
