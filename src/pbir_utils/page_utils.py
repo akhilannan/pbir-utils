@@ -88,7 +88,10 @@ def set_first_page_as_active(
     pages_json_path = pages_dir / "pages.json"
     pages_data = load_json(str(pages_json_path))
 
-    page_order = pages_data["pageOrder"]
+    page_order = pages_data.get("pageOrder", [])
+    if not page_order:
+        console.print_warning("No pages found in pageOrder. Cannot set active page.")
+        return False
     current_active_page = pages_data.get("activePageName")
 
     page_map = {}
@@ -191,6 +194,12 @@ def remove_empty_pages(
         if active_page_name not in non_empty_pages:
             pages_data["activePageName"] = non_empty_pages[0]
     else:
+        if not page_order:
+            console.print_warning(
+                "No pages found in the report. Attempting to preserve original state."
+            )
+            return False
+
         first_page_id = page_order[0]
         pages_data["pageOrder"] = [first_page_id]
         pages_data["activePageName"] = first_page_id

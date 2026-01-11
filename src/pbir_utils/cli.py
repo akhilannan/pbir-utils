@@ -1,6 +1,7 @@
 """PBIR Utilities CLI - A tool for managing Power BI Enhanced Report Format (PBIR) projects."""
 
 import argparse
+from importlib.metadata import version
 
 from .commands import register_all
 
@@ -10,6 +11,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="PBIR Utilities CLI - A tool for managing Power BI Enhanced Report Format (PBIR) projects.",
         formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {version('pbir-utils')}",
     )
     print(
         r"""
