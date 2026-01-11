@@ -56,7 +56,8 @@
         <span class="visual-count">{{ page.visuals | length }}</span>
     </button>
     {%- endfor %}
-    <span class="hidden-pages-pill" id="hidden-pages-pill" onclick="resetHiddenPages()" title="Click to restore hidden pages"></span>
+    <span class="hidden-pill" id="hidden-pages-pill" onclick="resetHiddenPages()" title="Click to restore hidden pages"></span>
+    <span class="hidden-pill" id="hidden-visuals-pill" onclick="resetHiddenVisuals()" title="Click to restore hidden visuals"></span>
 </div>
 
 <div class="main-content">

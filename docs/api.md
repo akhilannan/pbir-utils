@@ -203,7 +203,7 @@ For configuration details, see [Validate Report CLI Reference](cli.md#validate-r
 
 Generates a static HTML wireframe of the report layout and opens it in the default web browser.
 
-This function creates a temporary HTML file containing the wireframe visualization. The output includes rich interactive features: dark mode toggle, zoom controls (25%-200%), visual count badges, dimension tooltips, search/filter, copy ID, and visual hide/unhide.
+This function creates a temporary HTML file containing the wireframe visualization. The output includes rich interactive features: dark mode toggle, zoom controls (25%-200%), visual count badges, dimension tooltips, search/filter, copy ID, visual/page hiding with restoration pills, and global undo/reset.
 
 ### Parameters
 

@@ -209,7 +209,7 @@
             color: #ffffff;
         }
 
-        .pbir-wireframe .hidden-pages-pill {
+        .pbir-wireframe .hidden-pill {
             display: none;
             align-items: center;
             gap: 4px;
@@ -224,12 +224,12 @@
             transition: all 0.2s;
         }
 
-        .pbir-wireframe .hidden-pages-pill:hover {
+        .pbir-wireframe .hidden-pill:hover {
             opacity: 0.9;
             transform: scale(1.05);
         }
 
-        .pbir-wireframe .hidden-pages-pill.visible {
+        .pbir-wireframe .hidden-pill.visible {
             display: flex;
         }
 
@@ -869,8 +869,8 @@
             /* Keep fixed */
             z-index: 3000;
             left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            bottom: 40px;
+            transform: translateX(-50%) translateY(-20px);
+            top: 80px;
             font-size: 13px;
             font-weight: 500;
             opacity: 0;

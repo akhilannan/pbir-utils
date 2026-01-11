@@ -127,12 +127,21 @@ function updateButtons() {
     document.getElementById('reset-btn').disabled = !hasHiddenItems;
 
     // Update hidden pages pill
-    const pill = document.getElementById('hidden-pages-pill');
+    const pagePill = document.getElementById('hidden-pages-pill');
     if (hiddenPagesStack.length > 0) {
-        pill.textContent = `+${hiddenPagesStack.length} page${hiddenPagesStack.length > 1 ? 's' : ''}`;
-        pill.classList.add('visible');
+        pagePill.textContent = `+${hiddenPagesStack.length} page${hiddenPagesStack.length > 1 ? 's' : ''}`;
+        pagePill.classList.add('visible');
     } else {
-        pill.classList.remove('visible');
+        pagePill.classList.remove('visible');
+    }
+
+    // Update hidden visuals pill
+    const visualPill = document.getElementById('hidden-visuals-pill');
+    if (hiddenStack.length > 0) {
+        visualPill.textContent = `+${hiddenStack.length} visual${hiddenStack.length > 1 ? 's' : ''}`;
+        visualPill.classList.add('visible');
+    } else {
+        visualPill.classList.remove('visible');
     }
 }
 
@@ -246,9 +255,6 @@ function resetHiddenVisuals() {
         el.dataset.manuallyHidden = "false";
     });
     hiddenStack = [];
-
-    // Also reset hidden pages
-    resetHiddenPages();
 
     updateButtons();
 }
