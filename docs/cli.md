@@ -15,7 +15,10 @@ The `pbir-utils` command-line interface provides access to all utilities after i
 Launch a local web-based UI client for browsing reports, visualizing wireframes, and executing actions interactively.
 
 !!! note "Optional Dependencies"
-    UI requires additional dependencies. Install with: `pip install pbir-utils[ui]`
+    UI requires additional dependencies. Install with:
+    
+    * **pip**: `pip install "pbir-utils[ui]"`
+    * **uv**: `uv add "pbir-utils[ui]"`
 
 ```bash
 # Launch UI (opens browser automatically)

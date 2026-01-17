@@ -4,9 +4,8 @@ Generate Release Notes page from GitHub Releases API.
 This script fetches release information from the GitHub API and generates
 a markdown file for MkDocs documentation.
 
-Note: Requires the 'requests' library, which is not included in pbir-utils
-dependencies. Install with: pip install requests
-This is pre-installed in GitHub Actions environments.
+Note: Requires the 'requests' library, which is included in the 'docs'
+optional dependencies.
 """
 
 import os

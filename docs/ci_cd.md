@@ -25,7 +25,6 @@ my-powerbi-repo/
 │   └── check_reports.py         # The validation script (works on any CI)
 ├── pbir-sanitize.yaml           # (Optional) Customize sanitizer actions/severity
 ├── pbir-rules.yaml              # (Optional) Customize expression rules
-└── requirements.txt             # Dependencies (including pbir-utils)
 ```
 
 !!! tip "Optional Configuration"
@@ -189,15 +188,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install pbir-utils
-        run: pip install pbir-utils
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Validate Reports
-        run: python scripts/check_reports.py
+        run: uv run --with pbir-utils python scripts/check_reports.py
 ```
 
 ### Azure DevOps
@@ -223,10 +218,10 @@ steps:
       versionSpec: '3.12'
       addToPath: true
 
-  - script: pip install pbir-utils
-    displayName: 'Install pbir-utils'
+  - script: pip install uv
+    displayName: 'Install uv'
 
-  - script: python scripts/check_reports.py
+  - script: uv run --with pbir-utils python scripts/check_reports.py
     displayName: 'Validate Power BI Reports'
 ```
 

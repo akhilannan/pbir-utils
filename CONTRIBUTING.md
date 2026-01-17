@@ -49,19 +49,14 @@ This section guides you through submitting an enhancement suggestion, including 
     cd pbir-utils
     ```
 
-2.  **Create a virtual environment:**
-    ```bash
-    python -m venv .venv
-    # Windows
-    .venv\Scripts\activate
-    # Linux/MacOS
-    source .venv/bin/activate
-    ```
+2.  **Install `uv`:**
+    Follow the [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/) to install `uv`.
 
-3.  **Install dependencies:**
+3.  **Sync environment:**
     ```bash
-    pip install -e .[dev,docs]
+    uv sync --all-extras
     ```
+    This command will create a virtual environment and install all dependencies (including dev and docs) defined in `pyproject.toml`.
 
 ### Quick Reference
 
@@ -69,19 +64,19 @@ Common commands for daily development:
 
 ```bash
 # Run tests
-pytest
+uv run pytest
 
 # Run tests with coverage
-pytest --cov=src/pbir_utils
+uv run pytest --cov=src/pbir_utils
 
 # Check linting
-ruff check .
+uv run ruff check .
 
 # Format code
-ruff format .
+uv run ruff format .
 
 # Serve documentation locally
-mkdocs serve
+uv run mkdocs serve
 ```
 
 ## Code Style
@@ -90,11 +85,11 @@ This project uses `black` for code formatting and `ruff` for linting.
 
 -   **Format code:**
     ```bash
-    ruff format .
+    uv run ruff format .
     ```
 -   **Check linting:**
     ```bash
-    ruff check .
+    uv run ruff check .
     ```
 
 ## Testing
@@ -103,11 +98,11 @@ This project uses `pytest` for testing.
 
 -   **Run tests:**
     ```bash
-    pytest
+    uv run pytest
     ```
 -   **Run with coverage:**
     ```bash
-    pytest --cov=pbir_utils
+    uv run pytest --cov=pbir_utils
     ```
 
 ## Documentation
@@ -116,11 +111,11 @@ Documentation is built with MkDocs.
 
 -   **Serve documentation locally:**
     ```bash
-    mkdocs serve
+    uv run mkdocs serve
     ```
 -   **Build documentation:**
     ```bash
-    mkdocs build
+    uv run mkdocs build
     ```
 
 ## Pull Request Process

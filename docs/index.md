@@ -36,13 +36,21 @@ hide:
 ## 📦 Installation
 
 ```bash
+# Using uv (Recommended)
+uv add pbir-utils
+
+# Using pip
 pip install pbir-utils
 ```
 
 For the web UI, install with optional dependencies:
 
 ```bash
-pip install pbir-utils[ui]
+# Using uv
+uv add "pbir-utils[ui]"
+
+# Using pip
+pip install "pbir-utils[ui]"
 ```
 
 ## 🚀 Quick Start

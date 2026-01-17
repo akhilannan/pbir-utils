@@ -20,7 +20,11 @@
 ## 📦 Installation
 
 ```bash
-pip install pbir-utils[ui]
+# Using pip
+pip install "pbir-utils[ui]"
+
+# Using uv
+uv add "pbir-utils[ui]"
 ```
 
 ## 🚀 Quick Start
