@@ -76,7 +76,7 @@ def test_run_actions_stream(api_client, sample_report_structure):
 
 def test_validate_run_stream(api_client, sample_report_structure):
     """Test the validation stream endpoint."""
-    url = f"/api/reports/validate/run/stream?report_path={sample_report_structure}&include_sanitizer=true"
+    url = f"/api/reports/validate/run/stream?report_path={sample_report_structure}&include_sanitizer=true&sanitize_actions=cleanup_invalid_bookmarks"
 
     with api_client.stream("GET", url) as response:
         assert response.status_code == 200
