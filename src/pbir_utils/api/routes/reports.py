@@ -781,20 +781,38 @@ async def run_validation_stream(
                 nonlocal all_results, all_violations
 
                 try:
-                    # Run validation with both rules and sanitizer actions
-                    result = validate_report(
-                        report_path,
-                        source="all",
-                        rules=expr_rules_list if expr_rules_list else None,
-                        actions=(
-                            sanitize_actions_list if sanitize_actions_list else None
-                        ),
-                        rules_config=rules_config_path,
-                        sanitize_config=sanitize_config_path,
-                        strict=False,
-                    )
-                    all_results.update(result.results)
-                    all_violations.extend(result.violations)
+                    # 1. Run expression rules
+                    if expr_rules_list:
+                        result = validate_report(
+                            report_path,
+                            source="rules",
+                            rules=expr_rules_list,
+                            rules_config=rules_config_path,
+                            sanitize_config=sanitize_config_path,
+                            strict=False,
+                        )
+                        all_results.update(result.results)
+                        all_violations.extend(result.violations)
+
+                    # 2. Run sanitizer actions (only if explicitly included and selected)
+                    if include_sanitizer and sanitize_actions_list:
+                        result = validate_report(
+                            report_path,
+                            source="sanitizer",
+                            actions=sanitize_actions_list,
+                            rules_config=rules_config_path,
+                            sanitize_config=sanitize_config_path,
+                            strict=False,
+                        )
+                        all_results.update(result.results)
+                        all_violations.extend(result.violations)
+
+                    if not expr_rules_list and not (
+                        include_sanitizer and sanitize_actions_list
+                    ):
+                        console.print(
+                            "[yellow]No rules or actions selected for validation[/yellow]"
+                        )
 
                 except Exception as e:
                     # Error will be captured in console output

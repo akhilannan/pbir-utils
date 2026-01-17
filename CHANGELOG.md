@@ -1,26 +1,7 @@
 ### Features
-- **ui**: New web-based UI client (`pbir-utils ui` or `pbir-utils serve`)
-    - Report browser for navigating and selecting `.Report` folders
-    - Full wireframe visualization with all existing features
-    - Execute sanitize actions with real-time progress streaming (SSE)
-    - Run expression rules + sanitize action checks with popup summary
-    - Export metadata (CSV) and wireframe (HTML) (respects search, field filters, visibility toggles)
-    - Auto-reload wireframe after successful actions
-    - Persistent toast notifications and dirty state indicators
-- **validate**: New report validation command
-    - Runs sanitizer checks (dry-run) + expression rules by default
-    - `--source all|sanitize|rules` to filter which checks to run
-    - `--actions` to cherry-pick specific sanitizer actions
-    - `--rules` to cherry-pick specific expression rules
-    - `--rules-config` and `--sanitize-config` for custom YAML configs
-    - `--strict` mode exits with code 1 on violations (for CI/CD)
-    - `--format json` for machine-readable output
-    - Output grouped by `[Sanitizer Checks]` and `[Expression Rules]` sections
-- **sanitize**: Added `severity` field to action definitions
-    - Actions can now specify `severity: error|warning|info` in `pbir-sanitize.yaml`
-    - Enables per-action violation levels when used with `validate` command
-- **extract-metadata**: Simplified filter arguments
-    - Added explicit `--pages`, `--reports`, `--tables`, `--visual-types`, and `--visual-ids` arguments
-    - Aligned filter syntax with other CLI commands for bette r ergonomics
-    - Updated Python API (`export_pbir_metadata_to_csv`) with explicit keyword-only parameters
-    - Maintained backward compatibility for legacy JSON-based `--filters`
+- **sanitize**: Added `exclude_types` parameter to page display option actions
+    - Allows excluding specific page types (e.g., "Tooltip") when setting display options like "Fit to Page"
+    - Default configuration now excludes Tooltip pages from display option changes
+
+### Bug Fixes
+- **api**: Fixed issue where sanitizer actions were running in validation stream even when excluded (e.g. via UI checkbox)
