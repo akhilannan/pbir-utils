@@ -32,11 +32,21 @@ class ValidationResult:
         self.violations = violations
         self.passed = sum(1 for v in results.values() if v)
         self.failed = len(results) - self.passed
-        self.error_count = sum(1 for v in violations if v.get("severity") == "error")
-        self.warning_count = sum(
-            1 for v in violations if v.get("severity") == "warning"
-        )
-        self.info_count = sum(1 for v in violations if v.get("severity") == "info")
+
+        # Count unique failed rules by severity (not violation instances)
+        error_rules = {
+            v.get("rule_id") for v in violations if v.get("severity") == "error"
+        }
+        warning_rules = {
+            v.get("rule_id") for v in violations if v.get("severity") == "warning"
+        }
+        info_rules = {
+            v.get("rule_id") for v in violations if v.get("severity") == "info"
+        }
+
+        self.error_count = len(error_rules)
+        self.warning_count = len(warning_rules)
+        self.info_count = len(info_rules)
 
     @property
     def has_errors(self) -> bool:
@@ -45,6 +55,16 @@ class ValidationResult:
     @property
     def has_warnings(self) -> bool:
         return self.warning_count > 0
+
+    @property
+    def failed_rules(self) -> dict[str, str]:
+        """Failed rules as {rule_id: rule_name}."""
+        seen = {}
+        for v in self.violations:
+            rule_id = v.get("rule_id")
+            if rule_id and rule_id not in seen:
+                seen[rule_id] = v.get("rule_name", rule_id)
+        return seen
 
     def __repr__(self) -> str:
         return (

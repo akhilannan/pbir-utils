@@ -111,15 +111,33 @@ Validates a Power BI report against configurable checks. By default, runs both s
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `passed` | int | Number of checks that passed |
-| `failed` | int | Number of checks that failed |
-| `error_count` | int | Violations with `severity=error` |
-| `warning_count` | int | Violations with `severity=warning` |
-| `info_count` | int | Violations with `severity=info` |
-| `has_errors` | bool | `True` if any errors exist |
-| `has_warnings` | bool | `True` if any warnings exist |
-| `results` | dict | Check ID → passed (bool) |
-| `violations` | list | Full violation details |
+| `passed` | int | Number of rules that passed |
+| `failed` | int | Number of rules that failed |
+| `error_count` | int | Failed rules with `severity=error` |
+| `warning_count` | int | Failed rules with `severity=warning` |
+| `info_count` | int | Failed rules with `severity=info` |
+| `has_errors` | bool | `True` if any error-severity rules failed |
+| `has_warnings` | bool | `True` if any warning-severity rules failed |
+| `failed_rules` | dict | Failed rules as `{rule_id: rule_name}` |
+| `results` | dict | Rule ID → passed (bool), e.g., `{"remove_unused_measures": False, ...}` |
+| `violations` | list | Full violation details (see below) |
+
+**String representation**: Converting to string (e.g., `print(validation_result)`) returns a summary like `"5 passed, 0 errors, 2 warnings, 1 info"`. Counts are at the **rule level**, not individual violation instances.
+
+Each violation in `violations` is a dict with:
+
+| Key | Description |
+|-----|-------------|
+| `rule_id` | Rule identifier (e.g., `"remove_unused_measures"`) |
+| `rule_name` | Human-readable rule name |
+| `severity` | `"error"`, `"warning"`, or `"info"` |
+| `message` | Violation detail message |
+| `page_name` | *(scope=page/visual)* Page display name |
+| `visual_name` | *(scope=visual)* Visual ID |
+| `visual_type` | *(scope=visual)* Visual type |
+| `measure_name` | *(scope=measure)* Measure name |
+| `entity_name` | *(scope=measure)* Entity name |
+| `bookmark_name` | *(scope=bookmark)* Bookmark name |
 
 ### Raises
 
