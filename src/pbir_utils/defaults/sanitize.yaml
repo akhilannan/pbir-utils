@@ -125,6 +125,7 @@ definitions:
     implementation: set_page_display_option
     params:
       display_option: FitToPage
+      exclude_types: ["Tooltip"]
 
   set_display_option_fit_to_width:
     description: Set all pages to FitToWidth display
@@ -132,6 +133,7 @@ definitions:
     implementation: set_page_display_option
     params:
       display_option: FitToWidth
+      exclude_types: ["Tooltip"]
 
   set_display_option_actual_size:
     description: Set all pages to ActualSize display

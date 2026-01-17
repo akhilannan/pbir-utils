@@ -336,6 +336,7 @@ def set_page_display_option(
     report_path: str,
     display_option: str,
     page: str = None,
+    exclude_types: list[str] = None,
     dry_run: bool = False,
     summary: bool = False,
 ) -> bool:
@@ -346,6 +347,7 @@ def set_page_display_option(
         report_path (str): The path to the report.
         display_option (str): Display option to set ("ActualSize", "FitToPage", "FitToWidth").
         page (str): Page name or displayName to filter. None applies to all pages.
+        exclude_types (list[str]): List of page types to exclude (e.g., ["Tooltip"]).
         dry_run (bool): Perform a dry run without making changes.
         summary (bool): Show summary instead of detailed messages.
 
@@ -380,6 +382,16 @@ def set_page_display_option(
             page_name = page_data.get("name", "")
             page_display_name = page_data.get("displayName", "")
             if page != page_name and page != page_display_name:
+                continue
+
+        # Check if page type is excluded
+        if exclude_types:
+            page_type = page_data.get("type")
+            if page_type in exclude_types:
+                if not summary:
+                    console.print_info(
+                        f"Skipping page '{page_data.get('displayName', folder_name)}' (Type: {page_type})"
+                    )
                 continue
 
         current_option = page_data.get("displayOption")
