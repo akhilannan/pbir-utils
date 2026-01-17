@@ -196,6 +196,78 @@ def _evaluate_sanitizer_rule(
     return True, []
 
 
+def _get_path(obj, path: str, default=None):
+    """
+    Navigate nested dict/list using dot notation with optional array indexing.
+
+    Examples:
+        _get_path({"a": {"b": 1}}, "a.b") -> 1
+        _get_path({"items": [{"x": 10}]}, "items[0].x") -> 10
+        _get_path({}, "a.b.c", "default") -> "default"
+    """
+    if obj is None:
+        return default
+
+    current = obj
+    # Split by dots, but handle array indices like "items[0]"
+    parts = path.replace("]", "").replace("[", ".").split(".")
+
+    for part in parts:
+        if not part:
+            continue
+        try:
+            if isinstance(current, dict):
+                current = current.get(part)
+            elif isinstance(current, list) and part.isdigit():
+                idx = int(part)
+                current = current[idx] if 0 <= idx < len(current) else None
+            else:
+                return default
+        except (KeyError, IndexError, TypeError):
+            return default
+
+        if current is None:
+            return default
+
+    return current
+
+
+def _has_path(obj, path: str) -> bool:
+    """
+    Check if a nested path exists in the object.
+
+    Returns True if path resolves to a non-None value.
+    """
+    sentinel = object()
+    return _get_path(obj, path, sentinel) is not sentinel
+
+
+def _find_all(obj, key: str) -> list:
+    """
+    Recursively find all values for a given key name.
+
+    Similar to JsonPath's $..key syntax.
+
+    Examples:
+        _find_all({"a": {"x": 1}, "b": {"x": 2}}, "x") -> [1, 2]
+        _find_all({"items": [{"x": 1}, {"x": 2}]}, "x") -> [1, 2]
+    """
+    results = []
+
+    def _recurse(data):
+        if isinstance(data, dict):
+            for k, v in data.items():
+                if k == key:
+                    results.append(v)
+                _recurse(v)
+        elif isinstance(data, list):
+            for item in data:
+                _recurse(item)
+
+    _recurse(obj)
+    return results
+
+
 def _create_safe_evaluator(context: dict):
     """
     Create a simpleeval evaluator with safe functions and context.
@@ -233,6 +305,10 @@ def _create_safe_evaluator(context: dict):
         "re_search": lambda pattern, string: (
             bool(re.search(pattern, string)) if string else False
         ),
+        # JSON traversal helpers
+        "get_path": _get_path,
+        "has_path": _has_path,
+        "find_all": _find_all,
     }
 
     # Add context as names (variables available in expressions)
@@ -394,7 +470,7 @@ def validate_report(
     report_path: str,
     *,
     # Source filtering
-    source: str = "all",  # "all", "sanitize", "rules"
+    source: str = "all",  # "all", "sanitizer", "rules"
     # Cherry-pick specific items
     actions: list[str] | None = None,  # Sanitizer action IDs
     rules: list[str] | None = None,  # Expression rule IDs
@@ -410,7 +486,7 @@ def validate_report(
 
     Args:
         report_path: Path to the report folder.
-        source: Which checks to run - "all" (default), "sanitize", or "rules".
+        source: Which checks to run - "all" (default), "sanitizer", or "rules".
         actions: Specific sanitizer action IDs to check.
         rules: Specific expression rule IDs to run.
         sanitize_config: Custom sanitize config path (default: auto-discovered).
@@ -441,7 +517,7 @@ def validate_report(
     # ========================================
     # Run sanitizer checks if source includes them
     # ========================================
-    if source in ("all", "sanitize"):
+    if source in ("all", "sanitizer"):
         # Load sanitize config
         san_cfg = load_sanitize_config(
             config_path=sanitize_config, report_path=report_path

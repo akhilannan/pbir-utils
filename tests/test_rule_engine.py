@@ -11,6 +11,9 @@ from pbir_utils.rule_engine import (
     _evaluate_expression_rule,
     _safe_eval,
     _create_safe_evaluator,
+    _get_path,
+    _has_path,
+    _find_all,
 )
 from pbir_utils.rule_config import RuleSpec
 
@@ -529,3 +532,90 @@ class TestValidateReport:
                 with patch("pbir_utils.rule_engine.console"):
                     with pytest.raises(ValidationError):
                         validate_report(str(report_path), strict=True)
+
+
+class TestHelperFunctions:
+    """Tests for expression helper functions."""
+
+    # --- _get_path tests ---
+
+    def test_get_path_simple(self):
+        """Test basic nested access."""
+        obj = {"a": {"b": {"c": 42}}}
+        assert _get_path(obj, "a.b.c") == 42
+
+    def test_get_path_with_array_index(self):
+        """Test array index access."""
+        obj = {"items": [{"name": "first"}, {"name": "second"}]}
+        assert _get_path(obj, "items[0].name") == "first"
+        assert _get_path(obj, "items[1].name") == "second"
+
+    def test_get_path_missing_returns_default(self):
+        """Test default value for missing paths."""
+        obj = {"a": 1}
+        assert _get_path(obj, "a.b.c", "default") == "default"
+        assert _get_path(obj, "x.y.z") is None
+
+    def test_get_path_none_object(self):
+        """Test with None input."""
+        assert _get_path(None, "a.b") is None
+        assert _get_path(None, "a.b", "fallback") == "fallback"
+
+    def test_get_path_array_out_of_bounds(self):
+        """Test array index out of bounds."""
+        obj = {"items": [{"x": 1}]}
+        assert _get_path(obj, "items[5].x") is None
+
+    # --- _has_path tests ---
+
+    def test_has_path_exists(self):
+        """Test path exists."""
+        obj = {"visual": {"objects": {"fill": []}}}
+        assert _has_path(obj, "visual.objects.fill") is True
+        assert _has_path(obj, "visual.objects") is True
+
+    def test_has_path_missing(self):
+        """Test path does not exist."""
+        obj = {"visual": {}}
+        assert _has_path(obj, "visual.objects.fill") is False
+        assert _has_path(obj, "nonexistent") is False
+
+    # --- _find_all tests ---
+
+    def test_find_all_recursive(self):
+        """Test recursive search finds all matching keys."""
+        obj = {"a": {"projections": [1]}, "b": {"c": {"projections": [2, 3]}}}
+        result = _find_all(obj, "projections")
+        assert result == [[1], [2, 3]]
+
+    def test_find_all_in_list(self):
+        """Test finds keys inside list items."""
+        obj = {"items": [{"x": 1}, {"x": 2}, {"y": 3}]}
+        result = _find_all(obj, "x")
+        assert result == [1, 2]
+
+    def test_find_all_no_match(self):
+        """Test returns empty list when key not found."""
+        obj = {"a": {"b": 1}}
+        assert _find_all(obj, "nonexistent") == []
+
+    def test_find_all_none_input(self):
+        """Test handles None input gracefully."""
+        assert _find_all(None, "key") == []
+
+    # --- Integration with simpleeval ---
+
+    def test_helpers_available_in_evaluator(self):
+        """Test that helper functions are accessible in expressions."""
+        context = {"data": {"visual": {"query": {"projections": [1, 2, 3]}}}}
+        evaluator = _create_safe_evaluator(context)
+
+        # Test get_path
+        assert evaluator.eval("get_path(data, 'visual.query.projections')") == [1, 2, 3]
+
+        # Test has_path
+        assert evaluator.eval("has_path(data, 'visual.query')") is True
+        assert evaluator.eval("has_path(data, 'visual.missing')") is False
+
+        # Test find_all
+        assert evaluator.eval("find_all(data, 'projections')") == [[1, 2, 3]]

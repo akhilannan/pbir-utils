@@ -387,7 +387,52 @@ exclude:
 | `measure` | `measure`, `entity` | Current measure object and its parent entity |
 | `bookmark` | `bookmark` | Current bookmark object |
 
-**Available functions:** `len()`, `sum()`, `min()`, `max()`, `any()`, `all()`, `sorted()`, `reversed()`, `re_match(pattern, string)`, `re_search(pattern, string)`
+#### Available Functions
+
+**Built-in:** `len()`, `sum()`, `min()`, `max()`, `any()`, `all()`, `sorted()`, `reversed()`
+
+**Regex:** `re_match(pattern, string)`, `re_search(pattern, string)`
+
+**JSON Traversal Helpers:**
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `get_path(obj, path, default)` | Safely navigate nested properties using dot notation | `get_path(visual, "visual.query.projections")` |
+| `has_path(obj, path)` | Check if a nested path exists | `has_path(visual, "visual.objects.fill")` |
+| `find_all(obj, key)` | Recursively find all values for a key (like JSONPath `$..key`) | `find_all(visual, "projections")` |
+
+**Helper Examples:**
+
+```yaml
+definitions:
+  # Use get_path to simplify deep property access
+  check_visual_type:
+    scope: visual
+    expression: >
+      get_path(visual, "visual.visualType") == "slicer"
+
+  # Use find_all to search recursively (like JSONPath $..projections)
+  count_all_projections:
+    scope: visual
+    params:
+      max_fields: 6
+    expression: >
+      sum(len(p) for p in find_all(get_path(visual, "visual.query"), "projections")) <= max_fields
+
+  # Use has_path for existence checks
+  require_alt_text:
+    scope: visual
+    expression: >
+      has_path(visual, "visual.visualContainerObjects.general")
+
+  # Combine helpers with regex for powerful validation
+  ensure_theme_colors:
+    scope: visual
+    expression: >
+      get_path(visual, "visual.visualType") == "textbox" or 
+      all(not re_search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(c)) 
+          for c in find_all(visual, "color"))
+```
 
 #### Writing Expression Rules
 
@@ -435,7 +480,7 @@ definitions:
       excluded_types: ["shape", "textbox"]
     expression: |
       len([v for v in page.get("visuals", [])
-           if v.get("visual", {}).get("visualType") not in excluded_types]) <= max_visuals
+           if get_path(v, "visual.visualType") not in excluded_types]) <= max_visuals
 ```
 
 ### Complete Example

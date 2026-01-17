@@ -22,6 +22,13 @@ definitions:
     expression: >
       len(pages) <= max_pages
 
+  explicit_page_names:
+    description: "Ensure pages have explicit names, not default 'Page N' names"
+    severity: warning
+    scope: page
+    expression: >
+      not re_match(r'^Page \d+$', page.get("displayName", ""))
+
   reduce_visuals_on_page:
     description: "Limit visuals per page"
     severity: info
@@ -32,7 +39,7 @@ definitions:
     expression: >
       len([v for v in page.get("visuals", []) 
            if not v.get("isHidden") 
-           and v.get("visual", {}).get("visualType") not in excluded_types]) <= max_visuals
+           and get_path(v, "visual.visualType") not in excluded_types]) <= max_visuals
 
   reduce_objects_within_visuals:
     description: "Limit data fields per visual"
@@ -41,7 +48,7 @@ definitions:
     params:
       max_fields: 6
     expression: >
-      len(visual.get("visual", {}).get("query", {}).get("queryState", {}).get("Values", {}).get("projections", [])) <= max_fields
+      sum(len(p) for p in find_all(get_path(visual, "visual.query"), "projections")) <= max_fields
 
   reduce_topn_filters:
     description: "Limit TopN filter usage"
@@ -50,17 +57,18 @@ definitions:
     params:
       max_topn_filters: 1
     expression: >
-      len([f for f in visual.get("filterConfig", {}).get("filters", []) 
+      len([f for f in get_path(visual, "filterConfig.filters", []) 
            if f.get("type") == "TopN"]) <= max_topn_filters
 
   reduce_advanced_filters:
     description: "Limit advanced filter usage"
     severity: info
     scope: visual
+    disabled: true
     params:
       max_advanced_filters: 1
     expression: >
-      len([f for f in visual.get("filterConfig", {}).get("filters", []) 
+      len([f for f in get_path(visual, "filterConfig.filters", []) 
            if f.get("type") == "Advanced"]) <= max_advanced_filters
 
   ensure_theme_colors:
@@ -69,7 +77,9 @@ definitions:
     scope: visual
     disabled: true
     expression: >
-      visual.get("visual", {}).get("visualType") == "textbox" or not re_search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(visual.get("visual", {}).get("objects", {})))
+      get_path(visual, "visual.visualType") == "textbox" or 
+      all(not re_search(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', str(c)) 
+          for c in find_all(visual, "color"))
 
 # NOTE: No explicit 'rules:' list needed!
 # When omitted, ALL rules from 'definitions' are run automatically.
