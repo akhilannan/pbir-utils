@@ -152,10 +152,12 @@ class TestSanitizeHandler:
 class TestFiltersHandlers:
     """Tests for filter-related command handlers."""
 
+    @patch("pbir_utils.common.resolve_report_path")
     @patch("pbir_utils.filter_utils.update_report_filters")
     @patch("pbir_utils.commands.filters.parse_json_arg")
-    def test_handle_update_filters(self, mock_parse_json, mock_update):
+    def test_handle_update_filters(self, mock_parse_json, mock_update, mock_resolve):
         """Test update-filters handler."""
+        mock_resolve.return_value = "path"
         mock_parse_json.return_value = [{"Table": "T1"}]
         args = argparse.Namespace(
             report_path="path",
@@ -175,9 +177,11 @@ class TestFiltersHandlers:
             summary=True,
         )
 
+    @patch("pbir_utils.common.resolve_report_path")
     @patch("pbir_utils.filter_utils.sort_report_filters")
-    def test_handle_sort_filters(self, mock_sort):
+    def test_handle_sort_filters(self, mock_sort, mock_resolve):
         """Test sort-filters handler."""
+        mock_resolve.return_value = "path"
         args = argparse.Namespace(
             report_path="path",
             reports=None,

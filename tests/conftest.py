@@ -58,6 +58,12 @@ def simple_report(tmp_path):
         "definition/pages/pages.json",
         {"pageOrder": ["Page1"]},
     )
+    # Add root report.json for validation
+    create_dummy_file(
+        report_dir,
+        "definition/report.json",
+        {},
+    )
 
     return str(report_dir)
 
@@ -196,6 +202,9 @@ def temp_report_structure(tmp_path):
     report_dir = tmp_path / "TestReport.Report"
     pages_dir = report_dir / "definition" / "pages"
     os.makedirs(pages_dir)
+    # Add root report.json for validation
+    with open(report_dir / "definition" / "report.json", "w") as f:
+        f.write("{}")
     return report_dir
 
 

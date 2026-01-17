@@ -61,7 +61,7 @@ def test_sanitize_no_path_outside_report_dir(tmp_path, run_cli):
         cwd=str(tmp_path),
     )
     assert result.returncode != 0
-    assert "Error: report_path not provided" in result.stderr
+    assert "Report path not provided" in result.stderr
 
 
 def test_extract_metadata_infer_path(simple_report, tmp_path, run_cli):
@@ -131,7 +131,7 @@ def test_extract_metadata_deprecated_filters_still_works(
 def test_visualize_no_path_outside_report_dir(tmp_path, run_cli):
     result = run_cli(["visualize"], cwd=str(tmp_path))
     assert result.returncode != 0
-    assert "Error: report_path not provided" in result.stderr
+    assert "Report path not provided" in result.stderr
 
 
 def test_disable_interactions_no_path_in_report_dir(simple_report, run_cli):

@@ -76,8 +76,8 @@ def check_for_updates() -> None:
 
     try:
         _check_update_logic()
-    except Exception:
-        # Fail silently on any error (network, permission, parsing, etc.)
+    except (OSError, urllib.error.URLError, json.JSONDecodeError, KeyError, ValueError):
+        # Fail silently on expected errors (network, permission, parsing, etc.)
         pass
 
 
@@ -103,8 +103,8 @@ def _check_update_logic() -> None:
                 data = json.load(f)
                 last_checked_time = data.get("last_checked", 0.0)
                 cached_latest_version = data.get("latest_version")
-        except Exception:
-            # Invalid cache, ignore
+        except (OSError, json.JSONDecodeError, KeyError, TypeError):
+            # Invalid or corrupted cache file, ignore and refetch
             pass
 
     # Use cached version as current Source of Truth unless stale
@@ -117,7 +117,9 @@ def _check_update_logic() -> None:
     if is_stale or not latest_version:
         try:
             # Timeout set to 1 second to minimize delay
-            with urllib.request.urlopen(PYPI_JSON_URL, timeout=1) as response:
+            with urllib.request.urlopen(
+                PYPI_JSON_URL, timeout=1
+            ) as response:  # nosec B310
                 if response.status == 200:
                     content = response.read().decode("utf-8")
                     data = json.loads(content)
