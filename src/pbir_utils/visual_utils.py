@@ -360,7 +360,6 @@ def remove_hidden_visuals_never_shown(
         if folder:
             folder_path = Path(folder)
             if folder_path.exists():
-
                 page_json_path = folder_path.parent.parent / "page.json"
                 if page_json_path.exists():
                     page_data = load_json(page_json_path)

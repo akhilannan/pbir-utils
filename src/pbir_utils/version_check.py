@@ -117,9 +117,7 @@ def _check_update_logic() -> None:
     if is_stale or not latest_version:
         try:
             # Timeout set to 1 second to minimize delay
-            with urllib.request.urlopen(
-                PYPI_JSON_URL, timeout=1
-            ) as response:  # nosec B310
+            with urllib.request.urlopen(PYPI_JSON_URL, timeout=1) as response:  # nosec B310
                 if response.status == 200:
                     content = response.read().decode("utf-8")
                     data = json.loads(content)

@@ -62,8 +62,8 @@ def handle(args):
         import uvicorn
     except ImportError:
         print("\nUI dependencies not installed.")
-        print("Run: pip install \"pbir-utils[ui]\"")
-        print("  or: uv add \"pbir-utils[ui]\"\n")
+        print('Run: pip install "pbir-utils[ui]"')
+        print('  or: uv add "pbir-utils[ui]"\n')
         return
 
     import webbrowser
