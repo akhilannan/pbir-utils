@@ -67,10 +67,17 @@ class ValidationResult:
         return seen
 
     def __repr__(self) -> str:
-        return (
-            f"{self.passed} passed, {self.error_count} errors, "
-            f"{self.warning_count} warnings, {self.info_count} info"
-        )
+        """Format summary showing only non-zero severity counts."""
+        if self.failed == 0:
+            return f"{self.passed} passed"
+        parts = [f"{self.passed} passed"]
+        if self.error_count:
+            parts.append(f"{self.error_count} error(s)")
+        if self.warning_count:
+            parts.append(f"{self.warning_count} warning(s)")
+        if self.info_count:
+            parts.append(f"{self.info_count} info")
+        return ", ".join(parts)
 
 
 def load_pbir_context(report_path: str) -> dict:
@@ -645,8 +652,9 @@ def validate_report(
                             }
                         )
 
-    # Print summary
-    _print_summary(results, all_violations)
+    # Create result and print summary
+    result = ValidationResult(results, all_violations)
+    _print_summary(result)
 
     # Handle strict mode
     if strict and all_violations:
@@ -665,7 +673,7 @@ def validate_report(
                 failing_violations,
             )
 
-    return ValidationResult(results, all_violations)
+    return result
 
 
 def _print_rule_result(
@@ -713,28 +721,18 @@ def _print_rule_result(
                 console.print(f"    └─ ... and {len(violations) - 3} more")
 
 
-def _print_summary(results: dict[str, bool], violations: list[dict]):
+def _print_summary(result: ValidationResult):
     """Print validation summary."""
-    passed = sum(1 for v in results.values() if v)
-    failed = len(results) - passed
-
-    # Count by severity
-    error_count = sum(1 for v in violations if v.get("severity") == "error")
-    warning_count = sum(1 for v in violations if v.get("severity") == "warning")
-    info_count = sum(1 for v in violations if v.get("severity") == "info")
-
-    print()
-    console.print("━" * 50)
-    if failed == 0:
-        console.print_success(f"Validation complete: All {passed} rules passed")
+    if result.failed == 0:
+        text = f"Validation complete: All {result.passed} rules passed"
     else:
-        parts = []
-        if error_count:
-            parts.append(f"{error_count} error(s)")
-        if warning_count:
-            parts.append(f"{warning_count} warning(s)")
-        if info_count:
-            parts.append(f"{info_count} info")
-        summary_text = ", ".join(parts) if parts else f"{failed} failed"
-        console.print(f"Validation complete: {passed} passed, {summary_text}")
-    console.print("━" * 50)
+        text = f"Validation complete: {result}"
+
+    separator = "━" * len(text)
+    print()
+    console.print(separator)
+    if result.failed == 0:
+        console.print_success(text)
+    else:
+        console.print(text)
+    console.print(separator)

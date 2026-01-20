@@ -58,7 +58,7 @@ def _print_notice(current: str, latest: str) -> None:
         f"\n{SimpleColor.BLUE}[notice]{SimpleColor.RESET} A new release of {PACKAGE_NAME} is available: "
         f"{SimpleColor.RED}{current}{SimpleColor.RESET} -> {SimpleColor.GREEN}{latest}{SimpleColor.RESET}\n"
         f"{SimpleColor.BLUE}[notice]{SimpleColor.RESET} See what's new: "
-        f"{SimpleColor.CYAN}https://github.com/akhilannan/pbir-utils/releases/tag/v{latest}{SimpleColor.RESET}\n"
+        f"{SimpleColor.CYAN}https://github.com/akhilannan/pbir-utils/releases/tag/{latest}{SimpleColor.RESET}\n"
     )
     # Print to stderr so it doesn't break pipeable commands (like pbir-utils validate --json | jq)
     print(msg, file=sys.stderr)

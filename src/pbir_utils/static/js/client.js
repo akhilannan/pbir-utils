@@ -510,18 +510,51 @@ function renderExpressionRules() {
         return;
     }
 
-    const html = expressionRules.map(r => {
+    // Header with Select All checkbox (matching Actions panel pattern)
+    let html = `
+        <div class="action-group-header">
+            <div class="action-item select-all-container" style="border-bottom: 1px solid var(--border-color); margin-bottom: 4px; padding-bottom: 8px;">
+                <input type="checkbox" id="select-all-rules" onchange="toggleRulesGroup(this)" checked>
+                <label for="select-all-rules" style="font-weight: 600;">Expression Rules</label>
+            </div>
+        </div>`;
+
+    html += expressionRules.map(r => {
         const desc = r.description || r.id.replace(/_/g, ' ');
         const badge = r.severity[0].toUpperCase();
         return `
             <div class="rule-item">
-                <input type="checkbox" id="rule-${r.id}" value="${r.id}" checked>
+                <input type="checkbox" id="rule-${r.id}" value="${r.id}" class="rule-checkbox" checked onchange="updateRulesGroupState()">
                 <label for="rule-${r.id}" style="flex:1;cursor:pointer;">${escapeHtml(desc)}</label>
                 <span class="severity-badge ${r.severity}" title="Severity: ${r.severity}">${badge}</span>
             </div>`;
     }).join('');
 
     container.innerHTML = html;
+    updateRulesGroupState();
+}
+
+function toggleRulesGroup(source) {
+    const checkboxes = document.querySelectorAll('.rule-checkbox');
+    const isChecked = source.checked;
+
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+    });
+    updateRulesGroupState();
+}
+
+function updateRulesGroupState() {
+    const checkboxes = Array.from(document.querySelectorAll('.rule-checkbox'));
+    const selectAll = document.getElementById('select-all-rules');
+
+    if (!checkboxes.length || !selectAll) return;
+
+    const allChecked = checkboxes.every(cb => cb.checked);
+    const anyChecked = checkboxes.some(cb => cb.checked);
+
+    selectAll.checked = allChecked;
+    selectAll.indeterminate = !allChecked && anyChecked;
 }
 
 async function runCheck() {

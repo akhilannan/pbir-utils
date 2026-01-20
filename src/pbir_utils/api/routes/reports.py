@@ -604,11 +604,7 @@ async def run_validation(request: ValidateRequest):
     import tempfile
     from pathlib import Path
     from pbir_utils.rule_engine import validate_report
-    from pbir_utils.sanitize_config import load_config as load_sanitize_config
     from pbir_utils.console_utils import console
-
-    all_results = {}
-    all_violations = []
 
     # Decode custom rules config if provided
     rules_config_path = None
@@ -627,65 +623,80 @@ async def run_validation(request: ValidateRequest):
             logger.debug("Failed to decode rules config: %s", e)
 
     try:
-        # 1. Run expression rules
-        if request.expression_rules:
-            with console.suppress_all():
-                result = await run_in_threadpool(
-                    validate_report,
-                    request.report_path,
-                    source="rules",
-                    rules=request.expression_rules,
-                    rules_config=rules_config_path,
-                    strict=False,
-                )
-            all_results.update(result.results)
-            for v in result.violations:
-                all_violations.append(
-                    ViolationInfo(
-                        rule_id=v.get("rule_id", ""),
-                        rule_name=v.get("rule_name", ""),
-                        severity=v.get("severity", "warning"),
-                        message=v.get("message", ""),
-                        rule_type="expression",
-                        page_name=v.get("page_name"),
-                        visual_name=v.get("visual_name"),
-                    )
-                )
+        # Determine source based on what's requested
+        has_rules = bool(request.expression_rules)
+        has_actions = request.include_sanitizer and bool(request.sanitize_actions)
 
-        # 2. Run sanitize action dry-run checks (only if include_sanitizer is True)
-        if request.include_sanitizer and request.sanitize_actions:
-            # Load sanitize config to get action severities
-            san_cfg = await run_in_threadpool(
-                load_sanitize_config, report_path=request.report_path
+        if has_rules and has_actions:
+            source = "all"
+        elif has_rules:
+            source = "rules"
+        elif has_actions:
+            source = "sanitizer"
+        else:
+            # Nothing selected - return empty result
+            return ValidateResponse(
+                passed=0,
+                failed=0,
+                error_count=0,
+                warning_count=0,
+                info_count=0,
+                results={},
+                violations=[],
             )
 
-            with console.suppress_all():
-                result = await run_in_threadpool(
-                    validate_report,
-                    request.report_path,
-                    source="sanitize",
-                    actions=request.sanitize_actions,
-                    strict=False,
-                )
+        # Single call to validate_report - reuse returned ValidationResult
+        with console.suppress_all():
+            result = await run_in_threadpool(
+                validate_report,
+                request.report_path,
+                source=source,
+                rules=request.expression_rules if has_rules else None,
+                actions=request.sanitize_actions if has_actions else None,
+                rules_config=rules_config_path,
+                strict=False,
+            )
 
-            all_results.update(result.results)
-            for v in result.violations:
-                # Get severity from sanitize config
-                action_id = v.get("rule_id", "")
-                action_spec = san_cfg.definitions.get(action_id)
-                severity = action_spec.severity if action_spec else "warning"
+        # Convert violations to ViolationInfo for API response
+        # Detect rule_type based on rule_id prefix patterns
+        sanitizer_prefixes = (
+            "remove_",
+            "hide_",
+            "set_",
+            "reset_",
+            "disable_",
+            "clean_",
+            "collapse_",
+            "sort_",
+        )
+        violations = [
+            ViolationInfo(
+                rule_id=v.get("rule_id", ""),
+                rule_name=v.get("rule_name", ""),
+                severity=v.get("severity", "warning"),
+                message=v.get("message", ""),
+                rule_type=(
+                    "sanitizer"
+                    if v.get("rule_id", "").startswith(sanitizer_prefixes)
+                    else "expression"
+                ),
+                page_name=v.get("page_name"),
+                visual_name=v.get("visual_name"),
+            )
+            for v in result.violations
+        ]
 
-                all_violations.append(
-                    ViolationInfo(
-                        rule_id=action_id,
-                        rule_name=v.get(
-                            "rule_name", action_id.replace("_", " ").title()
-                        ),
-                        severity=severity,
-                        message=v.get("message", "Would make changes"),
-                        rule_type="sanitizer",
-                    )
-                )
+        # Reuse ValidationResult counts directly - no recalculation needed!
+        return ValidateResponse(
+            passed=result.passed,
+            failed=result.failed,
+            error_count=result.error_count,
+            warning_count=result.warning_count,
+            info_count=result.info_count,
+            results=result.results,
+            violations=violations,
+        )
+
     finally:
         # Cleanup temp file
         if temp_file:
@@ -693,20 +704,6 @@ async def run_validation(request: ValidateRequest):
                 Path(temp_file.name).unlink(missing_ok=True)
             except Exception as e:
                 logger.debug("Failed to cleanup temp file: %s", e)
-
-    # Calculate counts
-    passed = sum(1 for v in all_results.values() if v)
-    failed = sum(1 for v in all_results.values() if not v)
-
-    return ValidateResponse(
-        passed=passed,
-        failed=failed,
-        error_count=sum(1 for v in all_violations if v.severity == "error"),
-        warning_count=sum(1 for v in all_violations if v.severity == "warning"),
-        info_count=sum(1 for v in all_violations if v.severity == "info"),
-        results=all_results,
-        violations=all_violations,
-    )
 
 
 @router.get("/validate/run/stream")
@@ -772,47 +769,40 @@ async def run_validation_stream(
             logger.debug("Failed to decode sanitize config: %s", e)
 
     async def generate():
-        all_results = {}
-        all_violations = []
+        result = None
 
         with console.stream_output() as queue:
 
             def run():
-                nonlocal all_results, all_violations
+                nonlocal result
 
                 try:
-                    # 1. Run expression rules
-                    if expr_rules_list:
-                        result = validate_report(
-                            report_path,
-                            source="rules",
-                            rules=expr_rules_list,
-                            rules_config=rules_config_path,
-                            sanitize_config=sanitize_config_path,
-                            strict=False,
-                        )
-                        all_results.update(result.results)
-                        all_violations.extend(result.violations)
+                    # Determine source based on what's selected
+                    has_rules = bool(expr_rules_list)
+                    has_actions = include_sanitizer and bool(sanitize_actions_list)
 
-                    # 2. Run sanitizer actions (only if explicitly included and selected)
-                    if include_sanitizer and sanitize_actions_list:
-                        result = validate_report(
-                            report_path,
-                            source="sanitizer",
-                            actions=sanitize_actions_list,
-                            rules_config=rules_config_path,
-                            sanitize_config=sanitize_config_path,
-                            strict=False,
-                        )
-                        all_results.update(result.results)
-                        all_violations.extend(result.violations)
-
-                    if not expr_rules_list and not (
-                        include_sanitizer and sanitize_actions_list
-                    ):
+                    if has_rules and has_actions:
+                        source = "all"
+                    elif has_rules:
+                        source = "rules"
+                    elif has_actions:
+                        source = "sanitizer"
+                    else:
                         console.print(
                             "[yellow]No rules or actions selected for validation[/yellow]"
                         )
+                        return
+
+                    # Single call to validate_report
+                    result = validate_report(
+                        report_path,
+                        source=source,
+                        rules=expr_rules_list if has_rules else None,
+                        actions=sanitize_actions_list if has_actions else None,
+                        rules_config=rules_config_path,
+                        sanitize_config=sanitize_config_path,
+                        strict=False,
+                    )
 
                 except Exception as e:
                     # Error will be captured in console output
@@ -828,20 +818,21 @@ async def run_validation_stream(
                 except Empty:
                     await asyncio.sleep(0.05)
 
-            # Send final summary
-            passed = sum(1 for v in all_results.values() if v)
-            failed = sum(1 for v in all_results.values() if not v)
-            error_count = sum(1 for v in all_violations if v.get("severity") == "error")
-            warning_count = sum(
-                1 for v in all_violations if v.get("severity") == "warning"
-            )
-
-            summary = {
-                "passed": passed,
-                "failed": failed,
-                "error_count": error_count,
-                "warning_count": warning_count,
-            }
+            # Send final summary using the ValidationResult from single call
+            if result:
+                summary = {
+                    "passed": result.passed,
+                    "failed": result.failed,
+                    "error_count": result.error_count,
+                    "warning_count": result.warning_count,
+                }
+            else:
+                summary = {
+                    "passed": 0,
+                    "failed": 0,
+                    "error_count": 0,
+                    "warning_count": 0,
+                }
             yield {"event": "complete", "data": json.dumps(summary)}
 
         # Cleanup temp files

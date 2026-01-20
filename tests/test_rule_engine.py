@@ -67,8 +67,8 @@ class TestValidationResult:
 
         repr_str = repr(result)
         assert "1 passed" in repr_str
-        assert "1 errors" in repr_str
-        assert "1 warnings" in repr_str
+        assert "1 error(s)" in repr_str
+        assert "1 warning(s)" in repr_str
         assert "1 info" in repr_str
 
 
