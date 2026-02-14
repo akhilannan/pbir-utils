@@ -44,10 +44,8 @@ dev = [
     "pytest-cov",
     "httpx",
     "ruff",
-    "black",
     "bandit",
-    "build",
-    "twine",
+    "pip-audit",
 ]
 docs = [
     "mkdocs",

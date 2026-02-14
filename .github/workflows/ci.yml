@@ -27,16 +27,14 @@ jobs:
     - name: Lint with ruff
       run: uv run ruff check src tests
 
-    - name: Format check with black
+    - name: Format check with ruff
       run: uv run ruff format --check src tests
 
     - name: Security check with bandit
       run: uv run bandit -r src
 
     - name: Check dependencies for vulnerabilities
-      run: |
-        uv pip install pip-audit
-        uv run pip-audit
+      run: uv run pip-audit
 
     - name: Run tests with pytest
       run: uv run pytest --cov=src --cov-fail-under=80
