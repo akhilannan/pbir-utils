@@ -70,9 +70,9 @@ def test_float_precision_preserved(tmp_path):
     original_normalized = original_json.replace(" ", "")
     result_normalized = result.replace(" ", "").replace("\n", "")
 
-    assert (
-        original_normalized == result_normalized
-    ), f"Float precision lost!\nOriginal: {original_json}\nResult: {result}"
+    assert original_normalized == result_normalized, (
+        f"Float precision lost!\nOriginal: {original_json}\nResult: {result}"
+    )
 
 
 def test_get_report_paths(tmp_path):
@@ -393,20 +393,20 @@ class TestTraversePbirJson:
 
         # Entity and Property are yielded separately
         # For Column reference (default when no Measure wrapper):
-        assert any(
-            r[0] == "Sales" and r[5] == "Column" for r in results
-        ), "Should yield Entity 'Sales' with attribute_type='Column'"
-        assert any(
-            r[1] == "Amount" and r[5] == "Column" for r in results
-        ), "Should yield Property 'Amount' with attribute_type='Column'"
+        assert any(r[0] == "Sales" and r[5] == "Column" for r in results), (
+            "Should yield Entity 'Sales' with attribute_type='Column'"
+        )
+        assert any(r[1] == "Amount" and r[5] == "Column" for r in results), (
+            "Should yield Property 'Amount' with attribute_type='Column'"
+        )
 
         # For Measure reference (inside Measure wrapper):
-        assert any(
-            r[0] == "Sales" and r[5] == "Measure" for r in results
-        ), "Should yield Entity 'Sales' with attribute_type='Measure'"
-        assert any(
-            r[1] == "TotalRevenue" and r[5] == "Measure" for r in results
-        ), "Should yield Property 'TotalRevenue' with attribute_type='Measure'"
+        assert any(r[0] == "Sales" and r[5] == "Measure" for r in results), (
+            "Should yield Entity 'Sales' with attribute_type='Measure'"
+        )
+        assert any(r[1] == "TotalRevenue" and r[5] == "Measure" for r in results), (
+            "Should yield Property 'TotalRevenue' with attribute_type='Measure'"
+        )
 
 
 class TestResolveReportPath:

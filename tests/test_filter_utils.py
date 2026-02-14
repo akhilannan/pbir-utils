@@ -1151,9 +1151,9 @@ def test_extract_page_with_slicers_implicit(
 
     assert has_slicer_header, "Should see 'Slicer Filters:' header"
     assert has_slicer_filter, "Should see extracted slicer value"
-    assert (
-        not has_regular_info and not has_regular_dry
-    ), "Regular visual filters should be hidden unless requested"
+    assert not has_regular_info and not has_regular_dry, (
+        "Regular visual filters should be hidden unless requested"
+    )
 
 
 # --- Filtering Criteria Tests ---

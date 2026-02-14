@@ -173,9 +173,9 @@ def test_remove_unused_bookmarks_keeps_all_when_navigator_is_all_empty_string(tm
     changed = remove_unused_bookmarks(report_path, dry_run=False)
 
     # Assertions
-    assert (
-        changed is False
-    ), "Should not make changes when Navigator shows All bookmarks (empty string)"
+    assert changed is False, (
+        "Should not make changes when Navigator shows All bookmarks (empty string)"
+    )
     assert (
         tmp_path / "definition" / "bookmarks" / "Bookmark1.bookmark.json"
     ).exists(), "Bookmark1 should be preserved"
@@ -230,9 +230,9 @@ def test_remove_unused_bookmarks_keeps_all_when_navigator_has_no_group_prop(tmp_
     changed = remove_unused_bookmarks(report_path, dry_run=False)
 
     # Assertions
-    assert (
-        changed is False
-    ), "Should not make changes when Navigator shows All bookmarks (missing prop)"
+    assert changed is False, (
+        "Should not make changes when Navigator shows All bookmarks (missing prop)"
+    )
     assert (
         tmp_path / "definition" / "bookmarks" / "Bookmark2.bookmark.json"
     ).exists(), "Bookmark2 should be preserved"
