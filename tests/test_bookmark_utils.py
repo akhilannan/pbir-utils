@@ -1,6 +1,5 @@
 """Tests for bookmark_utils module."""
 
-import os
 from unittest.mock import patch
 
 
@@ -44,6 +43,11 @@ def test_remove_unused_bookmarks_empty(tmp_path):
     )
 
     # Create a page with no bookmark references
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {"name": "Page1", "displayName": "Page 1"},
+    )
     create_dummy_file(
         tmp_path,
         "definition/pages/Page1/visuals/v1/visual.json",
@@ -97,14 +101,10 @@ def test_cleanup_invalid_bookmarks(tmp_path):
     cleanup_invalid_bookmarks(report_path)
 
     # b1 should be removed
-    assert not os.path.exists(
-        os.path.join(report_path, "definition/bookmarks/b1.bookmark.json")
-    )
+    assert not (tmp_path / "definition" / "bookmarks" / "b1.bookmark.json").exists()
 
     # b2 should be cleaned
-    b2_data = load_json(
-        os.path.join(report_path, "definition/bookmarks/b2.bookmark.json")
-    )
+    b2_data = load_json(tmp_path / "definition" / "bookmarks" / "b2.bookmark.json")
     assert "v1" in b2_data["explorationState"]["sections"]["Page1"]["visualContainers"]
     assert (
         "invalid_v"
@@ -122,3 +122,117 @@ def test_cleanup_invalid_bookmarks_no_directory(tmp_path):
         assert any(
             "No bookmarks directory" in str(call) for call in mock_print.call_args_list
         )
+
+
+def test_remove_unused_bookmarks_keeps_all_when_navigator_is_all_empty_string(tmp_path):
+    """
+    Test that remove_unused_bookmarks does NOT remove any bookmarks
+    if a bookmark navigator has bookmarkGroup set to ''.
+    """
+    report_path = str(tmp_path)
+
+    # Create bookmarks
+    create_dummy_file(
+        tmp_path,
+        "definition/bookmarks/bookmarks.json",
+        {"items": [{"name": "Bookmark1"}]},
+    )
+    create_dummy_file(
+        tmp_path, "definition/bookmarks/Bookmark1.bookmark.json", {"name": "Bookmark1"}
+    )
+
+    # Create page.json (Required for iter_pages)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {"name": "Page1", "displayName": "Page 1"},
+    )
+
+    # Create Bookmark Navigator with "bookmarkGroup": {"expr": {"Literal": {"Value": "''"}}}
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/visuals/Visual1/visual.json",
+        {
+            "name": "Visual1",
+            "visual": {
+                "visualType": "bookmarkNavigator",
+                "objects": {
+                    "bookmarks": [
+                        {
+                            "properties": {
+                                "bookmarkGroup": {"expr": {"Literal": {"Value": "''"}}}
+                            }
+                        }
+                    ]
+                },
+            },
+        },
+    )
+
+    # Run the function
+    changed = remove_unused_bookmarks(report_path, dry_run=False)
+
+    # Assertions
+    assert (
+        changed is False
+    ), "Should not make changes when Navigator shows All bookmarks (empty string)"
+    assert (
+        tmp_path / "definition" / "bookmarks" / "Bookmark1.bookmark.json"
+    ).exists(), "Bookmark1 should be preserved"
+
+
+def test_remove_unused_bookmarks_keeps_all_when_navigator_has_no_group_prop(tmp_path):
+    """
+    Test that remove_unused_bookmarks does NOT remove any bookmarks
+    if a bookmark navigator has NO bookmarkGroup property.
+    """
+    report_path = str(tmp_path)
+
+    # Create bookmarks
+    create_dummy_file(
+        tmp_path,
+        "definition/bookmarks/bookmarks.json",
+        {"items": [{"name": "Bookmark2"}]},
+    )
+    create_dummy_file(
+        tmp_path, "definition/bookmarks/Bookmark2.bookmark.json", {"name": "Bookmark2"}
+    )
+
+    # Create page.json (Required for iter_pages)
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/page.json",
+        {"name": "Page1", "displayName": "Page 1"},
+    )
+
+    # Create Bookmark Navigator with missing "bookmarkGroup"
+    create_dummy_file(
+        tmp_path,
+        "definition/pages/Page1/visuals/Visual1/visual.json",
+        {
+            "name": "Visual1",
+            "visual": {
+                "visualType": "bookmarkNavigator",
+                "objects": {
+                    "bookmarks": [
+                        {
+                            "properties": {
+                                # "bookmarkGroup" is intentionally missing
+                            }
+                        }
+                    ]
+                },
+            },
+        },
+    )
+
+    # Run the function
+    changed = remove_unused_bookmarks(report_path, dry_run=False)
+
+    # Assertions
+    assert (
+        changed is False
+    ), "Should not make changes when Navigator shows All bookmarks (missing prop)"
+    assert (
+        tmp_path / "definition" / "bookmarks" / "Bookmark2.bookmark.json"
+    ).exists(), "Bookmark2 should be preserved"

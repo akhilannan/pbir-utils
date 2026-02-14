@@ -43,13 +43,27 @@ def remove_unused_bookmarks(
 
             if visual.get("visualType") == "bookmarkNavigator":
                 for bookmark in visual.get("objects", {}).get("bookmarks", []):
+                    props = bookmark.get("properties", {})
+
+                    if "bookmarkGroup" not in props:
+                        console.print_info(
+                            "Bookmark Navigator with 'All' bookmarks detected (missing group). Preserving all."
+                        )
+                        return False
+
                     val = (
-                        bookmark.get("properties", {})
-                        .get("bookmarkGroup", {})
+                        props.get("bookmarkGroup", {})
                         .get("expr", {})
                         .get("Literal", {})
                         .get("Value")
                     )
+
+                    if val is not None and val.strip("'") == "":
+                        console.print_info(
+                            "Bookmark Navigator with 'All' bookmarks detected (empty group). Preserving all."
+                        )
+                        return False
+
                     if val:
                         all_used_bookmark_refs.add(val.strip("'"))
 
