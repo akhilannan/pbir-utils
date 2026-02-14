@@ -211,10 +211,22 @@ async function loadActions(reportPath) {
         }
         const response = await fetch(url);
         const data = await response.json();
-        currentConfigPath = data.config_path;
-        customConfigYaml = null;  // Reset custom config when loading from report
-        renderActions(data.actions);
-        updateConfigIndicator();
+
+        // Check for stored custom config FIRST
+        const storedYaml = customConfigYaml || sessionStorage.getItem('pbir_custom_config_yaml');
+        const storedName = (customConfigYaml ? currentConfigPath : null) ||
+            sessionStorage.getItem('pbir_custom_config_path');
+
+        if (storedYaml) {
+            // Restore custom config
+            await applyConfigFromYaml(storedYaml, storedName, true);
+        } else {
+            // Use default/report config
+            currentConfigPath = data.config_path;
+            customConfigYaml = null;
+            renderActions(data.actions);
+            updateConfigIndicator();
+        }
     } catch (e) {
         appendOutput('error', `Failed to load actions: ${e.message}`);
     }
@@ -313,12 +325,24 @@ async function loadCustomConfig(input) {
     if (!input.files || !input.files[0]) return;
 
     const file = input.files[0];
-
-    // Read file content for later use during execution
     const yamlContent = await file.text();
 
+    await applyConfigFromYaml(yamlContent, file.name);
+
+    // Persist to session storage
+    if (customConfigYaml) {
+        sessionStorage.setItem('pbir_custom_config_yaml', customConfigYaml);
+        sessionStorage.setItem('pbir_custom_config_path', currentConfigPath);
+    }
+
+    // Reset file input so same file can be selected again
+    input.value = '';
+}
+
+async function applyConfigFromYaml(yamlContent, configName, silent = false) {
+    const blob = new Blob([yamlContent], { type: 'text/yaml' });
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', blob, configName || 'custom.yaml');
 
     try {
         const response = await fetch('/api/reports/config', {
@@ -334,7 +358,7 @@ async function loadCustomConfig(input) {
         const data = await response.json();
 
         // Store config for execution
-        currentConfigPath = file.name;
+        currentConfigPath = configName;
         customConfigYaml = yamlContent;
 
         // Render new actions from config
@@ -348,22 +372,28 @@ async function loadCustomConfig(input) {
         });
         renderActions(actions);
         updateConfigIndicator();
-        ensureOutputPanelVisible();
-        appendOutput('success', `Loaded custom config: ${file.name}`);
+        if (!silent) {
+            ensureOutputPanelVisible();
+            appendOutput('success', `Loaded custom config: ${configName}`);
+        }
 
     } catch (e) {
-        ensureOutputPanelVisible();
-        appendOutput('error', `Failed to load config: ${e.message}`);
+        if (!silent) {
+            ensureOutputPanelVisible();
+            appendOutput('error', `Failed to load config: ${e.message}`);
+        }
+        // If failed, clear bad config from session to prevent loop
+        sessionStorage.removeItem('pbir_custom_config_yaml');
+        sessionStorage.removeItem('pbir_custom_config_path');
     }
-
-    // Reset file input so same file can be selected again
-    input.value = '';
 }
 
 async function resetConfig(event) {
     if (event) event.stopPropagation();
     currentConfigPath = null;
     customConfigYaml = null;
+    sessionStorage.removeItem('pbir_custom_config_yaml');
+    sessionStorage.removeItem('pbir_custom_config_path');
     await loadActions(currentReportPath);
     appendOutput('info', 'Reset to default configuration');
     updateRunButtons();
@@ -491,9 +521,21 @@ async function loadExpressionRules(reportPath) {
         const url = `/api/reports/validate/rules?report_path=${encodeURIComponent(reportPath)}`;
         const response = await fetch(url);
         const data = await response.json();
-        expressionRules = data.rules || [];
-        renderExpressionRules();
-        document.getElementById('check-btn').disabled = false;
+
+        // Check for stored custom rules config FIRST
+        const storedYaml = customRulesConfigYaml || sessionStorage.getItem('pbir_custom_rules_yaml');
+        const storedName = (customRulesConfigYaml ? currentRulesConfigPath : null) ||
+            sessionStorage.getItem('pbir_custom_rules_path');
+
+        if (storedYaml) {
+            // Restore custom rules
+            await applyRulesConfigFromYaml(storedYaml, storedName, true);
+        } else {
+            expressionRules = data.rules || [];
+            renderExpressionRules();
+            document.getElementById('check-btn').disabled = false;
+        }
+
     } catch (e) {
         console.error('Failed to load validation rules:', e);
         expressionRules = [];
@@ -647,12 +689,23 @@ async function loadCustomRulesConfig(input) {
     if (!input.files || !input.files[0]) return;
 
     const file = input.files[0];
-
-    // Read file content for later use during validation
     const yamlContent = await file.text();
 
+    await applyRulesConfigFromYaml(yamlContent, file.name);
+
+    if (customRulesConfigYaml) {
+        sessionStorage.setItem('pbir_custom_rules_yaml', customRulesConfigYaml);
+        sessionStorage.setItem('pbir_custom_rules_path', currentRulesConfigPath);
+    }
+
+    // Reset file input so same file can be selected again
+    input.value = '';
+}
+
+async function applyRulesConfigFromYaml(yamlContent, configName, silent = false) {
+    const blob = new Blob([yamlContent], { type: 'text/yaml' });
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', blob, configName || 'custom_rules.yaml');
 
     try {
         const response = await fetch('/api/reports/validate/config', {
@@ -668,7 +721,7 @@ async function loadCustomRulesConfig(input) {
         const data = await response.json();
 
         // Store config for validation
-        currentRulesConfigPath = file.name;
+        currentRulesConfigPath = configName;
         customRulesConfigYaml = yamlContent;
 
         // Render new rules from config
@@ -680,22 +733,27 @@ async function loadCustomRulesConfig(input) {
         }));
         renderExpressionRules();
         updateRulesConfigIndicator();
-        ensureOutputPanelVisible();
-        appendOutput('success', `Loaded custom rules config: ${file.name}`);
+        if (!silent) {
+            ensureOutputPanelVisible();
+            appendOutput('success', `Loaded custom rules config: ${configName}`);
+        }
 
     } catch (e) {
-        ensureOutputPanelVisible();
-        appendOutput('error', `Failed to load rules config: ${e.message}`);
+        if (!silent) {
+            ensureOutputPanelVisible();
+            appendOutput('error', `Failed to load rules config: ${e.message}`);
+        }
+        sessionStorage.removeItem('pbir_custom_rules_yaml');
+        sessionStorage.removeItem('pbir_custom_rules_path');
     }
-
-    // Reset file input so same file can be selected again
-    input.value = '';
 }
 
 async function resetRulesConfig(event) {
     if (event) event.stopPropagation();
     currentRulesConfigPath = null;
     customRulesConfigYaml = null;
+    sessionStorage.removeItem('pbir_custom_rules_yaml');
+    sessionStorage.removeItem('pbir_custom_rules_path');
     await loadExpressionRules(currentReportPath);
     updateRulesConfigIndicator();
     appendOutput('info', 'Reset to default rules configuration');
