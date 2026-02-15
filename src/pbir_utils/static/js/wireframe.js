@@ -808,7 +808,7 @@ function initFieldsPane() {
         html += `<div class="table-item" data-table="${escapeHtml(tableName)}">`;
         html += '<div class="table-header">';
         html += `<span class="table-expand-icon" onclick="event.stopPropagation(); toggleTable('${escapeHtml(tableName)}')" aria-hidden="true">▶</span>`;
-        html += `<div class="table-header-content" role="button" tabindex="0" aria-expanded="false" onclick="toggleTableSelection('${escapeHtml(tableName)}')" onkeydown="handleTableKey(event, '${escapeHtml(tableName)}')" onmouseenter="showTableTooltip(event, '${escapeHtml(tableName)}')" onmouseleave="hideTableTooltip()">`;
+        html += `<div class="table-header-content" role="button" tabindex="0" aria-expanded="false" onclick="toggleTableSelection(event, '${escapeHtml(tableName)}')" onkeydown="handleTableKey(event, '${escapeHtml(tableName)}')" onmouseenter="showTableTooltip(event, '${escapeHtml(tableName)}')" onmouseleave="hideTableTooltip()">`;
         html += '<svg class="table-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="2"/><line x1="9" y1="9" x2="9" y2="21" stroke="currentColor" stroke-width="2"/></svg>';
         html += `<span class="table-name">${escapeHtml(tableName)}</span>`;
         html += `<span class="table-count">${tableData.visualCount}</span>`;
@@ -820,7 +820,7 @@ function initFieldsPane() {
         tableData.columns.forEach(col => {
             const fieldKey = `${tableName}.${col}`;
             const count = (fieldsIndex.fieldToVisuals[fieldKey] || []).length;
-            html += `<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="${escapeHtml(fieldKey)}" onclick="toggleFieldSelection('${escapeHtml(fieldKey)}')" onkeydown="handleFieldKey(event, '${escapeHtml(fieldKey)}')" onmouseenter="showFieldTooltip(event, '${escapeHtml(tableName)}', '${escapeHtml(col)}')" onmouseleave="hideFieldTooltip()">`;
+            html += `<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="${escapeHtml(fieldKey)}" onclick="toggleFieldSelection(event, '${escapeHtml(fieldKey)}')" onkeydown="handleFieldKey(event, '${escapeHtml(fieldKey)}')" onmouseenter="showFieldTooltip(event, '${escapeHtml(tableName)}', '${escapeHtml(col)}')" onmouseleave="hideFieldTooltip()">`;
             html += '<span class="field-icon column-icon" title="Column">⊟</span>';
             html += `<span class="field-name">${escapeHtml(col)}</span>`;
             html += `<span class="field-count">(${count})</span>`;
@@ -831,7 +831,7 @@ function initFieldsPane() {
         tableData.measures.forEach(meas => {
             const fieldKey = `${tableName}.${meas}`;
             const count = (fieldsIndex.fieldToVisuals[fieldKey] || []).length;
-            html += `<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="${escapeHtml(fieldKey)}" onclick="toggleFieldSelection('${escapeHtml(fieldKey)}')" onkeydown="handleFieldKey(event, '${escapeHtml(fieldKey)}')" onmouseenter="showFieldTooltip(event, '${escapeHtml(tableName)}', '${escapeHtml(meas)}')" onmouseleave="hideFieldTooltip()">`;
+            html += `<div class="field-item" role="checkbox" aria-checked="false" tabindex="0" data-field="${escapeHtml(fieldKey)}" onclick="toggleFieldSelection(event, '${escapeHtml(fieldKey)}')" onkeydown="handleFieldKey(event, '${escapeHtml(fieldKey)}')" onmouseenter="showFieldTooltip(event, '${escapeHtml(tableName)}', '${escapeHtml(meas)}')" onmouseleave="hideFieldTooltip()">`;
             html += '<span class="field-icon measure-icon" title="Measure">Σ</span>';
             html += `<span class="field-name">${escapeHtml(meas)}</span>`;
             html += `<span class="field-count">(${count})</span>`;
@@ -860,7 +860,7 @@ function initFieldsPane() {
 function handleTableKey(event, tableName) {
     if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        toggleTableSelection(tableName);
+        toggleTableSelection(event, tableName);
     } else if (event.key === 'ArrowRight') {
         event.preventDefault();
         const tableItem = document.querySelector(`.table-item[data-table="${tableName}"]`);
@@ -879,7 +879,7 @@ function handleTableKey(event, tableName) {
 function handleFieldKey(event, fieldKey) {
     if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        toggleFieldSelection(fieldKey);
+        toggleFieldSelection(event, fieldKey);
     }
 }
 
@@ -895,7 +895,7 @@ function toggleTable(tableName) {
     }
 }
 
-function toggleTableSelection(tableName) {
+function toggleTableSelection(event, tableName) {
     const tableData = fieldsIndex.tables[tableName];
     if (!tableData) return;
 
@@ -908,52 +908,77 @@ function toggleTableSelection(tableName) {
         tableFieldKeys.push(`${tableName}.${meas}`);
     });
 
-    // Check if all fields in this table are already selected
+    const isMulti = event.ctrlKey || event.metaKey;
     const allSelected = tableFieldKeys.every(key => selectedFields.has(key));
-
-    // Prepare undo data
     const changes = [];
-    tableFieldKeys.forEach(key => {
-        const isSelected = selectedFields.has(key);
-        // If allSelected is true, we are DESELECTING. Change if currently selected.
-        // If allSelected is false, we are SELECTING. Change if currently NOT selected.
-        if (allSelected) {
-            if (isSelected) changes.push({ key, wasSelected: true });
-        } else {
-            if (!isSelected) changes.push({ key, wasSelected: false });
-        }
-    });
+
+    if (!isMulti) {
+        // Single Select: Clears fields NOT in this table, selects ALL fields IN this table
+
+        // 1. Identify fields to deselect (currently selected but not in this table)
+        selectedFields.forEach(key => {
+            if (!tableFieldKeys.includes(key)) {
+                changes.push({ key, wasSelected: true });
+            }
+        });
+
+        // 2. Identify fields to select (in this table but not currently selected)
+        tableFieldKeys.forEach(key => {
+            if (!selectedFields.has(key)) {
+                changes.push({ key, wasSelected: false });
+            }
+        });
+
+        // If table is fully selected and we are in single select, stick to selection (or toggle off?)
+        // Let's enforce selection for now as it acts as a filter.
+    } else {
+        // Multi Select: Toggle behavior
+        tableFieldKeys.forEach(key => {
+            const isSelected = selectedFields.has(key);
+            // If allSelected is true, we are DESELECTING.
+            // If allSelected is false, we are SELECTING.
+            if (allSelected) {
+                if (isSelected) changes.push({ key, wasSelected: true });
+            } else {
+                if (!isSelected) changes.push({ key, wasSelected: false });
+            }
+        });
+    }
 
     if (changes.length > 0) {
         trackAction('batchFieldSelection', { changes });
     }
 
-    // Toggle: if all selected, deselect all; otherwise select all
-    tableFieldKeys.forEach(fieldKey => {
+    // Apply changes
+    changes.forEach(change => {
+        const fieldKey = change.key;
         const fieldItem = document.querySelector(`.field-item[data-field="${fieldKey}"]`);
-        if (allSelected) {
+
+        if (change.wasSelected) {
+            // Deselect
             selectedFields.delete(fieldKey);
             if (fieldItem) {
                 fieldItem.classList.remove('selected');
                 fieldItem.setAttribute('aria-checked', 'false');
             }
         } else {
+            // Select
             selectedFields.add(fieldKey);
             if (fieldItem) {
                 fieldItem.classList.add('selected');
                 fieldItem.setAttribute('aria-checked', 'true');
             }
         }
-
-        if (fieldItem && !selectedFields.has(fieldKey)) {
-            fieldItem.setAttribute('aria-checked', 'false');
-        }
     });
 
-    // Also expand the table to show selected items
+    // Update table expanded state
     const tableItem = document.querySelector(`.table-item[data-table="${tableName}"]`);
-    if (tableItem && !allSelected) {
-        tableItem.classList.add('expanded');
+    if (tableItem) {
+        // Expand if we just selected items
+        const hasSelectedItems = tableFieldKeys.some(k => selectedFields.has(k));
+        if (hasSelectedItems) {
+            tableItem.classList.add('expanded');
+        }
     }
 
     updateFieldsFooter();
@@ -961,25 +986,53 @@ function toggleTableSelection(tableName) {
     updateResetButtonState();
 }
 
-function toggleFieldSelection(fieldKey) {
-    const fieldItem = document.querySelector(`.field-item[data-field="${fieldKey}"]`);
+function toggleFieldSelection(event, fieldKey) {
+    const isMulti = event.ctrlKey || event.metaKey;
     const wasSelected = selectedFields.has(fieldKey);
+    const changes = [];
 
-    // Track action for undo (store the state to restore to)
-    trackAction('fieldSelection', { fieldKey, wasSelected });
-
-    if (wasSelected) {
-        selectedFields.delete(fieldKey);
-        if (fieldItem) {
-            fieldItem.classList.remove('selected');
-            fieldItem.setAttribute('aria-checked', 'false');
+    if (!isMulti) {
+        // Single Select
+        if (wasSelected && selectedFields.size === 1) {
+            // Already selected and it's the only one -> Deselect (toggle off)
+            changes.push({ key: fieldKey, wasSelected: true });
+        } else {
+            // Select this one, deselect all others
+            selectedFields.forEach(key => {
+                if (key !== fieldKey) {
+                    changes.push({ key, wasSelected: true });
+                }
+            });
+            if (!wasSelected) {
+                changes.push({ key: fieldKey, wasSelected: false });
+            }
+            // If wasSelected is true (but others were selected too), we keep it selected, so no change entry for it.
         }
     } else {
-        selectedFields.add(fieldKey);
-        if (fieldItem) {
-            fieldItem.classList.add('selected');
-            fieldItem.setAttribute('aria-checked', 'true');
-        }
+        // Multi Select (Toggle)
+        changes.push({ key: fieldKey, wasSelected: wasSelected });
+    }
+
+    if (changes.length > 0) {
+        trackAction('batchFieldSelection', { changes });
+
+        changes.forEach(change => {
+            const key = change.key;
+            const fieldItem = document.querySelector(`.field-item[data-field="${key}"]`);
+            if (change.wasSelected) {
+                selectedFields.delete(key);
+                if (fieldItem) {
+                    fieldItem.classList.remove('selected');
+                    fieldItem.setAttribute('aria-checked', 'false');
+                }
+            } else {
+                selectedFields.add(key);
+                if (fieldItem) {
+                    fieldItem.classList.add('selected');
+                    fieldItem.setAttribute('aria-checked', 'true');
+                }
+            }
+        });
     }
 
     updateFieldsFooter();
@@ -989,8 +1042,14 @@ function toggleFieldSelection(fieldKey) {
 
 function updateFieldsFooter() {
     const count = selectedFields.size;
-    document.getElementById('selected-count').textContent = `${count} selected`;
-    document.getElementById('clear-fields-btn').disabled = count === 0;
+    const controls = document.getElementById('fields-selection-controls');
+
+    if (count > 0) {
+        controls.style.display = 'flex';
+        document.getElementById('selection-text').textContent = `${count} selected`;
+    } else {
+        controls.style.display = 'none';
+    }
 }
 
 function clearFieldFilters() {

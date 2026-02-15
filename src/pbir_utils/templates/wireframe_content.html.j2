@@ -108,15 +108,15 @@
     <div class="fields-pane-header">
         <div class="fields-pane-title">
             <span>Fields</span>
+            <div class="fields-selection-chip" id="fields-selection-controls" style="display: none;">
+                <span class="selection-text" id="selection-text">0 selected</span>
+                <button class="clear-selection-btn" onclick="clearFieldFilters()" title="Clear Selection">✕</button>
+            </div>
         </div>
         <input type="text" id="fields-search" class="fields-search" placeholder="Search tables, columns..." oninput="searchFields()">
     </div>
     <div class="fields-list" id="fields-list">
         <!-- Populated by JavaScript -->
-    </div>
-    <div class="fields-pane-footer">
-        <span class="selected-count" id="selected-count">0 selected</span>
-        <button class="clear-fields-btn" id="clear-fields-btn" onclick="clearFieldFilters()" disabled>Clear All</button>
     </div>
 </div>
 </div>

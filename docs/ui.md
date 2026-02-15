@@ -80,7 +80,9 @@ The **Fields Pane** (right side) lists your tables, columns, and measures.
 
 - **Search**: Find fields by name.
 - **Field Usage**: Hover over a field to see where it is used (visuals, bookmarks, filters).
-- **Filter by Field**: Check a field to highlight only the visuals using it.
+- **Fields Selection**: Click a field to select it (and deselect others). Hold `Ctrl` (or `Cmd`) to select multiple fields.
+- **Filter by Field**: Selected fields highlight the visuals that use them.
+- **Selection Controls**: A summary of selected fields appears at the top of the pane, allowing you to quickly clear the selection.
 
 ---
 
