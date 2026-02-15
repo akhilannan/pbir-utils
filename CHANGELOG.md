@@ -11,4 +11,5 @@
     - Added ability to drag-select multiple visuals on the report canvas.
     - Added `Ctrl+click` support for adding/removing visuals from selection.
     - Added bulk "Hide Visuals" option in context menu when multiple visuals are selected.
+    - Added ability to search and filter by page name or page ID in the report wireframe.
 

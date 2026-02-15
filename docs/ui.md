@@ -40,13 +40,17 @@ pbir-utils ui --no-browser
 
 ## Browsing & Viewing
 
-The UI shows a wireframe of your report layout.
+The UI provides a wireframe view of your report layout.
 
-- **Reports**: Navigate your file system to find `.Report` folders.
-- **Canvas**: The main view shows your report pages. Zoom controls are in the top-right.
+- **Navigation**: Use the sidebar to browse your file system and open `.Report` folders.
+- **Search**: Use the main search bar in the header to filter the view. You can search by:
+    - **Visuals**: Filter by unique ID or visual type (e.g., `slicer`).
+    - **Pages**: Filter by display name or page ID. Entering a page ID will narrow the tab bar to only that page.
+- **Canvas**: The center area shows your report visuals. Zoom in or out using the controls in the top-right.
 - **Tabs**: Switch pages at the top. Right-click a tab to **Copy Page Name**, **Copy Page ID**, or **Hide Page**.
 - **Dark Mode**: Toggle the 🌙 icon in the header.
 - **Panes**: You can resize the sidebar and the output panel by dragging their edges.
+- **Active States**: Zoom levels and theme preferences are saved to your local storage across sessions.
 
 ---
 

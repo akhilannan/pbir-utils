@@ -551,10 +551,12 @@ function setVisualVisibility(visual, isVisible) {
 function isMatch(visual, filter) {
     if (!filter) return true;
     const ds = visual.dataset;
-    const pageName = visual.parentElement.dataset.pageName || "";
+    const pageName = (visual.parentElement.dataset.pageName || "").toLowerCase();
+    const pageId = visual.parentElement.id.toLowerCase();
     return ds.id.toLowerCase().includes(filter) ||
         ds.type.toLowerCase().includes(filter) ||
-        pageName.includes(filter);
+        pageName.includes(filter) ||
+        pageId.includes(filter);
 }
 
 function checkVisualFilterState(visual) {
@@ -597,6 +599,7 @@ function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFi
     getCachedTabs().forEach(tab => {
         const pageName = tab.dataset.pageName.toLowerCase();
         const pageId = tab.id.replace("tab-", "");
+        const pageIdLower = pageId.toLowerCase();
 
         // Check if page is explicitly hidden by user
         const isManuallyHidden = hiddenPagesStack.indexOf(pageId) !== -1;
@@ -606,9 +609,11 @@ function updateTabVisibility(pagesWithMatchingVisuals, noFiltersActive, searchFi
             return;
         }
 
-        // Only check page name match if there's actual search text
+        // Only check page name/id match if there's actual search text
         const matchesName = searchFilter && pageName.includes(searchFilter);
-        if (noFiltersActive || matchesName || pagesWithMatchingVisuals.has(pageId)) {
+        const matchesId = searchFilter && pageIdLower.includes(searchFilter);
+
+        if (noFiltersActive || matchesName || matchesId || pagesWithMatchingVisuals.has(pageId)) {
             tab.style.display = "";
         } else {
             tab.style.display = "none";
