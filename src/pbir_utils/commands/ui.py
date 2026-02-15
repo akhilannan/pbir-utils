@@ -45,8 +45,8 @@ def _resolve_initial_report(path_arg: str | None) -> str | None:
     Unlike resolve_report_path, this does not exit on error.
     """
     if path_arg:
-        # User provided explicit path
-        return path_arg
+        # User provided explicit path - return absolute path for frontend matching
+        return str(Path(path_arg).resolve())
 
     # Check if CWD is a .Report folder
     cwd = Path.cwd()

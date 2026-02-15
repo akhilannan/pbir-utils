@@ -87,8 +87,15 @@ async def browse_directory(path: str = None):
             )
         logger.info("Browsing directory: %s", resolved)
     else:
-        # Default to user's home directory
-        resolved = Path.home()
+        # Default to CWD, fallback to Home if restricted
+        try:
+            cwd = Path.cwd()
+            if _is_path_excluded(cwd):
+                resolved = Path.home()
+            else:
+                resolved = cwd
+        except (PermissionError, OSError):
+            resolved = Path.home()
 
     items: list[FileItem] = []
     try:

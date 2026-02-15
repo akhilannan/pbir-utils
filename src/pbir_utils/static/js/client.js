@@ -27,11 +27,13 @@ const dirtyBanner = document.getElementById('dirty-banner');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadActions();
-    browseDirectory(null);
 
     // Auto-load report if initial path was provided via CLI
     if (typeof initialReportPath !== 'undefined' && initialReportPath) {
         loadReport(initialReportPath);
+    } else {
+        // Only browse default directory if NO report is being loaded
+        browseDirectory(null);
     }
 });
 
@@ -975,13 +977,28 @@ function handleSectionKey(event, sectionId) {
 
 function restoreSidebarSectionState() {
     ['section-reports', 'section-actions', 'section-validate', 'section-export'].forEach(id => {
-        const isCollapsed = localStorage.getItem(`section-${id}-collapsed`) === 'true';
-        if (isCollapsed) {
-            const section = document.getElementById(id);
-            if (section) {
+        const key = `section-${id}-collapsed`;
+        let isCollapsed;
+
+        if (localStorage.getItem(key) === null) {
+            // Default state if no preference saved:
+            // Reports: Expanded (false)
+            // Others: Collapsed (true)
+            isCollapsed = (id !== 'section-reports');
+        } else {
+            isCollapsed = localStorage.getItem(key) === 'true';
+        }
+
+        const section = document.getElementById(id);
+        if (section) {
+            if (isCollapsed) {
                 section.classList.add('collapsed');
                 const header = section.querySelector('.sidebar-section-header');
                 if (header) header.setAttribute('aria-expanded', 'false');
+            } else {
+                section.classList.remove('collapsed');
+                const header = section.querySelector('.sidebar-section-header');
+                if (header) header.setAttribute('aria-expanded', 'true');
             }
         }
     });
@@ -1021,9 +1038,12 @@ function loadPanelState() {
                     outputBtn.setAttribute('aria-expanded', 'false');
                     outputBtn.setAttribute('aria-label', 'Expand Output Panel');
                 }
-            } else if (outputBtn) {
-                outputBtn.setAttribute('aria-expanded', 'true');
-                outputBtn.setAttribute('aria-label', 'Collapse Output Panel');
+            } else {
+                panel.classList.remove('collapsed');
+                if (outputBtn) {
+                    outputBtn.setAttribute('aria-expanded', 'true');
+                    outputBtn.setAttribute('aria-label', 'Collapse Output Panel');
+                }
             }
 
             if (state.sidebarWidth) sidebar.style.width = state.sidebarWidth;

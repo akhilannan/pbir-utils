@@ -745,8 +745,8 @@
             </div>
 
             <!-- Actions -->
-            <div class="sidebar-section actions-panel" id="section-actions">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')" onkeydown="handleSectionKey(event, 'section-actions')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-actions-content">
+            <div class="sidebar-section actions-panel collapsed" id="section-actions">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')" onkeydown="handleSectionKey(event, 'section-actions')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-actions-content">
                     <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">⚡ ACTIONS</span>
                     <span class="config-indicator" id="config-indicator"></span>
@@ -767,8 +767,8 @@
             </div>
 
             <!-- Validate -->
-            <div class="sidebar-section validation-panel" id="section-validate">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')" onkeydown="handleSectionKey(event, 'section-validate')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-validate-content">
+            <div class="sidebar-section validation-panel collapsed" id="section-validate">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')" onkeydown="handleSectionKey(event, 'section-validate')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-validate-content">
                     <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">🔍 VALIDATE</span>
                     <span class="config-indicator" id="rules-config-indicator"></span>
@@ -794,8 +794,8 @@
             </div>
 
             <!-- Export -->
-            <div class="sidebar-section" id="section-export">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')" onkeydown="handleSectionKey(event, 'section-export')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-export-content">
+            <div class="sidebar-section collapsed" id="section-export">
+                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')" onkeydown="handleSectionKey(event, 'section-export')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-export-content">
                     <span class="chevron" aria-hidden="true">▶</span>
                     <span class="section-title">📥 EXPORT</span>
                 </div>
@@ -838,8 +838,8 @@
             </div>
 
             <!-- Output Console -->
-            <div class="output-panel" id="output-panel">
-                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel" aria-label="Toggle Output Panel" aria-expanded="true" aria-controls="output-panel">
+            <div class="output-panel collapsed" id="output-panel">
+                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel" aria-label="Expand Output Panel" aria-expanded="false" aria-controls="output-panel">
                     <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
