@@ -57,6 +57,46 @@
             border: 1px solid var(--glass-border);
         }
 
+        /* Context Menu */
+        .pbir-context-menu {
+            position: fixed;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            padding: 4px;
+            z-index: 3000;
+            min-width: 160px;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.1s ease-out;
+        }
+
+        .pbir-context-menu-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.1s;
+        }
+
+        .pbir-context-menu-item:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .pbir-context-menu-separator {
+            height: 1px;
+            background: var(--border-color);
+            margin: 4px 0;
+        }
+
         /* Scoped Wireframe Styles */
         .pbir-wireframe {
             display: flex;
@@ -495,15 +535,34 @@
             z-index: 50;
         }
 
+        .pbir-wireframe .visual-box.selected {
+            transform: translateY(-2px);
+            background-color: rgba(59, 130, 246, 0.25);
+            box-shadow: 0 0 0 2px var(--accent-color), var(--shadow-md);
+            z-index: 60;
+        }
+
         [data-theme="dark"] .pbir-wireframe .visual-box:hover {
             background-color: rgba(96, 165, 250, 0.25);
         }
 
+        [data-theme="dark"] .pbir-wireframe .visual-box.selected {
+            background-color: rgba(96, 165, 250, 0.35);
+            box-shadow: 0 0 0 2px var(--accent-color), var(--shadow-md);
+        }
+
+        .pbir-wireframe .visual-box.hidden.selected {
+            border: 2px dashed var(--accent-color) !important;
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            /* Slightly distinct bg */
+            z-index: 100;
+        }
+
         .pbir-wireframe .visual-box.hidden {
-            border-style: dashed;
-            border-width: 2px;
-            border-color: var(--hidden-visual-border);
+            border: 2px dashed var(--hidden-visual-border);
             background-color: var(--hidden-visual-bg);
+            /* Ensure hidden visuals are still interactive */
+            pointer-events: auto !important;
             color: var(--text-secondary);
             box-shadow: none;
         }

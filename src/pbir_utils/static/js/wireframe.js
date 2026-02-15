@@ -38,6 +38,117 @@ let tooltip = document.getElementById('tooltip');
 let pageTooltip = document.getElementById('page-tooltip');
 let fieldTooltip = document.getElementById('field-tooltip');
 let tableTooltip = document.getElementById('table-tooltip');
+let contextMenu = null;
+
+/* Context Menu Functions */
+function showContextMenu(e, items) {
+    e.preventDefault();
+    e.stopPropagation(); // prevent bubbling
+
+    if (!items || items.length === 0) return;
+
+    if (!contextMenu) {
+        contextMenu = document.getElementById('context-menu');
+    }
+
+    // Build menu HTML
+    let html = '';
+    items.forEach(item => {
+        if (item === 'separator') {
+            html += '<div class="pbir-context-menu-separator"></div>';
+        } else {
+            html += `<div class="pbir-context-menu-item" onclick="${item.action}">
+                ${item.icon ? `<span>${item.icon}</span>` : ''}
+                <span>${item.label}</span>
+            </div>`;
+        }
+    });
+
+    contextMenu.innerHTML = html;
+    contextMenu.style.display = 'flex';
+
+    // Position menu
+    const menuWidth = 160; // Approximate min-width
+    const menuHeight = items.length * 36; // Approximate height
+
+    let x = e.clientX;
+    let y = e.clientY;
+
+    // Boundary checks
+    if (x + menuWidth > window.innerWidth) x -= menuWidth;
+    if (y + menuHeight > window.innerHeight) y -= menuHeight;
+
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+
+    // Close on outside click is handled by document listener
+}
+
+function hideContextMenu() {
+    if (contextMenu) contextMenu.style.display = 'none';
+}
+
+function showPageContextMenu(e, pageId, tabElement) {
+    const pageName = tabElement.dataset.pageName;
+    const items = [
+        { label: 'Copy Page Name', icon: '📝', action: `copyText('${escapeHtml(pageName).replace(/'/g, "\\'")}')` },
+        { label: 'Copy Page ID', icon: '📋', action: `copyText('${pageId}')` },
+        'separator',
+        { label: 'Hide Page', icon: '👁️', action: `hidePage(event, '${pageId}')` }
+    ];
+    showContextMenu(e, items);
+}
+
+// Global click listener to close context menu and deselect visuals
+document.addEventListener('click', e => {
+    hideContextMenu();
+
+    // Also deselect visuals if clicking on background
+    if (!e.target.closest('.visual-box') && !e.target.closest('.pbir-context-menu')) {
+        deselectAllVisuals();
+    }
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        hideContextMenu();
+        deselectAllVisuals();
+    }
+});
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+    }, err => {
+        console.error('Async: Could not copy text: ', err);
+    });
+    hideContextMenu();
+}
+
+function deselectAllVisuals() {
+    document.querySelectorAll('.visual-box.selected').forEach(el => {
+        el.classList.remove('selected');
+    });
+}
+
+function toggleVisualSelection(visualElement, e) {
+    // If Ctrl/Cmd key is pressed, toggle selection (multi-select not fully implemented but good practice)
+    // For now, single select pattern:
+
+    // If already selected, deselect
+    if (visualElement.classList.contains('selected')) {
+        visualElement.classList.remove('selected');
+        return;
+    }
+
+    // Deselect others
+    if (!e.ctrlKey && !e.metaKey) {
+        deselectAllVisuals();
+    }
+
+    // Select this one
+    visualElement.classList.add('selected');
+}
 
 function openPage(pageId, skipTracking) {
     // Get current page before switching (for undo tracking)
@@ -198,17 +309,13 @@ function hidePage(event, pageId) {
 
 function resetHiddenPages() {
     hiddenPagesStack = [];
+    // Explicitly unhide all tabs (filterVisuals will re-hide if needed by search/filter)
+    document.querySelectorAll('.tab-button').forEach(tab => {
+        tab.style.display = '';
+    });
     // Re-apply filters
     filterVisuals();
     updateButtons();
-}
-
-function copyVisualId(visualId) {
-    navigator.clipboard.writeText(visualId).then(() => {
-        showToast('ID Copied!');
-    }, err => {
-        console.error('Async: Could not copy text: ', err);
-    });
 }
 
 function showToast(message) {
@@ -571,13 +678,19 @@ function showTooltip(e, visualElement) {
     if (parent && parent !== 'None' && parent !== '') {
         content += `<br><span style='color:var(--text-secondary)'>Parent:</span> ${parent}`;
     }
-    content += `<br><span style='font-size:10px; color:#aaa'>Left click to copy ID · Right click to hide</span>`;
+    content += `<br><span style='font-size:10px; color:#aaa'>Click to select · Right-click for options</span>`;
     tooltip.innerHTML = content;
     tooltip.style.display = 'block';
     moveTooltip(e);
 }
 
 function moveTooltip(e) {
+    // If context menu is open, hide tooltip
+    if (contextMenu && contextMenu.style.display === 'flex') {
+        tooltip.style.display = 'none';
+        return;
+    }
+
     const xOffset = 15;
     const yOffset = 15;
     tooltip.style.left = `${e.clientX + xOffset}px`;
@@ -624,7 +737,7 @@ function showPageTooltip(e, tabElement) {
         content += '</div>';
     }
 
-    content += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border-color); font-size:10px; color:#aaa">Right click to hide</div>';
+    content += '<div style="margin-top:8px; padding-top:6px; border-top:1px solid var(--border-color); font-size:10px; color:#aaa">Right click for options</div>';
 
     pageTooltip.innerHTML = content;
     pageTooltip.style.display = 'block';
@@ -718,6 +831,7 @@ function initFieldsPane() {
         btn.classList.add('pane-collapsed');
     }
 }
+
 
 function handleTableKey(event, tableName) {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -1121,11 +1235,12 @@ function setupVisualEventDelegation() {
     const contentArea = document.querySelector('.content-area');
     if (!contentArea) return;
 
-    // Delegated click handler
+    // Delegated click handler -> Select/Highlight
     contentArea.addEventListener('click', e => {
         const visual = e.target.closest('.visual-box');
         if (visual && visual.dataset.manuallyHidden !== 'true') {
-            copyVisualId(visual.dataset.id);
+            toggleVisualSelection(visual, e);
+            e.stopPropagation(); // Prevent document click from immediately deselecting
         }
     });
 
@@ -1133,7 +1248,19 @@ function setupVisualEventDelegation() {
     contentArea.addEventListener('contextmenu', e => {
         const visual = e.target.closest('.visual-box');
         if (visual) {
-            hideVisual(e, visual.dataset.id);
+            e.preventDefault();
+            // Select it first if not selected
+            if (!visual.classList.contains('selected')) {
+                deselectAllVisuals();
+                visual.classList.add('selected');
+            }
+
+            const visualId = visual.dataset.id;
+            const items = [
+                { label: 'Copy ID', icon: '📋', action: `copyText('${visualId}')` },
+                { label: 'Hide Visual', icon: '👁', action: `hideVisual(event, '${visualId}')` }
+            ];
+            showContextMenu(e, items);
         }
     });
 
@@ -1141,7 +1268,12 @@ function setupVisualEventDelegation() {
     contentArea.addEventListener('mousemove', e => {
         const visual = e.target.closest('.visual-box');
         if (visual) {
-            showTooltip(e, visual);
+            // Don't show tooltip if context menu is open
+            if (contextMenu && contextMenu.style.display === 'flex') {
+                hideTooltip();
+            } else {
+                showTooltip(e, visual);
+            }
         }
     });
 

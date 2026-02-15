@@ -538,9 +538,10 @@ The generated wireframe opens automatically in your default browser and includes
 
 **Visual Interaction:**
 
-- **Left-click**: Copy visual ID to clipboard
-- **Right-click visual**: Temporarily hide visual (click `+X visuals` pill to restore)
-- **Right-click tab**: Temporarily hide page (click `+X pages` pill to restore)
+- **Left-click**: Select visual (displays ID and details). **Hidden visuals** show a dashed blue border when selected.
+- **Right-click visual**: Open context menu to Copy ID, Hide Visual, or Show Details.
+- **Right-click tab**: Open context menu to Hide Page.
+- **Unhide Pages**: Click the `+X pages` pill next to the tabs to restore hidden pages.
 - **Fields Pane**: Expandable sidebar to browse and filter visuals by tables, columns, and measures. Tracks field usage across **Visuals**, **Bookmarks**, and **Filters**.
 - **Universal Reset**: Clear all filters (Search, Fields, Visibility) with 🔄 button
 - **Undo**: Revert last action (Filter, Selection, Hide) with ↩ button

@@ -42,7 +42,7 @@
     {%- endfor %}
     <button class="tab-button {% if page.id == active_page_id %}active{% endif %} {% if page.is_hidden %}hidden-page{% endif %}" 
             onclick="openPage('{{ page.id }}')"
-            oncontextmenu="hidePage(event, '{{ page.id }}')"
+            oncontextmenu="showPageContextMenu(event, '{{ page.id }}', this)"
             id="tab-{{ page.id }}"
             data-page-name="{{ page.display_name }}"
             data-visual-count="{{ page.visuals | length }}"
@@ -140,3 +140,4 @@
 <div id="page-tooltip" class="base-tooltip page-tooltip"></div>
 <div id="field-tooltip" class="base-tooltip field-tooltip"></div>
 <div id="table-tooltip" class="base-tooltip table-tooltip"></div>
+<div id="context-menu" class="pbir-context-menu"></div>
