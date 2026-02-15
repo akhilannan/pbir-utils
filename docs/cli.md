@@ -12,56 +12,14 @@ The `pbir-utils` command-line interface provides access to all utilities after i
 
 ## UI (Web Interface)
 
-Launch a local web-based UI client for browsing reports, visualizing wireframes, and executing actions interactively.
+The `pbir-utils` web interface provides a rich, interactive way to browse reports, visualize wireframes, and execute actions.
 
-!!! note "Optional Dependencies"
-    UI requires additional dependencies. Install with:
-    
-    * **pip**: `pip install "pbir-utils[ui]"`
-    * **uv**: `uv add "pbir-utils[ui]"`
+For detailed documentation on the UI features, please see the [UI Guide](ui.md).
 
 ```bash
 # Launch UI (opens browser automatically)
-# Alias: pbir-utils serve
 pbir-utils ui
-
-# Auto-open a specific report
-pbir-utils ui "C:\Reports\MyReport.Report"
-
-# From inside a .Report folder (auto-detected)
-cd "C:\Reports\MyReport.Report"
-pbir-utils ui
-
-# Custom port
-pbir-utils ui --port 9000
-
-# Don't auto-open browser
-pbir-utils ui --no-browser
-
-# Custom host (for remote access)
-pbir-utils ui --host 0.0.0.0 --port 8080
 ```
-
-### UI Features
-
-| Feature | Description |
-|---------|-------------|
-| **Report Browser** | Navigate filesystem to select `.Report` folders |
-| **Wireframe Viewer** | Full wireframe visualization with zoom, filters, fields pane |
-| **Action Execution** | Run sanitize actions with real-time progress streaming |
-| **Validation Panel** | Run expression rules + sanitize action checks with popup summary |
-| **CSV Export** | Download attribute and visual metadata as CSV (respects filters) |
-| **HTML Export** | Download wireframe as standalone HTML file (respects filters) |
-| **Auto-Reload** | Wireframe refreshes automatically after successful actions |
-
-### CLI Options
-
-| Option | Description |
-|--------|-------------|
-| `report_path` | Path to auto-open on launch (optional; auto-detects `.Report` from CWD) |
-| `--port` | Port to bind to (default: 8765) |
-| `--host` | Host to bind to (default: 127.0.0.1) |
-| `--no-browser` | Don't automatically open the browser |
 
 ---
 ## Sanitize Report
@@ -523,66 +481,14 @@ exclude:
 
 ## Visualize Wireframes
 
-Generate a static HTML wireframe of the report layout. This tool creates a lightweight, portable HTML file that visualizes the position and size of visuals across pages.
+Generate a static HTML wireframe of the report layout. This creates a lightweight, portable HTML file that visualizes the position and size of visuals across pages.
 
-The generated wireframe opens automatically in your default browser and includes rich interactive features:
-
-**Navigation & View Controls:**
-
-- **Fields Pane**: Sidebar to explore data model and filter visuals by data usage (Tables, Columns, Measures). Includes field usage from **Visuals**, **Bookmarks**, and **Filters** (Page-level and Report-level).
-- **Page Tabs**: Switch between pages with visual count badges
-- **Dark Mode**: Toggle with 🌙 button (preference saved automatically)
-- **Zoom Controls**: Scale 25%-200% for large reports
-- **Pro Layout**: Modern glassmorphic UI with Inter typography
-- **Accurate Layering**: Visuals respect their Z-order from Power BI for correct overlapping
-
-**Visual Interaction:**
-
-- **Left-click**: Select visual (displays ID and details). **Hidden visuals** show a dashed blue border when selected.
-- **Right-click visual**: Open context menu to Copy ID, Hide Visual, or Show Details.
-- **Right-click tab**: Open context menu to Hide Page.
-- **Unhide Pages**: Click the `+X pages` pill next to the tabs to restore hidden pages.
-- **Fields Pane**: Expandable sidebar to browse and filter visuals by tables, columns, and measures. Tracks field usage across **Visuals**, **Bookmarks**, and **Filters**.
-- **Universal Reset**: Clear all filters (Search, Fields, Visibility) with 🔄 button
-- **Undo**: Revert last action (Filter, Selection, Hide) with ↩ button
-- **Search**: Filter visuals by ID, Type, or Page Name (and Fields via the pane)
-
-**Information Tooltips:**
-
-- **Page Tooltip** (hover over tabs): Page size, visual count, and type breakdown
-- **Visual Tooltip** (hover over visuals): Size (W×H), Position (X,Y), Parent group
-- **Table Tooltip** (hover over table headers in Fields Pane): Column/measure counts, visual usage, page breakdown
-
-!!! note "Active Page"
-    The wireframe opens on the report's active page instead of the first page. Page changes are tracked for undo/reset.
+For full documentation on the visualization features, see the [UI Guide](ui.md#static-wireframes).
 
 ```bash
 # Generate wireframe for all pages
 pbir-utils visualize "C:\Reports\MyReport.Report"
-
-# Filter by specific pages
-pbir-utils visualize "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
-
-# Filter by visual type
-pbir-utils visualize "C:\Reports\MyReport.Report" --visual-types slicer card
-
-# Exclude hidden visuals from generation
-pbir-utils visualize "C:\Reports\MyReport.Report" --no-show-hidden
 ```
-
-### CLI Options
-
-| Option | Description |
-|--------|-------------|
-| `--pages` | List of page names to include (uses AND logic with other filters) |
-| `--visual-types` | List of visual types to include (e.g., `slicer`, `card`, `table`) |
-| `--visual-ids` | List of specific visual IDs to include |
-| `--no-show-hidden` | Exclude hidden visuals from the generated HTML (default: include them) |
-
-!!! note "Filter Logic"
-    The `--pages`, `--visual-types`, and `--visual-ids` options use AND logic—only visuals matching ALL specified criteria are shown.
-
----
 ## Extract Metadata
 
 Extract metadata from PBIR reports to CSV. Supports two modes: **attribute metadata** (default) and **visual metadata** (`--visuals-only`).

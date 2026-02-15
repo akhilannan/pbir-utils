@@ -13,6 +13,7 @@
 
 **[View Full Documentation →](https://akhilannan.github.io/pbir-utils/)**
 
+- [UI Guide](https://akhilannan.github.io/pbir-utils/ui/) - Web interface documentation
 - [CLI Reference](https://akhilannan.github.io/pbir-utils/cli/) - Command-line usage and examples
 - [Python API](https://akhilannan.github.io/pbir-utils/api/) - Library documentation and code examples
 - [CI/CD Integration](https://akhilannan.github.io/pbir-utils/ci_cd/) - Pipeline integration and validation

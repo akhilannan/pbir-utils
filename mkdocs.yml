@@ -65,6 +65,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - UI Guide: ui.md
   - CLI Reference: cli.md
   - Python API: api.md
   - CI/CD Integration: ci_cd.md

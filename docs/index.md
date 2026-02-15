@@ -89,6 +89,7 @@ pbir.sanitize_powerbi_report(r"C:\Reports\MyReport.Report", dry_run=True)
 
 ## 📚 Next Steps
 
+- [UI Guide](ui.md) - Web interface documentation
 - [CLI Reference](cli.md) - Detailed command-line usage
 - [Python API](api.md) - Python library documentation
 - [CI/CD Integration](ci_cd.md) - Pipeline integration and validation

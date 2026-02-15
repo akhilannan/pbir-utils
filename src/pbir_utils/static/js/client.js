@@ -194,6 +194,7 @@ function renderWireframe(data) {
     // Initialize wireframe.js functions
     initFieldsPane();
     setupVisualEventDelegation();
+    initDragSelection();
 
     // Set theme from localStorage
     const savedTheme = localStorage.getItem('wireframeTheme');

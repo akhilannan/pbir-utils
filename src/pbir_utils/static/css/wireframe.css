@@ -954,3 +954,12 @@
             border-top: 1px solid var(--border-color);
             font-weight: 500;
         }
+
+        /* Drag Selection Box */
+        .drag-selection-box {
+            position: fixed;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--accent-color);
+            pointer-events: none;
+            z-index: 9999;
+        }

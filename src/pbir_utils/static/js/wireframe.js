@@ -104,7 +104,7 @@ document.addEventListener('click', e => {
     hideContextMenu();
 
     // Also deselect visuals if clicking on background
-    if (!e.target.closest('.visual-box') && !e.target.closest('.pbir-context-menu')) {
+    if (!e.target.closest('.visual-box') && !e.target.closest('.pbir-context-menu') && !isDragging) {
         deselectAllVisuals();
     }
 });
@@ -377,13 +377,32 @@ function trackAction(actionType, data) {
 function undoLastAction() {
     if (actionStack.length === 0) {
         // Fallback to old behavior for hidden visuals
-        undoHideVisual();
+        if (hiddenStack.length > 0) {
+            undoHideVisual();
+        }
         return;
     }
 
     const lastAction = actionStack.pop();
 
     switch (lastAction.type) {
+        case 'batchHideVisuals':
+            const visualIds = lastAction.data.visualIds;
+            visualIds.forEach(vid => {
+                const el = document.getElementById(`visual-${vid}`);
+                if (el) {
+                    checkVisualFilterState(el);
+                    el.style.pointerEvents = "auto";
+                    el.dataset.manuallyHidden = "false";
+                }
+                // Remove from hiddenStack
+                const idx = hiddenStack.indexOf(vid);
+                if (idx > -1) {
+                    hiddenStack.splice(idx, 1);
+                }
+            });
+            updateButtons();
+            break;
         case 'hideVisual':
             // Use the specific visualId from the action, not blindly pop from hiddenStack
             const visualId = lastAction.data.visualId;
@@ -1255,11 +1274,24 @@ function setupVisualEventDelegation() {
                 visual.classList.add('selected');
             }
 
-            const visualId = visual.dataset.id;
-            const items = [
-                { label: 'Copy ID', icon: '📋', action: `copyText('${visualId}')` },
-                { label: 'Hide Visual', icon: '👁', action: `hideVisual(event, '${visualId}')` }
-            ];
+            // Check if multiple items are selected
+            const selectedVisuals = document.querySelectorAll('.visual-box.selected');
+            const count = selectedVisuals.length;
+
+            let items = [];
+            if (count > 1) {
+                // Multi-select menu
+                items = [
+                    { label: `Hide ${count} Visuals`, icon: '👁', action: `hideSelectedVisuals()` }
+                ];
+            } else {
+                // Single visual menu
+                const visualId = visual.dataset.id;
+                items = [
+                    { label: 'Copy ID', icon: '📋', action: `copyText('${visualId}')` },
+                    { label: 'Hide Visual', icon: '👁', action: `hideVisual(event, '${visualId}')` }
+                ];
+            }
             showContextMenu(e, items);
         }
     });
@@ -1385,9 +1417,172 @@ function hasActiveFilters() {
         hiddenPagesStack.length > 0;
 }
 
+/* Drag Selection Logic */
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragSelectionBox = null;
+let dragInitialSelection = new Set(); // Store IDs of visuals selected before drag starts
+
+function initDragSelection() {
+    const contentArea = document.querySelector('.content-area');
+    if (!contentArea) return;
+
+    contentArea.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+}
+
+function handleDragStart(e) {
+    // Only start drag if clicking on empty space (content-area or page-container)
+    // and NOT on a visual, tab, or context menu
+    if (e.target.closest('.visual-box') ||
+        e.target.closest('.tab-button') ||
+        e.target.closest('.pbir-context-menu') ||
+        e.target.closest('.field-item') ||
+        e.target.closest('.sidebar')) {
+        return;
+    }
+
+    // Right click should not start drag
+    if (e.button !== 0) return;
+
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    // Capture initial selection state if Ctrl is pressed
+    dragInitialSelection.clear();
+    if (e.ctrlKey || e.metaKey) {
+        document.querySelectorAll('.visual-box.selected').forEach(el => {
+            dragInitialSelection.add(el.dataset.id);
+        });
+    } else {
+        // If not additive, clear selection immediately (standard behavior)
+        deselectAllVisuals();
+    }
+
+    // Create selection box
+    dragSelectionBox = document.createElement('div');
+    dragSelectionBox.className = 'drag-selection-box';
+    dragSelectionBox.style.left = `${dragStartX}px`;
+    dragSelectionBox.style.top = `${dragStartY}px`;
+    dragSelectionBox.style.width = '0px';
+    dragSelectionBox.style.height = '0px';
+    document.body.appendChild(dragSelectionBox);
+
+    // Hide context menu
+    hideContextMenu();
+}
+
+function handleDragMove(e) {
+    if (!isDragging || !dragSelectionBox) return;
+
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+
+    const width = Math.abs(currentX - dragStartX);
+    const height = Math.abs(currentY - dragStartY);
+    const left = Math.min(currentX, dragStartX);
+    const top = Math.min(currentY, dragStartY);
+
+    dragSelectionBox.style.width = `${width}px`;
+    dragSelectionBox.style.height = `${height}px`;
+    dragSelectionBox.style.left = `${left}px`;
+    dragSelectionBox.style.top = `${top}px`;
+
+    // Real-time selection update
+    const selectionRect = dragSelectionBox.getBoundingClientRect();
+    if (selectionRect.width > 2 && selectionRect.height > 2) {
+        updateSelectionFromRect(selectionRect, e.ctrlKey || e.metaKey);
+    }
+}
+
+function handleDragEnd(e) {
+    if (!isDragging) return;
+
+    // Calculate intersection
+    if (dragSelectionBox) {
+        dragSelectionBox.remove();
+        dragSelectionBox = null;
+    }
+
+    // Delay setting isDragging to false so the click event can see it was a drag
+    setTimeout(() => {
+        isDragging = false;
+    }, 0);
+}
+
+function updateSelectionFromRect(rect, isAdditive) {
+    // Get all visuals on the active page
+    const activePage = document.querySelector('.page-container.active');
+    if (!activePage) return;
+
+    const visuals = activePage.querySelectorAll('.visual-box');
+
+    visuals.forEach(visual => {
+        // Skip hidden visuals
+        if (visual.style.opacity === "0" || visual.style.display === "none") return;
+
+        const visualRect = visual.getBoundingClientRect();
+
+        // Check intersection
+        const intersects = !(rect.right < visualRect.left ||
+            rect.left > visualRect.right ||
+            rect.bottom < visualRect.top ||
+            rect.top > visualRect.bottom);
+
+        if (intersects) {
+            // If intersects, select it (works for both normal and additive)
+            visual.classList.add('selected');
+        } else {
+            // If NOT intersecting
+            if (isAdditive) {
+                // If additive (Ctrl), revert to initial state (was it selected before drag?)
+                if (dragInitialSelection.has(visual.dataset.id)) {
+                    visual.classList.add('selected');
+                } else {
+                    visual.classList.remove('selected');
+                }
+            } else {
+                // If not additive, standard behavior is to deselect
+                visual.classList.remove('selected');
+            }
+        }
+    });
+}
+
+function hideSelectedVisuals() {
+    const selectedVisuals = document.querySelectorAll('.visual-box.selected');
+    const visualIds = [];
+
+    selectedVisuals.forEach(visual => {
+        const vid = visual.dataset.id;
+        visualIds.push(vid);
+
+        // Visual hide logic (duplicated from hideVisual but without tracking individual actions)
+        visual.style.opacity = "0";
+        visual.style.pointerEvents = "none";
+        visual.dataset.manuallyHidden = "true";
+        hiddenStack.push(vid);
+    });
+
+    if (visualIds.length > 0) {
+        trackAction('batchHideVisuals', { visualIds });
+        updateButtons();
+        showToast(`Hidden ${visualIds.length} visuals`);
+    }
+
+    deselectAllVisuals();
+    hideContextMenu();
+}
+
+
+
 // Initialize based on mode
 if (!API_MODE) {
     // Static mode: data is embedded by Jinja, initialize immediately
     initFieldsPane();
     setupVisualEventDelegation();
+    initDragSelection();
 }
