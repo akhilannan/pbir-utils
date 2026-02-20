@@ -565,7 +565,7 @@
             border: 2px dashed var(--hidden-visual-border);
             background-color: var(--hidden-visual-bg);
             /* Ensure hidden visuals are still interactive */
-            pointer-events: auto !important;
+            pointer-events: auto;
             color: var(--text-secondary);
             box-shadow: none;
         }
@@ -576,6 +576,11 @@
 
         .pbir-wireframe .visual-box.hidden .visual-label {
             font-style: italic;
+        }
+
+        /* Ensure manually hidden visuals NEVER capture pointer events */
+        .pbir-wireframe .visual-box[data-manually-hidden="true"] {
+            pointer-events: none !important;
         }
 
         .pbir-wireframe .visual-label {
