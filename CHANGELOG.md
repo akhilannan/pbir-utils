@@ -1,5 +1,4 @@
-### Features
-- **ui**: 
-    - Updated **Fields Pane** selection behavior: defaults to single-select, supports `Ctrl+click` for multi-select.
-    - Moved **Fields Pane** selection controls to the header with a modern chip design for better visibility.
-
+## Fixed
+- **ui**:
+  - **Layout**: Fixed an issue where the report page would incorrectly shrink or overlap when expanding sidebars.
+  - **Refresh Behavior**: Ensured the latest app updates are immediately visible when refreshing the page, without needing to clear your browser cache.

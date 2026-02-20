@@ -491,6 +491,7 @@
             background-size: 20px 20px;
             z-index: 1;
             position: relative;
+            min-width: 0;
         }
 
         /* Page Container */
@@ -502,6 +503,8 @@
             transform-origin: top center;
             transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
             border-radius: 4px;
+            margin: auto;
+            flex-shrink: 0;
         }
 
         .pbir-wireframe .page-container.active {
@@ -603,6 +606,7 @@
             z-index: 90;
             overflow: hidden;
             position: relative;
+            flex-shrink: 0;
         }
 
         .pbir-wireframe .fields-pane.resizing {
