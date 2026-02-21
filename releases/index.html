@@ -1,0 +1,2429 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://akhilannan.github.io/pbir-utils/releases/">
+      
+      
+        <link rel="prev" href="../ci_cd/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Release Notes - PBIR Utils</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#release-notes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PBIR Utils" class="md-header__button md-logo" aria-label="PBIR Utils" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PBIR Utils
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Release Notes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/akhilannan/pbir-utils" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    akhilannan/pbir-utils
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../ui/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  UI Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Python API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../ci_cd/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CI/CD Integration
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PBIR Utils" class="md-nav__button md-logo" aria-label="PBIR Utils" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    PBIR Utils
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/akhilannan/pbir-utils" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    akhilannan/pbir-utils
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci_cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#213-february-21-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 - February 21, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#212-february-20-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 - February 20, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#211-february-15-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.1 - February 15, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1.1 - February 15, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#210-february-15-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.0 - February 15, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1.0 - February 15, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#206-february-14-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.6 - February 14, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.6 - February 14, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#205-february-14-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.5 - February 14, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.5 - February 14, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#204-january-20-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.4 - January 20, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.4 - January 20, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#203-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.3 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.3 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.2 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.2 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.1 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.1 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#190-january-03-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.9.0 - January 03, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.9.0 - January 03, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#180-january-01-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.8.0 - January 01, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.8.0 - January 01, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#171-december-31-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7.1 - December 31, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.7.1 - December 31, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#170-december-24-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7.0 - December 24, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.7.0 - December 24, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#167-december-21-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.7 - December 21, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.7 - December 21, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#166-december-20-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.6 - December 20, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.6 - December 20, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#165-december-20-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.5 - December 20, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.5 - December 20, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#161-december-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.1 - December 13, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.1 - December 13, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#updated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updated
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#160-december-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.0 - December 13, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.0 - December 13, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#157-december-09-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5.7 - December 09, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.5.7 - December 09, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#213-february-21-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 - February 21, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#212-february-20-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 - February 20, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#211-february-15-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.1 - February 15, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1.1 - February 15, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#210-february-15-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.0 - February 15, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1.0 - February 15, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#206-february-14-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.6 - February 14, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.6 - February 14, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#205-february-14-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.5 - February 14, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.5 - February 14, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#204-january-20-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.4 - January 20, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.4 - January 20, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#203-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.3 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.3 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.2 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.2 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201-january-17-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.0.1 - January 17, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.0.1 - January 17, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#190-january-03-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.9.0 - January 03, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.9.0 - January 03, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#180-january-01-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.8.0 - January 01, 2026
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.8.0 - January 01, 2026">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#171-december-31-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7.1 - December 31, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.7.1 - December 31, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#170-december-24-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7.0 - December 24, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.7.0 - December 24, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#167-december-21-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.7 - December 21, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.7 - December 21, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#166-december-20-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.6 - December 20, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.6 - December 20, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#165-december-20-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.5 - December 20, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.5 - December 20, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#161-december-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.1 - December 13, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.1 - December 13, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#updated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updated
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#160-december-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.0 - December 13, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.0 - December 13, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#157-december-09-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5.7 - December 09, 2025
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.5.7 - December 09, 2025">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  
+  
+
+
+<h1 id="release-notes">Release Notes</h1>
+<h2 id="213-february-21-2026"><a href="https://pypi.org/project/pbir-utils/2.1.3/">2.1.3</a> - February 21, 2026</h2>
+<h2 id="fixed">Fixed</h2>
+<ul>
+<li><strong>ui</strong>:</li>
+<li><strong>Layout</strong>: Fixed a Firefox-only bug where the sidebar toggle button could appear detached from the sidebar edge (<a href="https://github.com/akhilannan/pbir-utils/pull/3">#3</a> by <a href="https://github.com/Boreo">@Boreo</a>).</li>
+</ul>
+<hr />
+<h2 id="212-february-20-2026"><a href="https://pypi.org/project/pbir-utils/2.1.2/">2.1.2</a> - February 20, 2026</h2>
+<h2 id="fixed_1">Fixed</h2>
+<ul>
+<li><strong>ui</strong>:</li>
+<li><strong>Visuals</strong>: Fixed a bug where hiding a report-hidden visual would prevent interacting with or hiding the visuals underneath it.</li>
+<li><strong>Layout</strong>: Fixed an issue where the report page would incorrectly shrink or overlap when expanding sidebars.</li>
+<li><strong>Refresh Behavior</strong>: Ensured the latest app updates are immediately visible when refreshing the page, without needing to clear your browser cache.</li>
+</ul>
+<hr />
+<h2 id="211-february-15-2026"><a href="https://pypi.org/project/pbir-utils/2.1.1/">2.1.1</a> - February 15, 2026</h2>
+<h3 id="features">Features</h3>
+<ul>
+<li><strong>ui</strong>: <ul>
+<li>Updated <strong>Fields Pane</strong> selection behavior: defaults to single-select, supports <code>Ctrl+click</code> for multi-select.</li>
+<li>Moved <strong>Fields Pane</strong> selection controls to the header with a modern chip design for better visibility.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="210-february-15-2026"><a href="https://pypi.org/project/pbir-utils/2.1.0/">2.1.0</a> - February 15, 2026</h2>
+<h3 id="features_1">Features</h3>
+<ul>
+<li><strong>ui</strong>: <ul>
+<li>Improved initial view by collapsing secondary panes (Actions, Validate, Export, Output) by default.</li>
+<li>File browser now defaults to the current working directory instead of user home.</li>
+<li>Opening a report via CLI now correctly selects and highlights the report folder in the file browser.</li>
+<li>Fixed context menu not closing when clicking outside or selecting a visual.</li>
+<li>Fixed "Hide Page" icon in context menu.</li>
+<li>Fixed hidden pages not restoring when clicking the "+X pages" indicator.</li>
+<li>Enabled context menu and selection for "Report Hidden" visuals (dashed border).</li>
+<li>Improved visual distinction for selected hidden visuals (now uses blue dashed border).</li>
+<li>Added ability to drag-select multiple visuals on the report canvas.</li>
+<li>Added <code>Ctrl+click</code> support for adding/removing visuals from selection.</li>
+<li>Added bulk "Hide Visuals" option in context menu when multiple visuals are selected.</li>
+<li>Added ability to search and filter by page name or page ID in the report wireframe.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="206-february-14-2026"><a href="https://pypi.org/project/pbir-utils/2.0.6/">2.0.6</a> - February 14, 2026</h2>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li><strong>ui</strong>: Fixed custom sanitize/validation configuration being lost on page refresh or report change.</li>
+</ul>
+<hr />
+<h2 id="205-february-14-2026"><a href="https://pypi.org/project/pbir-utils/2.0.5/">2.0.5</a> - February 14, 2026</h2>
+<h3 id="bug-fixes_1">Bug Fixes</h3>
+<ul>
+<li><strong>sanitize</strong>: Fixed <code>remove_unused_bookmarks</code> incorrectly removing bookmarks from Navigator visuals configured to show "All" bookmarks.<ul>
+<li>Now correctly identifies navigators with missing or empty <code>bookmarkGroup</code> properties as using all bookmarks.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="204-january-20-2026"><a href="https://pypi.org/project/pbir-utils/2.0.4/">2.0.4</a> - January 20, 2026</h2>
+<h3 id="features_2">Features</h3>
+<ul>
+<li><strong>ui</strong>: Added "Select All" checkbox for Expression Rules in validation panel<ul>
+<li>Consistent with Actions panel UX pattern</li>
+<li>Supports indeterminate state when some rules are selected</li>
+</ul>
+</li>
+</ul>
+<h3 id="improvements">Improvements</h3>
+<ul>
+<li><strong>cli</strong>: Validation summary separator line now dynamically matches text width</li>
+<li><strong>api</strong>: Refactored <code>/validate/run</code> and <code>/validate/run/stream</code> endpoints to use single <code>validate_report</code> call instead of two separate calls<ul>
+<li>Eliminates duplicate count calculation logic</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="203-january-17-2026"><a href="https://pypi.org/project/pbir-utils/2.0.3/">2.0.3</a> - January 17, 2026</h2>
+<h3 id="features_3">Features</h3>
+<ul>
+<li><strong>sanitize</strong>: Added <code>exclude_types</code> parameter to page display option actions<ul>
+<li>Allows excluding specific page types (e.g., "Tooltip") when setting display options like "Fit to Page"</li>
+<li>Default configuration now excludes Tooltip pages from display option changes</li>
+</ul>
+</li>
+<li><strong>api</strong>: Added <code>failed_rules</code> property to <code>ValidationResult</code> for easy access to unique failed rule names as <code>{rule_id: rule_name}</code></li>
+</ul>
+<h3 id="bug-fixes_2">Bug Fixes</h3>
+<ul>
+<li><strong>api</strong>:<ul>
+<li>Fixed <code>ValidationResult</code> to count unique failed rules by severity, not violation instances. <code>str(result)</code> now shows accurate rule-level counts (e.g., "3 warnings" = 3 rules failed, not 38 violation instances)</li>
+<li>Fixed issue where sanitizer actions were running in validation stream even when excluded (e.g. via UI checkbox)</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="202-january-17-2026"><a href="https://pypi.org/project/pbir-utils/2.0.2/">2.0.2</a> - January 17, 2026</h2>
+<h3 id="features_4">Features</h3>
+<ul>
+<li><strong>ui</strong>: New web-based UI client (<code>pbir-utils ui</code> or <code>pbir-utils serve</code>)<ul>
+<li>Report browser for navigating and selecting <code>.Report</code> folders</li>
+<li>Full wireframe visualization with all existing features</li>
+<li>Execute sanitize actions with real-time progress streaming (SSE)</li>
+<li>Run expression rules + sanitize action checks with popup summary</li>
+<li>Export metadata (CSV) and wireframe (HTML) (respects search, field filters, visibility toggles)</li>
+<li>Auto-reload wireframe after successful actions</li>
+<li>Persistent toast notifications and dirty state indicators</li>
+</ul>
+</li>
+<li><strong>validate</strong>: New report validation command<ul>
+<li>Runs sanitizer checks (dry-run) + expression rules by default</li>
+<li><code>--source all|sanitize|rules</code> to filter which checks to run</li>
+<li><code>--actions</code> to cherry-pick specific sanitizer actions</li>
+<li><code>--rules</code> to cherry-pick specific expression rules</li>
+<li><code>--rules-config</code> and <code>--sanitize-config</code> for custom YAML configs</li>
+<li><code>--strict</code> mode exits with code 1 on violations (for CI/CD)</li>
+<li><code>--format json</code> for machine-readable output</li>
+<li>Output grouped by <code>[Sanitizer Checks]</code> and <code>[Expression Rules]</code> sections</li>
+</ul>
+</li>
+<li><strong>sanitize</strong>: Added <code>severity</code> field to action definitions<ul>
+<li>Actions can now specify <code>severity: error|warning|info</code> in <code>pbir-sanitize.yaml</code></li>
+<li>Enables per-action violation levels when used with <code>validate</code> command</li>
+</ul>
+</li>
+<li><strong>extract-metadata</strong>: Simplified filter arguments<ul>
+<li>Added explicit <code>--pages</code>, <code>--reports</code>, <code>--tables</code>, <code>--visual-types</code>, and <code>--visual-ids</code> arguments</li>
+<li>Aligned filter syntax with other CLI commands for bette r ergonomics</li>
+<li>Updated Python API (<code>export_pbir_metadata_to_csv</code>) with explicit keyword-only parameters</li>
+<li>Maintained backward compatibility for legacy JSON-based <code>--filters</code></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="201-january-17-2026"><a href="https://pypi.org/project/pbir-utils/2.0.1/">2.0.1</a> - January 17, 2026</h2>
+<h3 id="features_5">Features</h3>
+<ul>
+<li><strong>ui</strong>: New web-based UI client (<code>pbir-utils ui</code> or <code>pbir-utils serve</code>)<ul>
+<li>Report browser for navigating and selecting <code>.Report</code> folders</li>
+<li>Full wireframe visualization with all existing features</li>
+<li>Execute sanitize actions with real-time progress streaming (SSE)</li>
+<li>Run expression rules + sanitize action checks with popup summary</li>
+<li>Export metadata (CSV) and wireframe (HTML) (respects search, field filters, visibility toggles)</li>
+<li>Auto-reload wireframe after successful actions</li>
+<li>Persistent toast notifications and dirty state indicators</li>
+</ul>
+</li>
+<li><strong>validate</strong>: New report validation command<ul>
+<li>Runs sanitizer checks (dry-run) + expression rules by default</li>
+<li><code>--source all|sanitize|rules</code> to filter which checks to run</li>
+<li><code>--actions</code> to cherry-pick specific sanitizer actions</li>
+<li><code>--rules</code> to cherry-pick specific expression rules</li>
+<li><code>--rules-config</code> and <code>--sanitize-config</code> for custom YAML configs</li>
+<li><code>--strict</code> mode exits with code 1 on violations (for CI/CD)</li>
+<li><code>--format json</code> for machine-readable output</li>
+<li>Output grouped by <code>[Sanitizer Checks]</code> and <code>[Expression Rules]</code> sections</li>
+</ul>
+</li>
+<li><strong>sanitize</strong>: Added <code>severity</code> field to action definitions<ul>
+<li>Actions can now specify <code>severity: error|warning|info</code> in <code>pbir-sanitize.yaml</code></li>
+<li>Enables per-action violation levels when used with <code>validate</code> command</li>
+</ul>
+</li>
+<li><strong>extract-metadata</strong>: Simplified filter arguments<ul>
+<li>Added explicit <code>--pages</code>, <code>--reports</code>, <code>--tables</code>, <code>--visual-types</code>, and <code>--visual-ids</code> arguments</li>
+<li>Aligned filter syntax with other CLI commands for bette r ergonomics</li>
+<li>Updated Python API (<code>export_pbir_metadata_to_csv</code>) with explicit keyword-only parameters</li>
+<li>Maintained backward compatibility for legacy JSON-based <code>--filters</code></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="190-january-03-2026"><a href="https://pypi.org/project/pbir-utils/1.9.0/">1.9.0</a> - January 03, 2026</h2>
+<h3 id="features_6">Features</h3>
+<ul>
+<li><strong>wireframe</strong>: Major UX overhaul and enhancements<ul>
+<li>Added Fields Pane with comprehensive data model exploration (tables, columns, measures)</li>
+<li>Added table tooltips showing field counts, visual usage, and page breakdown</li>
+<li>Wireframe now opens on the active page instead of first page</li>
+<li>Page changes tracked in undo stack; reset returns to original active page</li>
+<li>Enhanced Field usage counts to include fields from Bookmarks, Page-level Filters, and Report-level Filters</li>
+<li>Added filter toggles to show/hide visible or hidden visuals</li>
+<li>Implemented universal Reset/Undo functionality</li>
+<li>Visual improvements for toggle buttons and filter states</li>
+<li>Modernized UI with glassmorphism, Inter font, and improved interactions</li>
+<li>Implemented visual layering (Z-index) based on Power BI visual order</li>
+</ul>
+</li>
+<li><strong>extract-metadata</strong>: Added "Attribute Type" (Column/Measure) to the metadata CSV output</li>
+</ul>
+<h3 id="bug-fixes_3">Bug Fixes</h3>
+<ul>
+<li><strong>sanitize</strong>: Improved summary mode messaging<ul>
+<li>Fixed message grammar for single-report scenarios</li>
+<li>Actions now show appropriate INFO messages when no changes are needed</li>
+</ul>
+</li>
+<li><strong>extract-metadata</strong>: Fixed duplicate rows and missing table names in metadata extraction<ul>
+<li>Skip redundant <code>queryRef</code>, <code>nativeQueryRef</code>, <code>metadata</code>, and <code>Subquery</code> keys</li>
+<li>Prevents duplicate entries from qualified name references</li>
+<li>Prevents orphan rows from filter subqueries with unresolved table aliases</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="180-january-01-2026"><a href="https://pypi.org/project/pbir-utils/1.8.0/">1.8.0</a> - January 01, 2026</h2>
+<h3 id="cli-features">CLI Features</h3>
+<ul>
+<li><strong>visualize</strong>: Major overhaul to static HTML generation (removed Dash server)<ul>
+<li>Lightweight, portable HTML output</li>
+<li><strong>Interactive Features</strong>:<ul>
+<li>Search/Filter visuals by ID, Type, or Page Name</li>
+<li>Copy Visual ID (left-click)</li>
+<li>Hide/Unhide visuals (right-click) with Undo/Reset</li>
+<li>Hide/Unhide pages (right-click tabs) with restore pill</li>
+</ul>
+</li>
+<li><strong>UI Enhancements</strong>:<ul>
+<li>🌙 Dark mode toggle with preference persistence</li>
+<li>🔍 Zoom controls (25%-200%) for large reports</li>
+<li>📊 Visual count badges on page tabs</li>
+<li>📏 Dimension tooltips (page size, visual size/position)</li>
+<li>Page tooltips with visual type breakdown on hover</li>
+<li>Visual indicators for hidden pages/visuals</li>
+<li>Refined Fluent-like styling</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="171-december-31-2025"><a href="https://pypi.org/project/pbir-utils/1.7.1/">1.7.1</a> - December 31, 2025</h2>
+<h3 id="cli-features_1">CLI Features</h3>
+<ul>
+<li><strong>batch-update</strong>: Added <code>--summary</code> flag to display aggregated output instead of per-file messages</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><strong>UI Improvements</strong><ul>
+<li>Enhanced documentation site with instant navigation (SPA-like), sticky Table of Contents, and navigation tracking</li>
+<li>Modernized UI with custom CSS: bold/underlined active tabs, refined fonts (Inter/JetBrains Mono), and smoother transitions</li>
+<li>Updated <code>README.md</code> and documentation home page with improved formatting and emoji indicators for better readability</li>
+<li>Hidden left navigation sidebar on all pages for more content space</li>
+</ul>
+</li>
+<li><strong>Release Notes</strong><ul>
+<li>Added auto-generated Release Notes page that fetches full release history from GitHub Releases API</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="170-december-24-2025"><a href="https://pypi.org/project/pbir-utils/1.7.0/">1.7.0</a> - December 24, 2025</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Visual Metadata Extraction</strong><ul>
+<li>Added <code>--visuals-only</code> flag to <code>extract-metadata</code> command for visual-level metadata export</li>
+<li>Exports Visual Type, Visual ID, Parent Group ID, and Is Hidden status</li>
+<li>Made output path optional - defaults to <code>metadata.csv</code> or <code>visuals.csv</code> in the report folder</li>
+</ul>
+</li>
+</ul>
+<h3 id="documentation_1">Documentation</h3>
+<ul>
+<li><strong>CI/CD Guide</strong><ul>
+<li>Added GitHub Actions workflow example alongside Azure DevOps</li>
+<li>Made validation script platform-agnostic (auto-detects CI environment)</li>
+</ul>
+</li>
+<li><strong>Examples Cleanup</strong><ul>
+<li>Removed deprecated <code>examples/example_usage.ipynb</code> notebook as all examples are fully covered in the official documentation</li>
+<li>Cleansed references to the notebook from <code>README.md</code> and documentation files</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="167-december-21-2025"><a href="https://pypi.org/project/pbir-utils/1.6.7/">1.6.7</a> - December 21, 2025</h2>
+<h3 id="added_1">Added</h3>
+<ul>
+<li><strong>Project Identity</strong><ul>
+<li>Added official project logo to README and Documentation.</li>
+<li>Added ASCII art startup banner to CLI for better user experience.</li>
+</ul>
+</li>
+</ul>
+<h3 id="documentation_2">Documentation</h3>
+<ul>
+<li><strong>CI/CD Integration</strong><ul>
+<li>Added new "CI/CD Integration" guide covering Azure DevOps pipeline setup</li>
+<li>Added comprehensive validation script example with blocking rules configuration</li>
+<li>Included strict validation strategy (fail build vs warn) guidance</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="166-december-20-2025"><a href="https://pypi.org/project/pbir-utils/1.6.6/">1.6.6</a> - December 20, 2025</h2>
+<h3 id="performance">Performance</h3>
+<ul>
+<li><strong>High-Impact Optimizations</strong>:<ul>
+<li><strong>Bookmark Usage Check</strong>: Drastically improved speed of checking for unused bookmarks by scanning visuals in a single efficient pass.</li>
+<li><strong>Invalid Bookmark Cleanup</strong>: Significantly faster cleanup process by pre-loading valid visual data instead of repeated file checks.</li>
+<li><strong>Hidden Visuals Removal</strong>: Reduced file operations by 50% by merging duplicate scanning processes.</li>
+<li><strong>Metadata Extraction</strong>: Exponential speedup for large reports by optimizing how metadata expressions are matched and deduplicated.</li>
+</ul>
+</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>CLI</strong>: All commands now consistently support auto-detection of report path when running from inside a <code>.Report</code> folder (<code>batch-update</code> and <code>update-filters</code> were updated)</li>
+</ul>
+<h3 id="documentation_3">Documentation</h3>
+<ul>
+<li><strong>CLI Reference</strong><ul>
+<li>Added comprehensive "Available Actions" table documenting all 22 sanitization actions with descriptions</li>
+<li>Added "Default" column to action table showing which actions run by default vs. opt-in with <code>--include</code></li>
+<li>Added tips for config auto-discovery and report path auto-detection</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="165-december-20-2025"><a href="https://pypi.org/project/pbir-utils/1.6.5/">1.6.5</a> - December 20, 2025</h2>
+<h3 id="performance_1">Performance</h3>
+<ul>
+<li><strong>Remove Measures</strong>: Significantly improved performance for reports with many measures by pre-computing visual usage and dependency graphs in a single pass instead of walking the file system for each measure</li>
+</ul>
+<h3 id="fixed_2">Fixed</h3>
+<ul>
+<li><strong>Sanitize Command</strong>: Now raises an error when <code>--config</code> path doesn't exist, instead of silently falling back to defaults</li>
+<li><strong>Visualize Command</strong>: Fixed crash when a page has no visuals (empty legend labels) and prevented duplicate startup messages</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><strong>CLI</strong>: Removed the redundant <code>--error-on-change</code> option from all commands (functionality can be achieved by checking <code>--dry-run</code> output)</li>
+</ul>
+<hr />
+<h2 id="161-december-13-2025"><a href="https://pypi.org/project/pbir-utils/1.6.1/">1.6.1</a> - December 13, 2025</h2>
+<h3 id="updated">Updated</h3>
+<ul>
+<li><strong>Clear Filters</strong></li>
+<li>Added <code>--summary</code> option for concise count-based output</li>
+<li>Improved slicer detection to match all slicer types</li>
+</ul>
+<hr />
+<h2 id="160-december-13-2025"><a href="https://pypi.org/project/pbir-utils/1.6.0/">1.6.0</a> - December 13, 2025</h2>
+<h3 id="added_2">Added</h3>
+<ul>
+<li><strong>Set Display Option Command</strong>: New <code>set-display-option</code> CLI command and <code>set_page_display_option()</code> Python API to set page display options in Power BI reports.</li>
+<li>Supports three display options: <code>ActualSize</code>, <code>FitToPage</code>, <code>FitToWidth</code></li>
+<li>Target specific pages by <code>displayName</code> or internal <code>name</code></li>
+<li>Apply to all pages when no filter specified</li>
+<li>Sanitize actions: <code>set_display_option_fit_to_page</code>, <code>set_display_option_fit_to_width</code>, <code>set_display_option_actual_size</code></li>
+<li><strong>Clear Filters Command</strong>: New <code>clear-filters</code> CLI command and <code>clear_filters()</code> Python API to inspect and clear filter conditions from Power BI reports.</li>
+<li>Supports report, page, and visual level filters (including slicers)</li>
+<li>Filter targeting with <code>--page</code>, <code>--visual</code> options</li>
+<li>Field filtering with <code>--table</code>, <code>--column</code>, <code>--field</code> (supports wildcards like <code>Date*</code>, <code>*Amount</code>)</li>
+<li>Dry-run mode (<code>--dry-run</code>) for inspecting filters without modifying files</li>
+<li>Configurable via <code>pbir-sanitizer.yaml</code> for use in sanitization pipelines</li>
+</ul>
+<hr />
+<h2 id="157-december-09-2025"><a href="https://pypi.org/project/pbir-utils/1.5.7/">1.5.7</a> - December 09, 2025</h2>
+<h3 id="performance_2">Performance</h3>
+<ul>
+<li><strong>CLI Startup Optimization</strong>: Reduced <code>--help</code> command time from ~10 seconds to under 1 second (~15x faster) by implementing lazy imports for heavy dependencies and deferring module loading until commands are executed.</li>
+</ul>
+<h3 id="fixed_3">Fixed</h3>
+<ul>
+<li><strong>Wireframe Visualizer Coordinate Parsing</strong>: Fixed <code>TypeError</code> and <code>ValueError</code> in <code>display_report_wireframes</code> caused by coordinates being stored as strings or with <code>@@__PRESERVE_FLOAT__@@</code> prefixes.</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/akhilannan/pbir-utils" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.instant", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

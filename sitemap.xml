@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/api/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/ci_cd/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/cli/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/releases/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://akhilannan.github.io/pbir-utils/ui/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+</urlset>
