@@ -55,7 +55,7 @@
         }
 
         .sidebar.collapsed {
-            width: 0;
+            width: 0 !important;
             min-width: 0;
             border-right: none;
         }
@@ -84,7 +84,7 @@
         /* Sidebar Toggle Button */
         .sidebar-toggle {
             position: absolute;
-            left: var(--sidebar-width);
+            right: -16px;
             top: 50%;
             transform: translateY(-50%);
             width: 16px;
@@ -101,7 +101,7 @@
             padding: 0;
             color: var(--text-secondary);
             z-index: 90;
-            transition: left 0.25s ease, background 0.15s, color 0.15s;
+            transition: background 0.15s, color 0.15s;
             box-shadow: 2px 0 8px rgba(0,0,0,0.05);
         }
 
@@ -110,14 +110,13 @@
             color: white;
         }
 
-        .sidebar.collapsed + .sidebar-toggle {
-            left: 0;
+        .sidebar.collapsed .sidebar-toggle {
             background: var(--accent-color);
             color: white;
             border-color: var(--accent-color);
         }
 
-        .sidebar.collapsed + .sidebar-toggle:hover {
+        .sidebar.collapsed .sidebar-toggle:hover {
             background: var(--accent-hover);
         }
 
@@ -127,7 +126,7 @@
             height: 10px;
         }
 
-        .sidebar.collapsed + .sidebar-toggle .chevron {
+        .sidebar.collapsed .sidebar-toggle .chevron {
             transform: rotate(180deg);
         }
         
@@ -818,12 +817,12 @@
             </div>
             
             <div class="sidebar-resizer" onmousedown="initSidebarResize(event)"></div>
+            <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar" aria-label="Toggle Sidebar" aria-expanded="true" aria-controls="sidebar">
+                <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
         </aside>
-        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar" aria-label="Toggle Sidebar" aria-expanded="true" aria-controls="sidebar">
-            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-        </button>
 
         <!-- Main Content -->
         <main class="main-content-wrapper">
