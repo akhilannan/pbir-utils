@@ -1,5 +1,3 @@
 ## Fixed
 - **ui**:
-  - **Visuals**: Fixed a bug where hiding a report-hidden visual would prevent interacting with or hiding the visuals underneath it.
-  - **Layout**: Fixed an issue where the report page would incorrectly shrink or overlap when expanding sidebars.
-  - **Refresh Behavior**: Ensured the latest app updates are immediately visible when refreshing the page, without needing to clear your browser cache.
+  - **Layout**: Fixed a Firefox-only bug where the sidebar toggle button could appear detached from the sidebar edge ([#3](https://github.com/akhilannan/pbir-utils/pull/3) by [@Boreo](https://github.com/Boreo)).
