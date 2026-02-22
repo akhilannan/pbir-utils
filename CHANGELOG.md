@@ -1,3 +1,4 @@
-## Fixed
+## Changed
 - **ui**:
-  - **Layout**: Fixed a Firefox-only bug where the sidebar toggle button could appear detached from the sidebar edge ([#3](https://github.com/akhilannan/pbir-utils/pull/3) by [@Boreo](https://github.com/Boreo)).
+  - **UI Overhaul**: Replaced structural emojis with crisp Lucide SVG icons (with secure emoji fallbacks for standalone HTML exports), refined the dark mode palette, standardized visual selection borders, and introduced sleek, modern scrollbars.
+

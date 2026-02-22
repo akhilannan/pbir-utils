@@ -81,6 +81,7 @@ function showContextMenu(e, items) {
     contextMenu.style.left = `${x}px`;
     contextMenu.style.top = `${y}px`;
 
+    if (window.lucide) lucide.createIcons();
     // Close on outside click is handled by document listener
 }
 
@@ -90,7 +91,12 @@ function hideContextMenu() {
 
 function showPageContextMenu(e, pageId, tabElement) {
     const pageName = tabElement.dataset.pageName;
-    const items = [
+    const items = window.lucide ? [
+        { label: 'Copy Page Name', icon: '<i data-lucide="copy" style="width: 14px; height: 14px;"></i>', action: `copyText('${escapeHtml(pageName).replace(/'/g, "\\'")}')` },
+        { label: 'Copy Page ID', icon: '<i data-lucide="copy" style="width: 14px; height: 14px;"></i>', action: `copyText('${pageId}')` },
+        'separator',
+        { label: 'Hide Page', icon: '<i data-lucide="eye-off" style="width: 14px; height: 14px;"></i>', action: `hidePage(event, '${pageId}')` }
+    ] : [
         { label: 'Copy Page Name', icon: '📝', action: `copyText('${escapeHtml(pageName).replace(/'/g, "\\'")}')` },
         { label: 'Copy Page ID', icon: '📋', action: `copyText('${pageId}')` },
         'separator',
@@ -209,11 +215,21 @@ function toggleTheme() {
     const btn = document.getElementById('theme-btn');
     if (body.getAttribute('data-theme') === 'dark') {
         body.removeAttribute('data-theme');
-        btn.textContent = '🌙';
+        if (window.lucide) {
+            btn.innerHTML = '<i data-lucide="moon"></i>';
+            lucide.createIcons();
+        } else {
+            btn.textContent = '🌙';
+        }
         localStorage.setItem('wireframe-theme', 'light');
     } else {
         body.setAttribute('data-theme', 'dark');
-        btn.textContent = '☀️';
+        if (window.lucide) {
+            btn.innerHTML = '<i data-lucide="sun"></i>';
+            lucide.createIcons();
+        } else {
+            btn.textContent = '☀️';
+        }
         localStorage.setItem('wireframe-theme', 'dark');
     }
 }
@@ -223,7 +239,15 @@ function toggleTheme() {
     const savedTheme = localStorage.getItem('wireframe-theme');
     if (savedTheme === 'dark') {
         document.body.setAttribute('data-theme', 'dark');
-        document.getElementById('theme-btn').textContent = '☀️';
+        const btn = document.getElementById('theme-btn');
+        if (btn) {
+            if (window.lucide) {
+                btn.innerHTML = '<i data-lucide="sun"></i>';
+                // Note: DOM might not be fully loaded here, createIcons usually runs later anyway
+            } else {
+                btn.textContent = '☀️';
+            }
+        }
     }
 })();
 
@@ -1345,13 +1369,18 @@ function setupVisualEventDelegation() {
             let items = [];
             if (count > 1) {
                 // Multi-select menu
-                items = [
+                items = window.lucide ? [
+                    { label: `Hide ${count} Visuals`, icon: '<i data-lucide="eye-off" style="width: 14px; height: 14px;"></i>', action: `hideSelectedVisuals()` }
+                ] : [
                     { label: `Hide ${count} Visuals`, icon: '👁', action: `hideSelectedVisuals()` }
                 ];
             } else {
                 // Single visual menu
                 const visualId = visual.dataset.id;
-                items = [
+                items = window.lucide ? [
+                    { label: 'Copy ID', icon: '<i data-lucide="copy" style="width: 14px; height: 14px;"></i>', action: `copyText('${visualId}')` },
+                    { label: 'Hide Visual', icon: '<i data-lucide="eye-off" style="width: 14px; height: 14px;"></i>', action: `hideVisual(event, '${visualId}')` }
+                ] : [
                     { label: 'Copy ID', icon: '📋', action: `copyText('${visualId}')` },
                     { label: 'Hide Visual', icon: '👁', action: `hideVisual(event, '${visualId}')` }
                 ];

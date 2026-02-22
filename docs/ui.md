@@ -48,7 +48,7 @@ The UI provides a wireframe view of your report layout.
     - **Pages**: Filter by display name or page ID. Entering a page ID will narrow the tab bar to only that page.
 - **Canvas**: The center area shows your report visuals. Zoom in or out using the controls in the top-right.
 - **Tabs**: Switch pages at the top. Right-click a tab to **Copy Page Name**, **Copy Page ID**, or **Hide Page**.
-- **Dark Mode**: Toggle the 🌙 icon in the header.
+- **Dark Mode**: Toggle the Sun/Moon icon in the header.
 - **Panes**: You can resize the sidebar and the output panel by dragging their edges.
 - **Active States**: Zoom levels and theme preferences are saved to your local storage across sessions.
 
@@ -93,7 +93,7 @@ The **Actions** panel lists available cleanup tasks.
 
 - **Run**: Executes the selected actions.
 - **Dry Run**: Simulates the actions and prints a log of what *would* happen, without changing files.
-- **Load Config**: Click the "📄" button to upload a custom `pbir-rules.yaml` or `pbir-sanitize.yaml` to override default action behaviors.
+- **Load Config**: Click the "Load Sanitizer Config" button (with the file icon) to upload a custom `pbir-sanitize.yaml` to override default action behaviors.
 
 ### Validation
 The **Validate** panel checks your report against rules.

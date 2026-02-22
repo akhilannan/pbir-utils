@@ -219,7 +219,7 @@
             color: var(--text-secondary);
             font-size: 10px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 999px;
             min-width: 16px;
             text-align: center;
@@ -541,7 +541,8 @@
         .pbir-wireframe .visual-box.selected {
             transform: translateY(-2px);
             background-color: rgba(59, 130, 246, 0.25);
-            box-shadow: 0 0 0 2px var(--accent-color), var(--shadow-md);
+            border: 2px solid var(--accent-color);
+            box-shadow: var(--shadow-md);
             z-index: 60;
         }
 
@@ -551,7 +552,8 @@
 
         [data-theme="dark"] .pbir-wireframe .visual-box.selected {
             background-color: rgba(96, 165, 250, 0.35);
-            box-shadow: 0 0 0 2px var(--accent-color), var(--shadow-md);
+            border: 2px solid var(--accent-color);
+            box-shadow: var(--shadow-md);
         }
 
         .pbir-wireframe .visual-box.hidden.selected {

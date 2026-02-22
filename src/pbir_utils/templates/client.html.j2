@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PBIR-Utils UI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         {% include 'css/wireframe.css' %}
 
@@ -12,6 +13,12 @@
         :root {
             --sidebar-width: 260px;
             --sidebar-bg: var(--card-bg);
+        }
+
+        i[data-lucide] {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
         }
 
         [data-theme="dark"] {
@@ -205,6 +212,8 @@
             overflow-y: auto;
             flex: 1;
             padding: 0;
+            scrollbar-width: thin;
+            scrollbar-gutter: stable;
         }
 
         .sidebar-section.collapsed .sidebar-section-content {
@@ -258,7 +267,7 @@
 
         .breadcrumb {
             padding: 8px 16px;
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-secondary);
             background: transparent;
             display: flex;
@@ -324,6 +333,7 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
+            height: 32px;
         }
 
         .action-btn.primary {
@@ -735,7 +745,7 @@
             <div class="sidebar-section file-browser" id="section-reports">
                 <div class="sidebar-section-header" onclick="toggleSidebarSection('section-reports')" onkeydown="handleSectionKey(event, 'section-reports')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-reports-content">
                     <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title">📁 REPORTS</span>
+                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="folder"></i> REPORTS</span>
                 </div>
                 <div class="sidebar-section-content" id="section-reports-content">
                     <div class="breadcrumb" id="breadcrumb"></div>
@@ -747,18 +757,18 @@
             <div class="sidebar-section actions-panel collapsed" id="section-actions">
                 <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')" onkeydown="handleSectionKey(event, 'section-actions')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-actions-content">
                     <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title">⚡ ACTIONS</span>
+                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="zap"></i> ACTIONS</span>
                     <span class="config-indicator" id="config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-actions-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; position: sticky; top: 0; background: var(--sidebar-bg); z-index: 1;">
-                        <button class="action-btn primary" onclick="runActions(false)" id="run-btn" disabled>▶ Run</button>
-                        <button class="action-btn secondary" onclick="runActions(true)" id="dry-run-btn" disabled>👁 Dry Run</button>
+                        <button class="action-btn primary" onclick="runActions(false)" id="run-btn" disabled><i data-lucide="play" style="width: 14px; height: 14px;"></i> Run</button>
+                        <button class="action-btn secondary" onclick="runActions(true)" id="dry-run-btn" disabled><i data-lucide="eye" style="width: 14px; height: 14px;"></i> Dry Run</button>
                     </div>
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomConfig(this)">
-                        <button class="export-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center;">
-                            📄 Load Sanitizer Config
+                        <button class="export-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
+                            <i data-lucide="file-json"></i> Load Sanitizer Config
                         </button>
                     </div>
                     <div id="actions-list"></div>
@@ -769,19 +779,19 @@
             <div class="sidebar-section validation-panel collapsed" id="section-validate">
                 <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')" onkeydown="handleSectionKey(event, 'section-validate')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-validate-content">
                     <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title">🔍 VALIDATE</span>
+                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="search"></i> VALIDATE</span>
                     <span class="config-indicator" id="rules-config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-validate-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding: 8px 16px;">
                         <button class="action-btn primary" onclick="runCheck()" id="check-btn" disabled>
-                            ✓ Check
+                            <i data-lucide="check"></i> Check
                         </button>
                     </div>
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="rules-config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomRulesConfig(this)">
-                        <button class="export-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center;">
-                            📄 Load Rules Config
+                        <button class="export-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
+                            <i data-lucide="file-json"></i> Load Rules Config
                         </button>
                     </div>
                     <div class="action-item" style="border-bottom: 1px solid var(--border-color); margin-bottom: 8px; padding-bottom: 8px;">
@@ -796,21 +806,21 @@
             <div class="sidebar-section collapsed" id="section-export">
                 <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')" onkeydown="handleSectionKey(event, 'section-export')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-export-content">
                     <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title">📥 EXPORT</span>
+                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="download"></i> EXPORT</span>
                 </div>
                 <div class="sidebar-section-content" style="padding: 8px 12px;" id="section-export-content">
                     <div class="export-buttons">
                         <button class="export-btn" onclick="downloadCSV('attributes', true)" id="export-meta-btn" disabled
                             title="Export attributes for visuals currently visible in the wireframe (respects UI view and search & selection)">
-                            <span class="icon">📄</span> Attributes CSV
+                            <i data-lucide="file-spreadsheet"></i> Attributes CSV
                         </button>
                         <button class="export-btn" onclick="downloadCSV('visuals', true)" id="export-visuals-btn" disabled
                             title="Export visual metadata for visuals currently visible in the wireframe (respects UI view and search & selection)">
-                            <span class="icon">📊</span> Visuals CSV
+                            <i data-lucide="bar-chart-2"></i> Visuals CSV
                         </button>
                         <button class="export-btn" onclick="downloadWireframeHTML(true)" id="export-html-btn" disabled
                             title="Export wireframe as standalone HTML file (respects current filters)">
-                            <span class="icon">🌐</span> Wireframe HTML
+                            <i data-lucide="globe"></i> Wireframe HTML
                         </button>
                     </div>
                 </div>
@@ -846,7 +856,7 @@
                 <div class="output-resizer" id="output-resizer" onmousedown="initOutputResize(event)"></div>
                 <div class="output-header">
                     <div class="output-header-left">
-                        <h4>📋 Output</h4>
+                        <h4 style="display: flex; align-items: center; gap: 6px;"><i data-lucide="clipboard-list"></i> Output</h4>
                     </div>
                     <button class="export-btn" onclick="clearOutput(); event.stopPropagation();" style="padding: 4px 8px;">Clear</button>
                 </div>

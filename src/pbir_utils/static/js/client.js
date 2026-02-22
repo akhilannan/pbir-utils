@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only browse default directory if NO report is being loaded
         browseDirectory(null);
     }
+
+    if (window.lucide) lucide.createIcons();
 });
 
 // ============ File Browser ============
@@ -74,12 +76,12 @@ function renderFileList(data) {
     let html = '';
     if (data.parent_path) {
         const safeParent = data.parent_path.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
-        html += `<div class="file-item" onclick="browseDirectory('${safeParent}')">📂 ..</div>`;
+        html += `<div class="file-item" onclick="browseDirectory('${safeParent}')"><i data-lucide="folder"></i> ..</div>`;
     }
 
     // Items
     html += data.items.map(item => {
-        const icon = item.is_report ? '📊' : (item.is_dir ? '📁' : '📄');
+        const icon = item.is_report ? '<i data-lucide="bar-chart-2"></i>' : (item.is_dir ? '<i data-lucide="folder"></i>' : '<i data-lucide="file"></i>');
         const isActive = currentReportPath && item.path === currentReportPath;
         const cls = `file-item${item.is_report ? ' report' : ''}${isActive ? ' active' : ''}`;
 
@@ -96,6 +98,8 @@ function renderFileList(data) {
     }).join('');
 
     fileList.innerHTML = html;
+
+    if (window.lucide) lucide.createIcons();
 }
 
 // Note: escapeHtml is provided by wireframe.js which is always loaded first
@@ -197,9 +201,23 @@ function renderWireframe(data) {
     initDragSelection();
 
     // Set theme from localStorage
-    const savedTheme = localStorage.getItem('wireframeTheme');
+    const savedTheme = localStorage.getItem('wireframe-theme');
     if (savedTheme === 'dark') {
         document.body.setAttribute('data-theme', 'dark');
+    }
+
+    // Upgrade wireframe UI icons to Lucide if available
+    if (window.lucide) {
+        const undoBtn = document.getElementById('undo-btn');
+        if (undoBtn) undoBtn.innerHTML = '<i data-lucide="undo-2"></i>';
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) resetBtn.innerHTML = '<i data-lucide="rotate-ccw"></i>';
+        const themeBtn = document.getElementById('theme-btn');
+        if (themeBtn) {
+            themeBtn.innerHTML = document.body.getAttribute('data-theme') === 'dark' ?
+                '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+        }
+        lucide.createIcons();
     }
 }
 
@@ -290,6 +308,8 @@ function renderActions(actions) {
 
     // Update select all states initially
     updateSelectAllState();
+
+    if (window.lucide) lucide.createIcons();
 }
 
 function restoreActionSelection(savedSet) {
@@ -313,11 +333,12 @@ function updateConfigIndicator() {
         if (currentConfigPath) {
             const fileName = currentConfigPath.split(/[\\/]/).pop();
             indicator.innerHTML = `
-                <span class="config-name">📄 ${fileName}</span>
+                <span class="config-name" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="file-json" style="width: 12px; height: 12px;"></i> ${escapeHtml(fileName)}</span>
                 <span class="config-reset" onclick="resetConfig(event)" title="Reset to Defaults">×</span>
             `;
             indicator.title = `Custom config: ${currentConfigPath}`;
             indicator.style.display = 'inline-flex';
+            if (window.lucide) lucide.createIcons();
         } else {
             indicator.style.display = 'none';
         }
@@ -577,6 +598,8 @@ function renderExpressionRules() {
 
     container.innerHTML = html;
     updateRulesGroupState();
+
+    if (window.lucide) lucide.createIcons();
 }
 
 function toggleRulesGroup(source) {
@@ -628,7 +651,8 @@ async function runCheck() {
 
     const btn = document.getElementById('check-btn');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Checking...';
+    btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Checking...';
+    if (window.lucide) lucide.createIcons();
 
     // Build SSE URL with query parameters
     let url = `/api/reports/validate/run/stream?report_path=${encodeURIComponent(currentReportPath)}`;
@@ -677,14 +701,16 @@ async function runCheck() {
     eventSource.addEventListener('complete', event => {
         eventSource.close();
         btn.disabled = false;
-        btn.innerHTML = '✓ Check';
+        btn.innerHTML = '<i data-lucide="check"></i> Check';
+        if (window.lucide) lucide.createIcons();
     });
 
     eventSource.onerror = () => {
         eventSource.close();
         appendOutput('error', 'Connection lost during validation');
         btn.disabled = false;
-        btn.innerHTML = '✓ Check';
+        btn.innerHTML = '<i data-lucide="check"></i> Check';
+        if (window.lucide) lucide.createIcons();
     };
 }
 
@@ -768,11 +794,12 @@ function updateRulesConfigIndicator() {
         if (currentRulesConfigPath) {
             const fileName = currentRulesConfigPath.split(/[\\/]/).pop();
             indicator.innerHTML = `
-                <span class="config-name">📄 ${fileName}</span>
+                <span class="config-name" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="file-json" style="width: 12px; height: 12px;"></i> ${escapeHtml(fileName)}</span>
                 <span class="config-reset" onclick="resetRulesConfig(event)" title="Reset to Defaults">×</span>
             `;
             indicator.title = `Custom rules config: ${currentRulesConfigPath}`;
             indicator.style.display = 'inline-flex';
+            if (window.lucide) lucide.createIcons();
         } else {
             indicator.style.display = 'none';
         }
