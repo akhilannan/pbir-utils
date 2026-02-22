@@ -968,81 +968,81 @@ function toggleOutputPanel() {
 
 // ============ Sidebar Logic ============
 
-function toggleSidebar() {
+function switchActivityView(sectionId) {
     const sidebar = document.getElementById('sidebar');
-    const btn = document.getElementById('sidebar-toggle');
-    const isCollapsed = sidebar.classList.toggle('collapsed');
+    const targetSection = document.getElementById(sectionId);
+    if (!targetSection) return;
 
-    if (btn) {
-        btn.setAttribute('aria-expanded', !isCollapsed);
-        btn.setAttribute('aria-label', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    const isCurrentlyActive = targetSection.classList.contains('active');
+
+    if (isCollapsed) {
+        // Sidebar is closed -> Open it and show the requested section
+        sidebar.classList.remove('collapsed');
+        activateSection(sectionId);
+    } else {
+        if (isCurrentlyActive) {
+            // Clicking the active icon while open -> Collapse sidebar
+            sidebar.classList.add('collapsed');
+        } else {
+            // Clicking a different icon -> Swap section
+            activateSection(sectionId);
+        }
     }
     savePanelState();
 }
 
-function toggleSidebarSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (!section) return;
+function activateSection(sectionId) {
+    // Hide all sections
+    const sections = ['section-reports', 'section-actions', 'section-validate', 'section-export'];
+    sections.forEach(id => {
+        const sec = document.getElementById(id);
+        if (sec) sec.classList.remove('active');
 
-    const header = section.querySelector('.sidebar-section-header');
+        // Remove active class from corresponding nav icon
+        const navIconId = id.replace('section-', 'nav-');
+        const navIcon = document.getElementById(navIconId);
+        if (navIcon) navIcon.classList.remove('active');
+    });
 
-    // Toggle collapsed state
-    const isCollapsed = section.classList.toggle('collapsed');
+    // Show target section
+    const activeSec = document.getElementById(sectionId);
+    if (activeSec) activeSec.classList.add('active');
 
-    // Update ARIA attributes
-    if (header) header.setAttribute('aria-expanded', !isCollapsed);
-
-    // Save state preference if needed (optional)
-    localStorage.setItem(`section-${sectionId}-collapsed`, isCollapsed);
+    // Highlight target nav icon
+    const activeNavIconId = sectionId.replace('section-', 'nav-');
+    const activeNavIcon = document.getElementById(activeNavIconId);
+    if (activeNavIcon) activeNavIcon.classList.add('active');
 }
 
 function handleSectionKey(event, sectionId) {
     if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        toggleSidebarSection(sectionId);
+        switchActivityView(sectionId);
     }
 }
 
-function restoreSidebarSectionState() {
-    ['section-reports', 'section-actions', 'section-validate', 'section-export'].forEach(id => {
-        const key = `section-${id}-collapsed`;
-        let isCollapsed;
-
-        if (localStorage.getItem(key) === null) {
-            // Default state if no preference saved:
-            // Reports: Expanded (false)
-            // Others: Collapsed (true)
-            isCollapsed = (id !== 'section-reports');
-        } else {
-            isCollapsed = localStorage.getItem(key) === 'true';
-        }
-
-        const section = document.getElementById(id);
-        if (section) {
-            if (isCollapsed) {
-                section.classList.add('collapsed');
-                const header = section.querySelector('.sidebar-section-header');
-                if (header) header.setAttribute('aria-expanded', 'false');
-            } else {
-                section.classList.remove('collapsed');
-                const header = section.querySelector('.sidebar-section-header');
-                if (header) header.setAttribute('aria-expanded', 'true');
-            }
-        }
-    });
-}
-// Call restore on load
-restoreSidebarSectionState();
 
 function savePanelState() {
     const panel = document.getElementById('output-panel');
     const sidebar = document.getElementById('sidebar');
 
+    // Find active section
+    let activeView = 'section-reports'; // default
+    const sections = ['section-reports', 'section-actions', 'section-validate', 'section-export'];
+    sections.forEach(id => {
+        const sec = document.getElementById(id);
+        if (sec && sec.classList.contains('active')) {
+            activeView = id;
+        }
+    });
+
     const state = {
         outputHeight: panel.style.height,
         outputCollapsed: panel.classList.contains('collapsed'),
         sidebarWidth: sidebar.style.width,
-        sidebarCollapsed: sidebar.classList.contains('collapsed')
+        sidebarCollapsed: sidebar.classList.contains('collapsed'),
+        activeView: activeView
     };
 
     localStorage.setItem('uiLayout', JSON.stringify(state));
@@ -1056,7 +1056,6 @@ function loadPanelState() {
             const panel = document.getElementById('output-panel');
             const sidebar = document.getElementById('sidebar');
             const outputBtn = document.getElementById('output-toggle');
-            const sidebarBtn = document.getElementById('sidebar-toggle');
 
             if (state.outputHeight) panel.style.height = state.outputHeight;
 
@@ -1078,19 +1077,24 @@ function loadPanelState() {
 
             if (state.sidebarCollapsed) {
                 sidebar.classList.add('collapsed');
-                if (sidebarBtn) {
-                    sidebarBtn.setAttribute('aria-expanded', 'false');
-                    sidebarBtn.setAttribute('aria-label', 'Expand Sidebar');
-                }
-            } else if (sidebarBtn) {
-                sidebarBtn.setAttribute('aria-expanded', 'true');
-                sidebarBtn.setAttribute('aria-label', 'Collapse Sidebar');
+            }
+
+            if (state.activeView) {
+                activateSection(state.activeView);
+            } else {
+                activateSection('section-reports'); // Fallback
             }
 
         } catch (e) {
             console.error('Failed to load layout:', e);
+            activateSection('section-reports');
         }
     }
+
+    // Clean up old obsolete keys from section toggles
+    ['section-reports', 'section-actions', 'section-validate', 'section-export'].forEach(id => {
+        localStorage.removeItem(`section-${id}-collapsed`);
+    });
 }
 
 // Load layout on startup

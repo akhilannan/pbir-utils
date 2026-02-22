@@ -56,10 +56,6 @@
             box-shadow: var(--shadow-md);
             z-index: 50;
         }
-        
-        .sidebar.transition-enabled {
-             transition: width 0.25s ease;
-        }
 
         .sidebar.collapsed {
             width: 0 !important;
@@ -85,79 +81,71 @@
         }
 
         .sidebar.collapsed .sidebar-section {
-            display: none;
+            display: none !important;
         }
 
-        /* Sidebar Toggle Button */
-        .sidebar-toggle {
-            position: absolute;
-            right: -16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 60px;
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-            cursor: pointer;
+        /* Activity Bar */
+        .activity-bar {
+            width: 48px;
+            background: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 60;
+            flex-shrink: 0;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0;
             color: var(--text-secondary);
-            z-index: 90;
-            transition: background 0.15s, color 0.15s;
-            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            position: relative;
         }
 
-        .sidebar-toggle:hover {
-            background: var(--accent-color);
-            color: white;
+        .activity-icon:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
         }
 
-        .sidebar.collapsed .sidebar-toggle {
-            background: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
+        .activity-icon.active {
+            color: var(--accent-color);
         }
 
-        .sidebar.collapsed .sidebar-toggle:hover {
-            background: var(--accent-hover);
+        .activity-icon.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            background-color: var(--accent-color);
+            border-radius: 0 4px 4px 0;
         }
 
-        .sidebar-toggle .chevron {
-            transition: transform 0.2s ease;
-            width: 10px;
-            height: 10px;
-        }
-
-        .sidebar.collapsed .sidebar-toggle .chevron {
-            transform: rotate(180deg);
-        }
-        
-        .sidebar-toggle:focus-visible {
-            outline: 2px solid var(--accent-color);
-            outline-offset: 2px;
+        .activity-bar .spacer {
+            flex: 1;
         }
 
         .sidebar-section {
             padding: 0;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
+            display: none; /* Only show active section */
             flex-direction: column;
             overflow: hidden;
-            transition: flex 0.25s ease;
+            flex: 1; /* Always take full height when visible */
             min-height: 0;
         }
 
-        .sidebar-section:not(.collapsed) {
-            flex: 1;
-        }
-
-        .sidebar-section.collapsed {
-            flex: 0 0 auto;
+        .sidebar-section.active {
+            display: flex;
         }
 
         .sidebar-section-header {
@@ -168,40 +156,17 @@
             text-transform: uppercase;
             color: var(--text-secondary);
             letter-spacing: 0.5px;
-            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
             user-select: none;
-            transition: background 0.15s, color 0.15s;
             flex-shrink: 0;
             background: rgba(0,0,0,0.02);
-            outline: none;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .sidebar-section-header:hover, .sidebar-section-header:focus-visible {
-            background: var(--hover-bg);
-            color: var(--text-primary);
-        }
-        
-        .sidebar-section-header:focus-visible {
-            outline: 2px solid var(--accent-color);
-            outline-offset: -2px;
-        }
-
-        .sidebar-section-header .chevron {
-            transition: transform 0.2s ease;
-            font-size: 9px;
-            opacity: 0.7;
-            flex-shrink: 0;
-        }
-
-        .sidebar-section-header .chevron {
-            transform: rotate(90deg);
-        }
-
-        .sidebar-section.collapsed .sidebar-section-header .chevron {
-            transform: rotate(0deg);
+        [data-theme="dark"] .sidebar-section-header {
+            background: rgba(255,255,255,0.02);
         }
 
         .sidebar-section-header .section-title {
@@ -216,26 +181,7 @@
             scrollbar-gutter: stable;
         }
 
-        .sidebar-section.collapsed .sidebar-section-content {
-            display: none;
-        }
-
-        /* File Browser */
-        .file-browser {
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .file-browser .sidebar-section-content {
-            flex: 1;
-            overflow-y: auto;
-            max-height: none;
-        }
-
-        .file-browser.collapsed .sidebar-section-content {
-            max-height: 0;
-        }
+        /* File Browser styling is now handled directly by the generic .sidebar-section classes */
 
         .file-item {
             padding: 8px 16px;
@@ -739,13 +685,29 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Activity Bar -->
+        <nav class="activity-bar">
+            <div class="activity-icon active" id="nav-reports" onclick="switchActivityView('section-reports')" title="Reports">
+                <i data-lucide="folder"></i>
+            </div>
+            <div class="activity-icon" id="nav-actions" onclick="switchActivityView('section-actions')" title="Actions">
+                <i data-lucide="zap"></i>
+            </div>
+            <div class="activity-icon" id="nav-validate" onclick="switchActivityView('section-validate')" title="Validate">
+                <i data-lucide="search"></i>
+            </div>
+            <div class="activity-icon" id="nav-export" onclick="switchActivityView('section-export')" title="Export">
+                <i data-lucide="download"></i>
+            </div>
+            <div class="spacer"></div>
+        </nav>
+
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <!-- File Browser -->
-            <div class="sidebar-section file-browser" id="section-reports">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-reports')" onkeydown="handleSectionKey(event, 'section-reports')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-reports-content">
-                    <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="folder"></i> REPORTS</span>
+            <div class="sidebar-section active" id="section-reports">
+                <div class="sidebar-section-header">
+                    <span class="section-title">REPORTS</span>
                 </div>
                 <div class="sidebar-section-content" id="section-reports-content">
                     <div class="breadcrumb" id="breadcrumb"></div>
@@ -754,10 +716,9 @@
             </div>
 
             <!-- Actions -->
-            <div class="sidebar-section actions-panel collapsed" id="section-actions">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-actions')" onkeydown="handleSectionKey(event, 'section-actions')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-actions-content">
-                    <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="zap"></i> ACTIONS</span>
+            <div class="sidebar-section actions-panel" id="section-actions">
+                <div class="sidebar-section-header">
+                    <span class="section-title">ACTIONS</span>
                     <span class="config-indicator" id="config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-actions-content">
@@ -776,10 +737,9 @@
             </div>
 
             <!-- Validate -->
-            <div class="sidebar-section validation-panel collapsed" id="section-validate">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-validate')" onkeydown="handleSectionKey(event, 'section-validate')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-validate-content">
-                    <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="search"></i> VALIDATE</span>
+            <div class="sidebar-section validation-panel" id="section-validate">
+                <div class="sidebar-section-header">
+                    <span class="section-title">VALIDATE</span>
                     <span class="config-indicator" id="rules-config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-validate-content">
@@ -803,10 +763,9 @@
             </div>
 
             <!-- Export -->
-            <div class="sidebar-section collapsed" id="section-export">
-                <div class="sidebar-section-header" onclick="toggleSidebarSection('section-export')" onkeydown="handleSectionKey(event, 'section-export')" role="button" tabindex="0" aria-expanded="false" aria-controls="section-export-content">
-                    <span class="chevron" aria-hidden="true">▶</span>
-                    <span class="section-title" style="display: flex; align-items: center; gap: 6px;"><i data-lucide="download"></i> EXPORT</span>
+            <div class="sidebar-section" id="section-export">
+                <div class="sidebar-section-header">
+                    <span class="section-title">EXPORT</span>
                 </div>
                 <div class="sidebar-section-content" style="padding: 8px 12px;" id="section-export-content">
                     <div class="export-buttons">
@@ -825,13 +784,7 @@
                     </div>
                 </div>
             </div>
-            
             <div class="sidebar-resizer" onmousedown="initSidebarResize(event)"></div>
-            <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar" aria-label="Toggle Sidebar" aria-expanded="true" aria-controls="sidebar">
-                <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
         </aside>
 
         <!-- Main Content -->

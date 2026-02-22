@@ -42,7 +42,8 @@ pbir-utils ui --no-browser
 
 The UI provides a wireframe view of your report layout.
 
-- **Navigation**: Use the sidebar to browse your file system and open `.Report` folders.
+- **Activity Bar**: Use the navigation rail on the far left to switch between Reports, Actions, Validate, and Export panes. Clicking an active icon collapses the sidebar.
+- **Reports Navigation**: Use the Active Reports pane in the sidebar to browse your file system and open `.Report` folders.
 - **Search**: Use the main search bar in the header to filter the view. You can search by:
     - **Visuals**: Filter by unique ID or visual type (e.g., `slicer`).
     - **Pages**: Filter by display name or page ID. Entering a page ID will narrow the tab bar to only that page.
@@ -89,14 +90,14 @@ The **Fields Pane** (right side) lists your tables, columns, and measures.
 ## Actions & Validation
 
 ### Running Actions
-The **Actions** panel lists available cleanup tasks.
+Click the **Zap** icon in the Activity Bar to open the **Actions** panel, which lists available cleanup tasks.
 
 - **Run**: Executes the selected actions.
 - **Dry Run**: Simulates the actions and prints a log of what *would* happen, without changing files.
 - **Load Config**: Click the "Load Sanitizer Config" button (with the file icon) to upload a custom `pbir-sanitize.yaml` to override default action behaviors.
 
 ### Validation
-The **Validate** panel checks your report against rules.
+Click the **Search** icon in the Activity Bar to open the **Validate** panel, which checks your report against rules.
 
 - **Expression Rules**: Checks logic (e.g., "Visuals must not overlap").
 - **Sanitizer Checks**: If "Include sanitizer action checks" is selected, it also checks if any sanitizer actions (like "Remove unused bookmarks") would trigger changes.
@@ -106,7 +107,7 @@ The **Validate** panel checks your report against rules.
 
 ## Exporting
 
-You can export data for external use:
+Click the **Download** icon in the Activity Bar to open the **Export** panel, where you can export data for external use:
 
 - **Attributes CSV**: Metadata for visible visuals.
 - **Visuals CSV**: List of visuals with IDs and types.
