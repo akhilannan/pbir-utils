@@ -7,7 +7,9 @@ from unittest.mock import patch
 from conftest import create_dummy_file
 from pbir_utils.page_utils import (
     hide_pages_by_type,
+    set_active_page,
     set_first_page_as_active,
+    set_page_order,
     remove_empty_pages,
     set_page_size,
     set_page_display_option,
@@ -118,11 +120,11 @@ class TestHidePagesByType:
         assert result is False
 
 
-class TestSetFirstPageAsActive:
-    """Tests for set_first_page_as_active."""
+class TestSetActivePage:
+    """Tests for set_active_page and backwards compat wrapper."""
 
     def test_with_hidden_pages(self, tmp_path):
-        """Test that the first non-hidden page is set as active."""
+        """Test that the first non-hidden page is set as active when page=None."""
         report_path = str(tmp_path)
 
         create_dummy_file(
@@ -165,7 +167,7 @@ class TestSetFirstPageAsActive:
             },
         )
 
-        set_first_page_as_active(report_path)
+        set_active_page(report_path)
 
         pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
         assert pages_data["activePageName"] == "Page3"
@@ -203,41 +205,169 @@ class TestSetFirstPageAsActive:
         )
 
         with patch("builtins.print") as mock_print:
-            set_first_page_as_active(report_path)
+            set_active_page(report_path)
             assert any("Warning" in str(call) for call in mock_print.call_args_list)
 
         pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
         assert pages_data["activePageName"] == "Page1"
 
-    def test_renamed_folders(self, tmp_path):
-        """Test when folder names don't match page IDs."""
+    def test_specific_page_by_display_name(self, tmp_path):
+        """Test setting a specific page by displayName."""
         report_path = str(tmp_path)
 
         create_dummy_file(
             tmp_path,
             "definition/pages/pages.json",
-            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page2"},
+            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
         )
-
         create_dummy_file(
             tmp_path,
-            "definition/pages/Folder_Page1/page.json",
-            {"name": "Page1", "displayName": "Page 1", "visibility": "Visible"},
+            "definition/pages/Page1/page.json",
+            {"name": "Page1", "displayName": "Overview", "visibility": "Visible"},
         )
         create_dummy_file(
             tmp_path,
             "definition/pages/Page2/page.json",
+            {"name": "Page2", "displayName": "Details", "visibility": "Visible"},
+        )
+
+        set_active_page(report_path, page="Details")
+
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["activePageName"] == "Page2"
+
+    def test_page_not_found(self, tmp_path):
+        """Test behavior when specific page is not found."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1"], "activePageName": "Page1"},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"name": "Page1", "displayName": "Overview"},
+        )
+
+        with patch("builtins.print"):
+            result = set_active_page(report_path, page="Missing")
+
+        assert result is False
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["activePageName"] == "Page1"
+
+    def test_backward_compat_wrapper(self, tmp_path):
+        """Test the set_first_page_as_active wrapper works."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
             {
-                "name": "Page2",
-                "displayName": "Page 2",
+                "name": "Page1",
+                "displayName": "Hidden",
                 "visibility": "HiddenInViewMode",
             },
         )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"name": "Page2", "displayName": "Visible", "visibility": "Visible"},
+        )
 
         set_first_page_as_active(report_path)
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["activePageName"] == "Page2"
+
+
+class TestSetPageOrder:
+    """Tests for set_page_order."""
+
+    def test_set_page_order_successful(self, tmp_path):
+        """Test successfully setting page order using internal names and display names."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2", "Page3"]},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"name": "Page1", "displayName": "First"},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"name": "Page2", "displayName": "Second"},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page3/page.json",
+            {"name": "Page3", "displayName": "Third"},
+        )
+
+        # Test case-insensitive and using logic mix of ID and displayName
+        result = set_page_order(report_path, ["Second", "page3", "Page1"])
+        assert result is True
 
         pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
-        assert pages_data["activePageName"] == "Page1"
+        assert pages_data["pageOrder"] == ["Page2", "Page3", "Page1"]
+
+    def test_unresolved_pages_aborts(self, tmp_path):
+        """Test that if a page cannot be found, the update aborts."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1", "Page2"]}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"name": "Page1"}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page2/page.json", {"name": "Page2"}
+        )
+
+        with patch("builtins.print"):
+            result = set_page_order(report_path, ["Page2", "MissingPage"])
+
+        assert result is False
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["pageOrder"] == ["Page1", "Page2"]
+
+    def test_appends_unspecified_pages(self, tmp_path):
+        """Test that pages not in the order list are appended to the end."""
+        report_path = str(tmp_path)
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2", "Page3"]},
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"name": "Page1"}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page2/page.json", {"name": "Page2"}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page3/page.json", {"name": "Page3"}
+        )
+
+        # Only ordered Page2
+        result = set_page_order(report_path, ["Page2"])
+
+        assert result is True
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["pageOrder"] == ["Page2", "Page1", "Page3"]
 
 
 class TestRemoveEmptyPages:

@@ -11,6 +11,7 @@ from . import (
     measures,
     filters,
     pages,
+    themes,
     ui,
     validate,
 )
@@ -27,6 +28,7 @@ ALL_COMMANDS = [
     measures,
     filters,
     pages,
+    themes,
 ]
 
 

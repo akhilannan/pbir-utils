@@ -17,7 +17,9 @@ from .pbir_report_sanitizer import (
 from .bookmark_utils import remove_unused_bookmarks, cleanup_invalid_bookmarks
 from .page_utils import (
     hide_pages_by_type,
+    set_active_page,
     set_first_page_as_active,
+    set_page_order,
     remove_empty_pages,
     set_page_size,
     set_page_display_option,
@@ -28,6 +30,10 @@ from .visual_utils import (
     remove_hidden_visuals_never_shown,
 )
 from .folder_standardizer import standardize_pbir_folders
+from .theme_utils import (
+    set_theme,
+    reset_hardcoded_colors,
+)
 from .sanitize_config import SanitizeConfig, ActionSpec, load_config
 from .rule_engine import validate_report, ValidationError, ValidationResult
 
@@ -56,10 +62,15 @@ __all__ = [
     "cleanup_invalid_bookmarks",
     # Page utilities
     "hide_pages_by_type",
+    "set_active_page",
     "set_first_page_as_active",
+    "set_page_order",
     "remove_empty_pages",
     "set_page_size",
     "set_page_display_option",
+    # Theme utilities
+    "set_theme",
+    "reset_hardcoded_colors",
     # Visual utilities
     "remove_unused_custom_visuals",
     "disable_show_items_with_no_data",

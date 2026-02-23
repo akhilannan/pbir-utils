@@ -256,6 +256,39 @@ class TestExtractMetadataFromFile:
         # Should return empty since page doesn't match
         assert result == []
 
+    def test_extract_visual_calculations(self, tmp_path):
+        """Test extracting NativeVisualCalculations from a visual."""
+        report_dir = tmp_path / "TestReport.Report"
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        visual_data = {
+            "name": "VisualWithCalc",
+            "visual": {
+                "visualType": "tableEx",
+                "objects": {},
+                "query": {
+                    "NativeVisualCalculation": {
+                        "Name": "My Visual Calc",
+                        "Expression": "SUM(Sales[Amount]) * 1.5",
+                    }
+                },
+            },
+        }
+        visual_path = create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/VisualWithCalc/visual.json",
+            visual_data,
+        )
+
+        result = _extract_metadata_from_file(visual_path)
+        assert len(result) == 1
+        row = result[0]
+        assert row["Column or Measure"] == "My Visual Calc"
+        assert row["Attribute Type"] == "Visual Calculation"
+        assert row["Expression"] == "SUM(Sales[Amount]) * 1.5"
+        assert row["Used In Detail"] == "Visual Calculation"
+
 
 class TestConsolidateMetadataFromDirectory:
     """Tests for _consolidate_metadata_from_directory function."""

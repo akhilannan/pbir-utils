@@ -349,6 +349,79 @@ class TestPagesHandlers:
             summary=True,
         )
 
+    @patch("pbir_utils.common.resolve_report_path")
+    @patch("pbir_utils.page_utils.set_page_order")
+    def test_handle_set_page_order(self, mock_set, mock_resolve):
+        """Test set-page-order handler."""
+        mock_resolve.return_value = "resolved/path"
+        args = argparse.Namespace(
+            report_path="path",
+            order=["Page1", "Page2"],
+            dry_run=True,
+            summary=False,
+        )
+
+        from pbir_utils.commands.pages import handle_set_page_order
+
+        handle_set_page_order(args)
+
+        mock_set.assert_called_once_with(
+            "resolved/path",
+            page_order=["Page1", "Page2"],
+            dry_run=True,
+            summary=False,
+        )
+
+    @patch("pbir_utils.common.resolve_report_path")
+    @patch("pbir_utils.page_utils.set_active_page")
+    def test_handle_set_active_page(self, mock_set, mock_resolve):
+        """Test set-active-page handler."""
+        mock_resolve.return_value = "resolved/path"
+        args = argparse.Namespace(
+            report_path="path",
+            page="Overview",
+            dry_run=False,
+            summary=True,
+        )
+
+        from pbir_utils.commands.pages import handle_set_active_page
+
+        handle_set_active_page(args)
+
+        mock_set.assert_called_once_with(
+            "resolved/path",
+            page="Overview",
+            dry_run=False,
+            summary=True,
+        )
+
+
+class TestThemesHandlers:
+    """Tests for theme-related command handlers."""
+
+    @patch("pbir_utils.common.resolve_report_path")
+    @patch("pbir_utils.theme_utils.set_theme")
+    def test_handle_set_theme(self, mock_set, mock_resolve):
+        """Test set-theme handler."""
+        mock_resolve.return_value = "resolved/path"
+        args = argparse.Namespace(
+            report_path="path",
+            theme_file="my_theme.json",
+            dry_run=True,
+            summary=False,
+        )
+
+        from pbir_utils.commands.themes import handle_set_theme
+
+        handle_set_theme(args)
+
+        mock_set.assert_called_once_with(
+            "resolved/path",
+            theme_path="my_theme.json",
+            dry_run=True,
+            summary=False,
+        )
+
 
 class TestInteractionsHandlers:
     """Tests for interaction-related command handlers."""

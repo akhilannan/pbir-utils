@@ -447,3 +447,26 @@ def remove_hidden_visuals_never_shown(
     else:
         console.print_info("No hidden visuals removed.")
         return False
+
+
+def _find_calculations_in_dict(obj):
+    """Recursively find NativeVisualCalculation references in a dict/list."""
+    calcs = []
+    if isinstance(obj, dict):
+        if "NativeVisualCalculation" in obj and isinstance(
+            obj["NativeVisualCalculation"], dict
+        ):
+            calc = obj["NativeVisualCalculation"]
+            calcs.append(
+                {
+                    "name": calc.get("Name", "Unknown"),
+                    "expression": calc.get("Expression", ""),
+                }
+            )
+        else:
+            for k, v in obj.items():
+                calcs.extend(_find_calculations_in_dict(v))
+    elif isinstance(obj, list):
+        for item in obj:
+            calcs.extend(_find_calculations_in_dict(item))
+    return calcs

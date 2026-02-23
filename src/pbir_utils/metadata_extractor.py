@@ -8,6 +8,7 @@ from .common import (
     extract_visual_info,
     find_report_folders,
 )
+from .visual_utils import _find_calculations_in_dict
 from .console_utils import console
 
 HEADER_FIELDS = [
@@ -229,6 +230,33 @@ def _extract_metadata_from_file(
         )
         if _apply_row_filters(row, filters):
             all_rows.append(row)
+
+    # If this file is a visual.json, also extract NativeVisualCalculations
+    if "visual" in data and isinstance(data["visual"], dict):
+        visual_type = data["visual"].get("visualType", "NA")
+        calcs = _find_calculations_in_dict(data.get("visual", {}))
+        for calc in calcs:
+            row = dict(
+                zip(
+                    HEADER_FIELDS,
+                    [
+                        report_name,
+                        page_name,
+                        page_id,
+                        "NA",  # Table is generally not applicable
+                        calc[
+                            "name"
+                        ],  # Using Calc Name as the column/measure equivalent
+                        "Visual Calculation",  # Attribute Type
+                        calc["expression"],
+                        visual_type,
+                        "Visual Calculation",
+                        id,
+                    ],
+                )
+            )
+            if _apply_row_filters(row, filters):
+                all_rows.append(row)
 
     return all_rows
 

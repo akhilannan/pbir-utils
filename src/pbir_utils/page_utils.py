@@ -69,23 +69,30 @@ def hide_pages_by_type(
     return True
 
 
-def set_first_page_as_active(
-    report_path: str, dry_run: bool = False, summary: bool = False
+def set_active_page(
+    report_path: str, page: str = None, dry_run: bool = False, summary: bool = False
 ) -> bool:
     """
-    Set the first non-hidden page of the report as active.
+    Set a specific page or the first non-hidden page as active.
 
     Args:
         report_path (str): The path to the report.
+        page (str, optional): Page name or displayName to target. If None, sets the first non-hidden page.
         dry_run (bool): Whether to perform a dry run.
         summary (bool): Whether to show summary instead of detailed messages.
 
     Returns:
         bool: True if changes were made (or would be made in dry run), False otherwise.
     """
-    console.print_action_heading("Setting the first non-hidden page as active", dry_run)
+    page_filter_msg = f" '{page}'" if page else " the first non-hidden page"
+    console.print_action_heading(f"Setting{page_filter_msg} as active", dry_run)
     pages_dir = Path(report_path) / "definition" / "pages"
     pages_json_path = pages_dir / "pages.json"
+
+    if not pages_json_path.exists():
+        console.print_warning("No pages.json found.")
+        return False
+
     pages_data = load_json(str(pages_json_path))
 
     page_order = pages_data.get("pageOrder", [])
@@ -98,50 +105,183 @@ def set_first_page_as_active(
     for page_id, folder_path, page_data in iter_pages(report_path):
         page_map[page_id] = (folder_path, page_data)
 
-    first_non_hidden_page = None
-    first_non_hidden_page_display_name = None
+    target_page_id = None
+    target_page_display_name = None
 
-    for page_id in page_order:
-        if page_id in page_map:
-            _, page_data = page_map[page_id]
-            if page_data.get("visibility") != "HiddenInViewMode":
-                first_non_hidden_page = page_id
-                first_non_hidden_page_display_name = page_data.get(
-                    "displayName", page_id
-                )
-                break
+    if page is not None:
+        # Look for the specific page by name or displayName
+        for page_id in page_order:
+            if page_id in page_map:
+                _, page_data = page_map[page_id]
+                page_name = page_data.get("name", page_id)
+                page_display_name = page_data.get("displayName", page_id)
+                if page == page_name or page == page_display_name:
+                    target_page_id = page_id
+                    target_page_display_name = page_display_name
+                    break
 
-    if first_non_hidden_page is None:
-        first_non_hidden_page = page_order[0]
-        if first_non_hidden_page in page_map:
-            _, fallback_page_data = page_map[first_non_hidden_page]
-            first_non_hidden_page_display_name = fallback_page_data.get(
-                "displayName", first_non_hidden_page
+        # Also check pages not in pageOrder
+        if target_page_id is None:
+            for page_id, (_, page_data) in page_map.items():
+                page_name = page_data.get("name", page_id)
+                page_display_name = page_data.get("displayName", page_id)
+                if page == page_name or page == page_display_name:
+                    target_page_id = page_id
+                    target_page_display_name = page_display_name
+                    break
+
+        if target_page_id is None:
+            console.print_warning(
+                f"Warning: Page '{page}' not found. Cannot set as active."
             )
-        else:
-            first_non_hidden_page_display_name = first_non_hidden_page
-        console.print_warning(
-            f"Warning: All pages are hidden or no page.json found. Defaulting to first page: '{first_non_hidden_page_display_name}' ({first_non_hidden_page})"
-        )
+            return False
+    else:
+        # Default behavior: find first non-hidden page in pageOrder
+        for page_id in page_order:
+            if page_id in page_map:
+                _, page_data = page_map[page_id]
+                if page_data.get("visibility") != "HiddenInViewMode":
+                    target_page_id = page_id
+                    target_page_display_name = page_data.get("displayName", page_id)
+                    break
 
-    if first_non_hidden_page != current_active_page:
-        pages_data["activePageName"] = first_non_hidden_page
+        # Fallback if all are hidden
+        if target_page_id is None:
+            target_page_id = page_order[0]
+            if target_page_id in page_map:
+                _, fallback_page_data = page_map[target_page_id]
+                target_page_display_name = fallback_page_data.get(
+                    "displayName", target_page_id
+                )
+            else:
+                target_page_display_name = target_page_id
+            console.print_warning(
+                f"Warning: All pages are hidden. Defaulting to first page: '{target_page_display_name}' ({target_page_id})"
+            )
+
+    if target_page_id != current_active_page:
+        pages_data["activePageName"] = target_page_id
         if not dry_run:
             write_json(str(pages_json_path), pages_data)
-        if dry_run:
-            console.print_dry_run(
-                f"Would set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
-            )
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would set '{target_page_display_name}' as active."
+                )
+            else:
+                console.print_success(f"Set '{target_page_display_name}' as active.")
         else:
-            console.print_success(
-                f"Set '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) as the active page."
-            )
+            if dry_run:
+                console.print_dry_run(
+                    f"Would set '{target_page_display_name}' ({target_page_id}) as the active page."
+                )
+            else:
+                console.print_success(
+                    f"Set '{target_page_display_name}' ({target_page_id}) as the active page."
+                )
         return True
     else:
         console.print_info(
-            f"No changes needed. '{first_non_hidden_page_display_name}' ({first_non_hidden_page}) is already set as active."
+            f"No changes needed. '{target_page_display_name}' ({target_page_id}) is already set as active."
         )
         return False
+
+
+def set_first_page_as_active(
+    report_path: str, dry_run: bool = False, summary: bool = False
+) -> bool:
+    """
+    Set the first non-hidden page of the report as active. (Deprecated: use set_active_page instead)
+    """
+    return set_active_page(report_path, page=None, dry_run=dry_run, summary=summary)
+
+
+def set_page_order(
+    report_path: str,
+    page_order: list[str],
+    dry_run: bool = False,
+    summary: bool = False,
+) -> bool:
+    """
+    Set the specific order of pages in the report.
+
+    Args:
+        report_path (str): The path to the report.
+        page_order (list[str]): List of page names or displayNames in the desired order.
+        dry_run (bool): Whether to perform a dry run.
+        summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made in dry run), False otherwise.
+    """
+    console.print_action_heading("Setting page order", dry_run)
+    pages_dir = Path(report_path) / "definition" / "pages"
+    pages_json_path = pages_dir / "pages.json"
+
+    if not pages_json_path.exists():
+        console.print_warning("No pages.json found.")
+        return False
+
+    pages_data = load_json(str(pages_json_path))
+    current_order = pages_data.get("pageOrder", [])
+
+    if not current_order:
+        console.print_warning("Report has no pages in pageOrder.")
+        return False
+
+    page_map = {}
+    for page_id, folder_path, page_data in iter_pages(report_path):
+        page_name = page_data.get("name", page_id)
+        page_display_name = page_data.get("displayName", page_id)
+        # Store lowercase to make matching case-insensitive, but also store original
+        page_map[page_name.lower()] = page_id
+        page_map[page_display_name.lower()] = page_id
+        page_map[page_id.lower()] = page_id
+
+    resolved_order = []
+    missing_pages = []
+
+    for p in page_order:
+        p_lower = p.lower()
+        if p_lower in page_map:
+            resolved_id = page_map[p_lower]
+            if resolved_id not in resolved_order:
+                resolved_order.append(resolved_id)
+        else:
+            missing_pages.append(p)
+
+    if missing_pages:
+        console.print_error(
+            f"Could not resolve the following pages: {', '.join(missing_pages)}"
+        )
+        console.print_warning("Page order update aborted.")
+        return False
+
+    # Append any unspecified pages to the end to prevent orphaning them
+    for current_id in current_order:
+        if current_id not in resolved_order:
+            resolved_order.append(current_id)
+
+    if current_order == resolved_order:
+        console.print_info("No changes needed. Page order is already matching.")
+        return False
+
+    pages_data["pageOrder"] = resolved_order
+    if not dry_run:
+        write_json(str(pages_json_path), pages_data)
+
+    if summary:
+        if dry_run:
+            console.print_dry_run("Would reorder pages.")
+        else:
+            console.print_success("Reordered pages.")
+    else:
+        if dry_run:
+            console.print_dry_run("Would update pageOrder.")
+        else:
+            console.print_success("Updated pageOrder.")
+
+    return True
 
 
 def remove_empty_pages(

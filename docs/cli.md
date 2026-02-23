@@ -499,7 +499,7 @@ If no output path is specified, creates `metadata.csv` (or `visuals.csv` with `-
 
 ### Attribute Metadata (Default)
 
-Exports detailed information about tables, columns, measures, DAX expressions, and usage contexts.
+Exports detailed information about tables, columns, measures, visual calculations, DAX expressions, and usage contexts.
 
 ```bash
 # Creates metadata.csv in the report folder
@@ -617,6 +617,73 @@ The command's scope depends on which options are provided:
 2. **With `--pages`**: Disables interactions between all visuals on the specified pages only.
 3. **With `--source-visual-ids` or `--source-visual-types`**: Disables interactions **from** the specified sources to all targets.
 4. **With `--target-visual-ids` or `--target-visual-types`**: Disables interactions **to** the specified targets from all sources.
+
+---
+## Page Operations
+
+Commands for managing report pages.
+
+### Set Page Order
+
+Reorder pages in the report to a specific sequence. Pages not specified in the list will be appended to the end.
+
+```bash
+# Reorder pages explicitly
+pbir-utils set-page-order "C:\Reports\MyReport.Report" --order "Executive Summary" "Sales Details" "Glossary"
+
+# Preview without applying
+pbir-utils set-page-order "C:\Reports\MyReport.Report" --order "Overview" "Trends" --dry-run
+```
+
+### Set Active Page
+
+Set a specific page as the default active page when the report is opened.
+
+```bash
+# Set a specific page by name
+pbir-utils set-active-page "C:\Reports\MyReport.Report" --page "Sales Details"
+
+# Same as set_first_page_as_active: Sets first non-hidden page if omitted
+pbir-utils set-active-page "C:\Reports\MyReport.Report"
+```
+
+---
+## Theme Management
+
+Commands for applying and updating report themes.
+
+### Set Theme
+
+Apply a custom theme JSON file to the report.
+
+```bash
+pbir-utils set-theme "C:\Reports\MyReport.Report" --theme-file "C:\Themes\Corporate.json"
+```
+
+### Reset Colors
+
+Remove hardcoded hex colors from visuals to fall back to theme colors.
+
+```bash
+# Reset all colors in a report
+pbir-utils reset-colors "C:\Reports\MyReport.Report"
+
+# Reset colors only on specific pages
+pbir-utils reset-colors "C:\Reports\MyReport.Report" --pages "Sales" "Marketing"
+
+# Reset colors only for specific visual types
+pbir-utils reset-colors "C:\Reports\MyReport.Report" --visual-types lineChart columnChart
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--pages` | List of page names or display names to process |
+| `--visual-types` | List of visual types to process |
+| `--visual-ids` | List of visual IDs to process |
+| `--dry-run` | Preview changes without modifying files |
+| `--summary` | Show summary instead of detailed messages |
 
 ---
 ## Remove Measures

@@ -765,3 +765,76 @@ pbir.set_page_size(
 ```
 
 ---
+
+## Page Utilities
+
+Functions for managing page order and active status.
+
+### `set_page_order`
+
+Reorders pages in a Power BI report based on a provided list.
+
+```python
+pbir.set_page_order(
+    report_path=r"C:\DEV\MyReport.Report",
+    page_order=["Overview", "Details", "Appendix"],
+    dry_run=True,
+    summary=False
+)
+```
+
+### `set_active_page`
+
+Sets a specific page as the default active page when opening the report.
+
+```python
+# Set specific page
+pbir.set_active_page(
+    report_path=r"C:\DEV\MyReport.Report",
+    page="Overview",
+    dry_run=True
+)
+
+# Equivalent to set_first_page_as_active
+pbir.set_active_page(
+    report_path=r"C:\DEV\MyReport.Report"
+)
+```
+
+---
+
+## Theme Utilities
+
+Functions for managing reports' themes and colors.
+
+### `set_theme`
+
+Applies a custom theme JSON to the report.
+
+```python
+pbir.set_theme(
+    report_path=r"C:\DEV\MyReport.Report",
+    theme_path=r"C:\Themes\Corporate.json",
+    dry_run=True
+)
+```
+
+### `reset_hardcoded_colors`
+
+Removes hardcoded hex colors from visuals to fall back to theme colors.
+
+```python
+# Reset all hardcoded colors across the entire report
+pbir.reset_hardcoded_colors(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=True,
+    summary=True
+)
+
+# Reset colors only on specific pages
+pbir.reset_hardcoded_colors(
+    report_path=r"C:\DEV\MyReport.Report",
+    pages=["Overview", "Detail"],
+    dry_run=True
+)
+```

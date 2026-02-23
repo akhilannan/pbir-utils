@@ -142,6 +142,10 @@ definitions:
     params:
       display_option: ActualSize
 
+  reset_hardcoded_colors:
+    description: Remove hardcoded hex colors from visuals to fall back to theme colors
+    severity: info
+
 
 # Default action execution order
 actions:
