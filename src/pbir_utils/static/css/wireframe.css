@@ -485,7 +485,6 @@
             overflow: auto;
             padding: 40px;
             display: flex;
-            justify-content: center;
             align-items: flex-start;
             background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
             background-size: 20px 20px;
