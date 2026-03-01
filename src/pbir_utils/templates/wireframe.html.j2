@@ -24,6 +24,7 @@
 {% include 'wireframe_content.html.j2' %}
 
 <script>
+    var API_MODE = false;
     var fieldsIndex = {{ fields_index | tojson }};
     var activePageId = "{{ active_page_id }}";
     {% include 'js/wireframe.js' %}

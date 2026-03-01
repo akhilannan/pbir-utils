@@ -804,18 +804,23 @@ function hidePageTooltip() {
 const selectedFields = new Set();
 let searchDebounceTimer = null;
 
-function toggleFieldsPane() {
+function expandFieldsPane(event) {
     const pane = document.getElementById('fields-pane');
-    const btn = document.getElementById('fields-pane-btn');
-    const isCollapsed = pane.classList.toggle('collapsed');
-    btn.classList.toggle('pane-collapsed', isCollapsed);
+    if (pane && pane.classList.contains('collapsed')) {
+        pane.classList.remove('collapsed');
+        localStorage.setItem('wireframe-fields-pane', 'expanded');
+    }
+}
 
-    // Update ARIA state
-    btn.setAttribute('aria-expanded', !isCollapsed);
-    btn.setAttribute('aria-label', isCollapsed ? 'Expand Fields Pane' : 'Collapse Fields Pane');
-
-    // Save preference
-    localStorage.setItem('wireframe-fields-pane', isCollapsed ? 'collapsed' : 'expanded');
+function collapseFieldsPane(event) {
+    if (event) {
+        event.stopPropagation(); // prevent triggering expandFieldsPane on the parent pane
+    }
+    const pane = document.getElementById('fields-pane');
+    if (pane && !pane.classList.contains('collapsed')) {
+        pane.classList.add('collapsed');
+        localStorage.setItem('wireframe-fields-pane', 'collapsed');
+    }
 }
 
 function initFieldsPane() {
@@ -870,13 +875,10 @@ function initFieldsPane() {
     // Load saved pane state (default is collapsed)
     const savedState = localStorage.getItem('wireframe-fields-pane');
     const pane = document.getElementById('fields-pane');
-    const btn = document.getElementById('fields-pane-btn');
     if (savedState === 'expanded') {
         pane.classList.remove('collapsed');
-        btn.classList.remove('pane-collapsed');
     } else {
-        // Default is collapsed, ensure button class is set
-        btn.classList.add('pane-collapsed');
+        pane.classList.add('collapsed');
     }
 }
 
@@ -1428,8 +1430,6 @@ function initFieldsPaneResize(e) {
 
     // Disable transitions for smooth dragging
     pane.classList.add('resizing');
-    const btn = document.getElementById('fields-pane-btn');
-    if (btn) btn.classList.add('resizing');
     document.getElementById('fields-pane-resize').classList.add('active');
 
     document.body.style.cursor = 'ew-resize';
@@ -1458,8 +1458,6 @@ document.addEventListener('mouseup', e => {
     // Re-enable transitions
     const pane = document.getElementById('fields-pane');
     if (pane) pane.classList.remove('resizing');
-    const btn = document.getElementById('fields-pane-btn');
-    if (btn) btn.classList.remove('resizing');
     const handle = document.getElementById('fields-pane-resize');
     if (handle) handle.classList.remove('active');
 

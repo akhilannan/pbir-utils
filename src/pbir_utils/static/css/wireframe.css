@@ -621,10 +621,62 @@
         }
 
         .pbir-wireframe .fields-pane.collapsed {
-            width: 0;
-            min-width: 0;
-            opacity: 0;
-            border-left: none;
+            width: 24px !important;
+            min-width: 24px;
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        .pbir-wireframe .fields-pane.collapsed:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .pbir-wireframe .fields-pane.collapsed:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .pbir-wireframe .fields-pane.collapsed .fields-pane-resize {
+            display: none;
+        }
+
+        .pbir-wireframe .fields-pane.collapsed .fields-pane-expanded-content {
+            display: none;
+        }
+
+        .pbir-wireframe .fields-pane-collapsed-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            padding-top: 10px;
+            gap: 10px;
+            color: var(--text-secondary);
+        }
+
+        .pbir-wireframe .fields-pane.collapsed .fields-pane-collapsed-content {
+            display: flex;
+        }
+
+        .pbir-wireframe .fields-pane-collapsed-content .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transform: rotate(180deg);
+        }
+
+        .pbir-wireframe .fields-pane.collapsed:hover .fields-pane-collapsed-content {
+            color: var(--text-primary);
+        }
+
+        .pbir-wireframe .fields-pane-expanded-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
         }
 
         /* Fields Pane Resize Handle */
@@ -912,73 +964,7 @@
             color: var(--text-secondary);
         }
 
-        /* Pane Toggle Button */
-        .pbir-wireframe .fields-pane-toggle {
-            position: absolute;
-            /* Changed from fixed to absolute */
-            right: var(--fields-pane-width);
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 60px;
-            background-color: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-right: none;
-            border-radius: 8px 0 0 8px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
-            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, color 0.2s;
-            z-index: 95;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            font-size: 14px;
-        }
 
-        .pbir-wireframe .fields-pane-toggle svg {
-            width: 10px;
-            height: 10px;
-        }
-
-        .pbir-wireframe .fields-pane-toggle.resizing {
-            transition: none;
-        }
-
-        .pbir-wireframe .fields-pane-toggle:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
-
-        .pbir-wireframe .fields-pane-toggle.pane-collapsed {
-            right: 0;
-            background-color: var(--accent-color);
-            color: #ffffff;
-            border: 1px solid var(--accent-color);
-        }
-
-        .pbir-wireframe .fields-pane-toggle.pane-collapsed:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .pbir-wireframe .fields-pane-toggle .toggle-icon-expand {
-            display: none;
-        }
-
-        .pbir-wireframe .fields-pane-toggle .toggle-icon-collapse {
-            display: block;
-        }
-
-        .pbir-wireframe .fields-pane-toggle.pane-collapsed .toggle-icon-expand {
-            display: block;
-        }
-
-        .pbir-wireframe .fields-pane-toggle.pane-collapsed .toggle-icon-collapse {
-            display: none;
-        }
 
         /* Toast - Keep global-ish or scope? It's fixed position. If scoped, it positions relative to wireframe container if that has transform? No, fixed is viewport relative unless contain property used. */
         .pbir-wireframe .toast {
@@ -1011,7 +997,9 @@
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            padding: 4px 16px;
+            padding: 0 16px;
+            height: 24px;
+            box-sizing: border-box;
             font-size: 10px;
             color: var(--text-secondary);
             background: var(--card-bg);
