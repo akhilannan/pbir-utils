@@ -417,22 +417,24 @@ def remove_measures(
     entities_to_keep = []
 
     used_measures_cache = None
+    all_used_measures = None
     if check_visual_usage:
         used_measures_cache = _get_all_measures_used_in_visuals(report_path)
+        # Build dependency graph from ALL entities so cross-entity
+        # measure references are detected correctly.
+        all_measures_dict = {
+            measure["name"]: measure.get("expression", "")
+            for entity in report_data.get("entities", [])
+            for measure in entity.get("measures", [])
+        }
+        if all_measures_dict:
+            dep_graph = _build_dependency_graph(all_measures_dict)
+            all_used_measures = _get_all_used_measures(
+                all_measures_dict, used_measures_cache, dep_graph
+            )
 
     for entity in report_data.get("entities", []):
         measures = entity.get("measures", [])
-        measures_dict = {
-            measure["name"]: measure.get("expression", "") for measure in measures
-        }
-
-        all_used_measures = None
-        if check_visual_usage and used_measures_cache is not None:
-            dep_graph = _build_dependency_graph(measures_dict)
-            all_used_measures = _get_all_used_measures(
-                measures_dict, used_measures_cache, dep_graph
-            )
-
         entity["measures"] = [
             measure
             for measure in measures

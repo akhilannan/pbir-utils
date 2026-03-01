@@ -158,3 +158,43 @@ def test_remove_measures(
     measures = written_data["entities"][0]["measures"]
     assert len(measures) == 1
     assert measures[0]["name"] == "KeepMe"
+
+
+@patch("pbir_utils.pbir_measure_utils._load_report_extension_data")
+@patch("pbir_utils.pbir_measure_utils.write_json")
+@patch("pbir_utils.pbir_measure_utils._get_all_measures_used_in_visuals")
+def test_remove_measures_cross_entity_dependency(
+    mock_get_all, mock_write, mock_load_data
+):
+    """Measures referenced across entities must not be removed."""
+    report_data = {
+        "entities": [
+            {
+                "name": "Table1",
+                "measures": [
+                    {"name": "BaseMetric", "expression": "SUM(Table[Col])"},
+                ],
+            },
+            {
+                "name": "Table2",
+                "measures": [
+                    {"name": "DerivedMetric", "expression": "[BaseMetric] * 2"},
+                ],
+            },
+        ]
+    }
+    mock_load_data.return_value = ("path/reportExtensions.json", report_data)
+    # Only DerivedMetric is in a visual; BaseMetric is used indirectly
+    mock_get_all.return_value = {"DerivedMetric"}
+
+    remove_measures("path", measure_names=None, check_visual_usage=True)
+
+    args, _ = mock_write.call_args
+    written_data = args[1]
+    all_remaining = [
+        m["name"]
+        for entity in written_data["entities"]
+        for m in entity.get("measures", [])
+    ]
+    assert "BaseMetric" in all_remaining, "Indirectly used measure was removed"
+    assert "DerivedMetric" in all_remaining
