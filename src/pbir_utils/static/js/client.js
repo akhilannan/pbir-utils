@@ -956,13 +956,7 @@ document.addEventListener('mouseup', () => {
 
 function toggleOutputPanel() {
     const panel = document.getElementById('output-panel');
-    const btn = document.getElementById('output-toggle');
-    const isCollapsed = panel.classList.toggle('collapsed');
-
-    if (btn) {
-        btn.setAttribute('aria-expanded', !isCollapsed);
-        btn.setAttribute('aria-label', isCollapsed ? 'Expand Output Panel' : 'Collapse Output Panel');
-    }
+    panel.classList.toggle('collapsed');
     savePanelState();
 }
 
@@ -1055,22 +1049,13 @@ function loadPanelState() {
             const state = JSON.parse(saved);
             const panel = document.getElementById('output-panel');
             const sidebar = document.getElementById('sidebar');
-            const outputBtn = document.getElementById('output-toggle');
 
             if (state.outputHeight) panel.style.height = state.outputHeight;
 
             if (state.outputCollapsed) {
                 panel.classList.add('collapsed');
-                if (outputBtn) {
-                    outputBtn.setAttribute('aria-expanded', 'false');
-                    outputBtn.setAttribute('aria-label', 'Expand Output Panel');
-                }
             } else {
                 panel.classList.remove('collapsed');
-                if (outputBtn) {
-                    outputBtn.setAttribute('aria-expanded', 'true');
-                    outputBtn.setAttribute('aria-label', 'Collapse Output Panel');
-                }
             }
 
             if (state.sidebarWidth) sidebar.style.width = state.sidebarWidth;

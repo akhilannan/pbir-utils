@@ -491,12 +491,11 @@
         }
 
         .output-panel.collapsed {
-            height: 0 !important;
-            border-top: none;
+            height: 24px !important;
+            min-height: 24px !important;
         }
 
-        /* Hide content when collapsed, but keep toggle visible */
-        .output-panel.collapsed > .output-header,
+        /* Hide content when collapsed, but keep header visible */
         .output-panel.collapsed > .output-content,
         .output-panel.collapsed > .output-resizer {
             display: none;
@@ -519,72 +518,42 @@
             opacity: 0.5;
         }
 
-        /* Output Toggle Button */
-        .output-toggle {
-            position: absolute;
-            top: -16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 16px;
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            z-index: 90;
-            transition: all 0.2s;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-        }
-
-        .output-panel.collapsed .output-toggle {
-             border-bottom: 1px solid var(--border-color);
-             background: var(--accent-color);
-             color: white;
-             border-color: var(--accent-color);
-        }
-
-        .output-toggle:hover {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .output-toggle:focus-visible {
-            outline: 2px solid var(--accent-color);
-            outline-offset: 2px;
-        }
-
-        .output-panel.collapsed .output-toggle:hover {
-            background: var(--accent-hover);
-        }
-        
-        /* Rotate chevron based on state */
-        .output-toggle .chevron {
-            transition: transform 0.2s ease;
-            width: 10px;
-            height: 10px;
-            font-size: 14px;
-            line-height: 1;
-            transform: rotate(0deg); 
-        }
-        
-        .output-panel.collapsed .output-toggle .chevron {
-            transform: rotate(180deg);
-        }
-
         .output-header {
-            padding: 10px 16px;
+            padding: 0 16px;
+            height: 24px;
+            box-sizing: border-box;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
             user-select: none;
             background: rgba(0,0,0,0.01);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .output-header:hover {
+            background: rgba(0,0,0,0.03);
+        }
+
+        [data-theme="dark"] .output-header:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .output-header-chevron {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .output-header:hover .output-header-chevron {
+            color: var(--text-primary);
+        }
+
+        .output-panel.collapsed .output-header-chevron {
+            transform: rotate(180deg);
         }
 
         .output-header-left {
@@ -595,12 +564,17 @@
 
         .output-header h4 {
             margin: 0;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+        
+        .output-header h4 i {
+            width: 12px;
+            height: 12px;
         }
 
         .output-content {
@@ -680,6 +654,11 @@
         .wireframe-container .main-content {
             flex: 1;
             overflow: hidden;
+        }
+
+        /* Hide wireframe footer in client UI */
+        .pbir-wireframe footer {
+            display: none !important;
         }
     </style>
 </head>
@@ -801,17 +780,19 @@
 
             <!-- Output Console -->
             <div class="output-panel collapsed" id="output-panel">
-                <button class="output-toggle" id="output-toggle" onclick="toggleOutputPanel(event)" title="Toggle Output Panel" aria-label="Expand Output Panel" aria-expanded="false" aria-controls="output-panel">
-                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
                 <div class="output-resizer" id="output-resizer" onmousedown="initOutputResize(event)"></div>
-                <div class="output-header">
-                    <div class="output-header-left">
+                <div class="output-header" onclick="toggleOutputPanel()" title="Toggle Output Panel">
+                    <div class="output-header-left" style="flex: 1;">
                         <h4 style="display: flex; align-items: center; gap: 6px;"><i data-lucide="clipboard-list"></i> Output</h4>
                     </div>
-                    <button class="export-btn" onclick="clearOutput(); event.stopPropagation();" style="padding: 4px 8px;">Clear</button>
+                    <span class="output-header-chevron">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                    <div style="flex: 1; display: flex; justify-content: flex-end;">
+                        <button class="export-btn" onclick="clearOutput(); event.stopPropagation();" style="padding: 2px 8px; font-size: 11px;">Clear</button>
+                    </div>
                 </div>
                 <div class="output-content" id="output-content"></div>
             </div>
