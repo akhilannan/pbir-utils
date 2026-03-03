@@ -329,19 +329,23 @@ function restoreActionSelection(savedSet) {
 }
 
 function updateConfigIndicator() {
-    const indicator = document.getElementById('config-indicator');
-    if (indicator) {
+    const loadBtn = document.getElementById('load-config-btn');
+    const activeContainer = document.getElementById('active-config-container');
+    const nameText = document.getElementById('active-config-name-text');
+    const nameLabel = document.getElementById('active-config-name');
+
+    if (loadBtn && activeContainer && nameText && nameLabel) {
         if (currentConfigPath) {
             const fileName = currentConfigPath.split(/[\\/]/).pop();
-            indicator.innerHTML = `
-                <span class="config-name" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="file-json" style="width: 12px; height: 12px;"></i> ${escapeHtml(fileName)}</span>
-                <span class="config-reset" onclick="resetConfig(event)" title="Reset to Defaults">×</span>
-            `;
-            indicator.title = `Custom config: ${currentConfigPath}`;
-            indicator.style.display = 'inline-flex';
+            nameText.textContent = fileName;
+            nameLabel.title = fileName;
+
+            loadBtn.style.display = 'none';
+            activeContainer.style.display = 'flex';
             if (window.lucide) lucide.createIcons();
         } else {
-            indicator.style.display = 'none';
+            loadBtn.style.display = 'flex';
+            activeContainer.style.display = 'none';
         }
     }
 }
@@ -790,19 +794,23 @@ async function resetRulesConfig(event) {
 }
 
 function updateRulesConfigIndicator() {
-    const indicator = document.getElementById('rules-config-indicator');
-    if (indicator) {
+    const loadBtn = document.getElementById('load-rules-config-btn');
+    const activeContainer = document.getElementById('active-rules-config-container');
+    const nameText = document.getElementById('active-rules-config-name-text');
+    const nameLabel = document.getElementById('active-rules-config-name');
+
+    if (loadBtn && activeContainer && nameText && nameLabel) {
         if (currentRulesConfigPath) {
             const fileName = currentRulesConfigPath.split(/[\\/]/).pop();
-            indicator.innerHTML = `
-                <span class="config-name" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="file-json" style="width: 12px; height: 12px;"></i> ${escapeHtml(fileName)}</span>
-                <span class="config-reset" onclick="resetRulesConfig(event)" title="Reset to Defaults">×</span>
-            `;
-            indicator.title = `Custom rules config: ${currentRulesConfigPath}`;
-            indicator.style.display = 'inline-flex';
+            nameText.textContent = fileName;
+            nameLabel.title = fileName;
+
+            loadBtn.style.display = 'none';
+            activeContainer.style.display = 'flex';
             if (window.lucide) lucide.createIcons();
         } else {
-            indicator.style.display = 'none';
+            loadBtn.style.display = 'flex';
+            activeContainer.style.display = 'none';
         }
     }
 }

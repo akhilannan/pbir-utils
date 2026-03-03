@@ -94,14 +94,14 @@ Click the **Zap** icon in the Activity Bar to open the **Actions** panel, which 
 
 - **Run**: Executes the selected actions.
 - **Dry Run**: Simulates the actions and prints a log of what *would* happen, without changing files.
-- **Load Config**: Click the "Load Sanitizer Config" button (with the file icon) to upload a custom `pbir-sanitize.yaml` to override default action behaviors.
+- **Load Config**: Click the "Load Sanitizer Config" button to upload a custom `pbir-sanitize.yaml` to override default action behaviors. When loaded, this area displays the active config name along with specific controls to change or reset the configuration.
 
 ### Validation
 Click the **Search** icon in the Activity Bar to open the **Validate** panel, which checks your report against rules.
 
 - **Expression Rules**: Checks logic (e.g., "Visuals must not overlap").
 - **Sanitizer Checks**: If "Include sanitizer action checks" is selected, it also checks if any sanitizer actions (like "Remove unused bookmarks") would trigger changes.
-- **Load Rules**: You can upload a custom `pbir-rules.yaml` here.
+- **Load Rules**: You can upload a custom `pbir-rules.yaml` here. Similar to actions, the loaded config name and controls will be displayed inline.
 
 ---
 

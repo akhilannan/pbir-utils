@@ -346,40 +346,48 @@
             font-size: 12px;
         }
 
-        .config-indicator {
-            display: none; /* JS toggles this */
+        .active-config-container {
+            display: none;
             align-items: center;
-            gap: 4px;
-            padding: 2px 4px 2px 8px;
-            font-size: 10px;
-            background: var(--accent-color);
-            color: white;
-            border-radius: 10px; /* Pill shape */
-            white-space: nowrap;
-            max-width: 150px;
-            margin-left: auto; /* Push to right */
+            justify-content: space-between;
+            padding: 6px 10px;
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid var(--accent-color);
+            border-radius: 6px;
         }
 
-        .config-name {
+        [data-theme="dark"] .active-config-container {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .active-config-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 100px;
+            white-space: nowrap;
         }
 
-        .config-reset {
+        .config-action-btn {
+            background: none;
+            border: none;
+            padding: 4px;
             cursor: pointer;
-            width: 14px;
-            height: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.1);
-            transition: all 0.2s;
+            border-radius: 4px;
         }
 
-        .config-reset:hover {
-            background: rgba(0,0,0,0.3);
+        .config-action-btn:hover {
+            color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
         }
 
         /* Validation Panel */
@@ -698,7 +706,6 @@
             <div class="sidebar-section actions-panel" id="section-actions">
                 <div class="sidebar-section-header">
                     <span class="section-title">ACTIONS</span>
-                    <span class="config-indicator" id="config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-actions-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; position: sticky; top: 0; background: var(--sidebar-bg); z-index: 1;">
@@ -707,9 +714,18 @@
                     </div>
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomConfig(this)">
-                        <button class="export-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
+                        <button class="export-btn" id="load-config-btn" onclick="document.getElementById('config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
                             <i data-lucide="file-json"></i> Load Sanitizer Config
                         </button>
+                        <div id="active-config-container" class="active-config-container">
+                            <span class="active-config-name" id="active-config-name" title="">
+                                <i data-lucide="file-check-2" style="width: 14px; height: 14px; flex-shrink: 0;"></i> <span id="active-config-name-text"></span>
+                            </span>
+                            <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                                <button class="config-action-btn" onclick="document.getElementById('config-file-input').click()" title="Change Config"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i></button>
+                                <button class="config-action-btn" onclick="resetConfig(event)" title="Reset to Defaults"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
+                            </div>
+                        </div>
                     </div>
                     <div id="actions-list"></div>
                 </div>
@@ -719,7 +735,6 @@
             <div class="sidebar-section validation-panel" id="section-validate">
                 <div class="sidebar-section-header">
                     <span class="section-title">VALIDATE</span>
-                    <span class="config-indicator" id="rules-config-indicator"></span>
                 </div>
                 <div class="sidebar-section-content" id="section-validate-content">
                     <div class="action-buttons" style="border-bottom: 1px solid var(--border-color); padding: 8px 16px;">
@@ -729,9 +744,18 @@
                     </div>
                     <div class="config-picker" style="padding: 4px 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color);">
                         <input type="file" id="rules-config-file-input" accept=".yaml,.yml" style="display: none;" onchange="loadCustomRulesConfig(this)">
-                        <button class="export-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
+                        <button class="export-btn" id="load-rules-config-btn" onclick="document.getElementById('rules-config-file-input').click()" style="width: 100%; justify-content: center; gap: 6px;">
                             <i data-lucide="file-json"></i> Load Rules Config
                         </button>
+                        <div id="active-rules-config-container" class="active-config-container">
+                            <span class="active-config-name" id="active-rules-config-name" title="">
+                                <i data-lucide="file-check-2" style="width: 14px; height: 14px; flex-shrink: 0;"></i> <span id="active-rules-config-name-text"></span>
+                            </span>
+                            <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                                <button class="config-action-btn" onclick="document.getElementById('rules-config-file-input').click()" title="Change Rules Config"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i></button>
+                                <button class="config-action-btn" onclick="resetRulesConfig(event)" title="Reset to Defaults"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
+                            </div>
+                        </div>
                     </div>
                     <div class="action-item" style="border-bottom: 1px solid var(--border-color); margin-bottom: 8px; padding-bottom: 8px;">
                         <input type="checkbox" id="include-sanitizer-checks" checked>
