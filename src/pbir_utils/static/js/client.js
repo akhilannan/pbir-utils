@@ -176,8 +176,8 @@ function renderWireframe(data) {
         wireframeContainer.innerHTML = data.html_content;
     }
 
-    // Move tooltips to document.body (must be outside wireframe-container to avoid overflow clipping)
-    const tooltipIds = ['tooltip', 'page-tooltip', 'field-tooltip', 'table-tooltip'];
+    // Move tooltips and context menu to document.body (must be outside wireframe-container to avoid overflow clipping)
+    const tooltipIds = ['tooltip', 'page-tooltip', 'field-tooltip', 'table-tooltip', 'context-menu'];
     tooltipIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -185,11 +185,12 @@ function renderWireframe(data) {
         }
     });
 
-    // Re-initialize wireframe.js global tooltip references (they were null at script load time)
+    // Re-initialize wireframe.js global references (they become stale after innerHTML replacement)
     tooltip = document.getElementById('tooltip');
     pageTooltip = document.getElementById('page-tooltip');
     fieldTooltip = document.getElementById('field-tooltip');
     tableTooltip = document.getElementById('table-tooltip');
+    contextMenu = document.getElementById('context-menu');
 
     // Reset cached elements
     cachedVisuals = null;
