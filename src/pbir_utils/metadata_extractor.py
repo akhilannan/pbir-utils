@@ -35,6 +35,100 @@ VISUAL_HEADER_FIELDS = [
 ]
 
 
+def _resolve_columns(
+    columns: list[str] = None,
+    exclude_columns: list[str] = None,
+    custom_columns: dict[str, str] = None,
+    default_fields: list[str] = None,
+) -> list[str]:
+    """
+    Validate and compute the final list of CSV fieldnames.
+
+    Args:
+        columns: Explicit columns to include (in order). Mutually exclusive with exclude_columns.
+        exclude_columns: Columns to remove from defaults. Mutually exclusive with columns.
+        custom_columns: Dict of {name: template} for user-defined derived columns.
+        default_fields: The default field list (HEADER_FIELDS or VISUAL_HEADER_FIELDS).
+
+    Returns:
+        list[str]: Ordered list of fieldnames for CSV output.
+
+    Raises:
+        ValueError: If both columns and exclude_columns are provided, or if unknown names are used.
+    """
+    if columns and exclude_columns:
+        raise ValueError(
+            "--columns and --exclude-columns are mutually exclusive. Use one or the other."
+        )
+
+    custom_names = set(custom_columns.keys()) if custom_columns else set()
+    available = set(default_fields) | custom_names
+
+    if columns:
+        unknown = [c for c in columns if c not in available]
+        if unknown:
+            raise ValueError(
+                f"Unknown column(s): {', '.join(unknown)}. "
+                f"Available: {', '.join(default_fields)}"
+                + (f" + custom: {', '.join(custom_names)}" if custom_names else "")
+            )
+        return list(columns)
+
+    if exclude_columns:
+        unknown = [c for c in exclude_columns if c not in available]
+        if unknown:
+            raise ValueError(
+                f"Unknown column(s) to exclude: {', '.join(unknown)}. "
+                f"Available: {', '.join(default_fields)}"
+                + (f" + custom: {', '.join(custom_names)}" if custom_names else "")
+            )
+        excluded = set(exclude_columns)
+        result = [f for f in default_fields if f not in excluded]
+        # Append custom columns that weren't excluded
+        result.extend(n for n in (custom_columns or {}) if n not in excluded)
+        return result
+
+    # No selection — defaults + any custom columns appended
+    result = list(default_fields)
+    result.extend(custom_columns or {})
+    return result
+
+
+def _apply_custom_columns(rows: list[dict], custom_columns: dict[str, str]) -> None:
+    """
+    Evaluate custom column templates and add derived values to each row in-place.
+
+    Args:
+        rows: List of row dicts to augment.
+        custom_columns: Dict of {column_name: template_string}.
+                        Templates use {ColumnName} placeholders, e.g. "{Report}/{Page Name}".
+    """
+    if not custom_columns:
+        return
+    for row in rows:
+        # Build a dict with empty-string fallback for None values (once per row)
+        safe = {k: (v if v is not None else "") for k, v in row.items()}
+        for col_name, template in custom_columns.items():
+            try:
+                row[col_name] = template.format_map(safe)
+            except KeyError as e:
+                row[col_name] = f"<unknown placeholder {e}>"
+
+
+def _select_columns(rows: list[dict], fieldnames: list[str]) -> list[dict]:
+    """
+    Filter each row dict to only include keys in fieldnames, preserving order.
+
+    Args:
+        rows: List of row dicts.
+        fieldnames: Ordered list of column names to keep.
+
+    Returns:
+        list[dict]: New list of filtered row dicts.
+    """
+    return [{k: row.get(k, "") for k in fieldnames} for row in rows]
+
+
 def _extract_report_name(json_file_path: str | Path) -> str:
     """
     Extracts the report name from the JSON file path.
@@ -354,6 +448,9 @@ def export_pbir_metadata_to_csv(
     visual_types: list[str] = None,
     visual_ids: list[str] = None,
     visuals_only: bool = False,
+    columns: list[str] = None,
+    exclude_columns: list[str] = None,
+    custom_columns: dict[str, str] = None,
 ):
     """
     Exports the extracted Power BI Enhanced Report Format (PBIR) metadata to a CSV file.
@@ -372,6 +469,12 @@ def export_pbir_metadata_to_csv(
         visual_ids (list[str], optional): Filter by visual ID(s) (for visuals_only mode).
         visuals_only (bool, optional): If True, exports visual-level metadata instead of attribute usage.
                                        Defaults to False.
+        columns (list[str], optional): Columns to include in output (in order).
+                                       Mutually exclusive with exclude_columns.
+        exclude_columns (list[str], optional): Columns to exclude from output.
+                                               Mutually exclusive with columns.
+        custom_columns (dict[str, str], optional): Custom derived columns as {name: template}.
+                                                    Templates use {ColumnName} placeholders.
 
     Returns:
         None
@@ -395,14 +498,29 @@ def export_pbir_metadata_to_csv(
         default_filename = "visuals.csv" if visuals_only else "metadata.csv"
         csv_output_path = str(Path(directory_path) / default_filename)
 
+    col_opts = {
+        "columns": columns,
+        "exclude_columns": exclude_columns,
+        "custom_columns": custom_columns,
+    }
+
     if visuals_only:
-        _export_visual_metadata(directory_path, csv_output_path, final_filters)
+        _export_visual_metadata(
+            directory_path, csv_output_path, final_filters, **col_opts
+        )
     else:
-        _export_attribute_metadata(directory_path, csv_output_path, final_filters)
+        _export_attribute_metadata(
+            directory_path, csv_output_path, final_filters, **col_opts
+        )
 
 
 def _export_visual_metadata(
-    directory_path: str, csv_output_path: str, filters: dict = None
+    directory_path: str,
+    csv_output_path: str,
+    filters: dict = None,
+    columns: list[str] = None,
+    exclude_columns: list[str] = None,
+    custom_columns: dict[str, str] = None,
 ):
     """Export visual-level metadata using iter_pages + extract_visual_info."""
     console.print_action_heading("Extracting visual metadata", False)
@@ -451,17 +569,30 @@ def _export_visual_metadata(
     _sort_by_page_order(metadata, report_paths)
 
     try:
+        fieldnames = _resolve_columns(
+            columns, exclude_columns, custom_columns, VISUAL_HEADER_FIELDS
+        )
+        _apply_custom_columns(metadata, custom_columns)
+        metadata = _select_columns(metadata, fieldnames)
+
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=VISUAL_HEADER_FIELDS)
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(metadata)
         console.print_success(f"Visual metadata exported to {csv_output_path}")
+    except ValueError as e:
+        console.print_error(str(e))
     except Exception as e:
         console.print_error(f"Error exporting visual metadata: {e}")
 
 
 def _export_attribute_metadata(
-    directory_path: str, csv_output_path: str, filters: dict = None
+    directory_path: str,
+    csv_output_path: str,
+    filters: dict = None,
+    columns: list[str] = None,
+    exclude_columns: list[str] = None,
+    custom_columns: dict[str, str] = None,
 ):
     """Export attribute-level metadata (original behavior)."""
     console.print_action_heading("Extracting metadata", False)
@@ -472,10 +603,18 @@ def _export_attribute_metadata(
     _sort_by_page_order(metadata, all_report_paths)
 
     try:
+        fieldnames = _resolve_columns(
+            columns, exclude_columns, custom_columns, HEADER_FIELDS
+        )
+        _apply_custom_columns(metadata, custom_columns)
+        metadata = _select_columns(metadata, fieldnames)
+
         with open(csv_output_path, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=HEADER_FIELDS)
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(metadata)
         console.print_success(f"Metadata exported to {csv_output_path}")
+    except ValueError as e:
+        console.print_error(str(e))
     except Exception as e:
         console.print_error(f"Error exporting metadata: {e}")

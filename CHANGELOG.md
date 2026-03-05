@@ -1,5 +1,3 @@
-## Changed
-- **UI**: Improved custom config loading UX. The generic load button is now replaced by a clear indicator displaying the loaded file name, along with direct controls to change or reset the configuration.
+## Added
+- **Metadata Extraction**: New `--columns`, `--exclude-columns`, and `--define-column` flags for `extract-metadata`. Select, reorder, exclude, or derive custom columns in CSV output using `{ColumnName}` templates. ([#4](https://github.com/akhilannan/pbir-utils/issues/4))
 
-## Fixed
-- **UI**: Fixed right-click context menu not working after switching to a different report.

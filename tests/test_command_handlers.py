@@ -519,7 +519,13 @@ class TestOtherHandlers:
         handle_extract(args)
 
         mock_export.assert_called_once_with(
-            "path", "out.csv", filters=None, visuals_only=False
+            "path",
+            "out.csv",
+            filters=None,
+            visuals_only=False,
+            columns=None,
+            exclude_columns=None,
+            custom_columns=None,
         )
 
     @patch("pbir_utils.common.resolve_report_path")
@@ -542,7 +548,13 @@ class TestOtherHandlers:
         handle_extract(args)
         mock_resolve.assert_called_with(None)
         mock_export.assert_called_once_with(
-            "resolved/path", None, filters=None, visuals_only=False
+            "resolved/path",
+            None,
+            filters=None,
+            visuals_only=False,
+            columns=None,
+            exclude_columns=None,
+            custom_columns=None,
         )
 
 

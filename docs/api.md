@@ -266,6 +266,9 @@ Exports metadata from PBIR into a CSV file. Supports two modes: **attribute meta
 | `visual_types` | list[str] | Filter by visual type(s) (for `visuals_only=True`) |
 | `visual_ids` | list[str] | Filter by visual ID(s) (for `visuals_only=True`) |
 | `visuals_only` | bool | If `True`, exports visual-level metadata instead of attribute usage. Default: `False` |
+| `columns` | list[str] | Columns to include in output (in order). Mutually exclusive with `exclude_columns`. |
+| `exclude_columns` | list[str] | Columns to exclude from output. Mutually exclusive with `columns`. |
+| `custom_columns` | dict[str, str] | Custom derived columns as `{name: template}`. Templates use `{ColumnName}` placeholders. |
 
 ### Example
 
@@ -301,6 +304,35 @@ pbir.export_pbir_metadata_to_csv(
 **Attribute Metadata (default):** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
 
 **Visual Metadata (`visuals_only=True`):** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
+
+### Customizing Output Columns
+
+```python
+# Select specific columns
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    columns=["Report", "Page Name", "Table", "Column or Measure"],
+)
+
+# Exclude unwanted columns
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    exclude_columns=["Page ID", "ID"],
+)
+
+# Add custom derived columns
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    custom_columns={"Path": "{Report}/{Page Name}"},
+)
+
+# Combine custom columns with column selection
+pbir.export_pbir_metadata_to_csv(
+    directory_path=r"C:\DEV\Power BI Report",
+    columns=["Path", "Table", "Expression"],
+    custom_columns={"Path": "{Report}/{Page Name}"},
+)
+```
 
 
 ---

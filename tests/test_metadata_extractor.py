@@ -2,6 +2,7 @@
 
 import os
 
+import pytest
 from conftest import create_dummy_file
 from pbir_utils.metadata_extractor import (
     _extract_report_name,
@@ -10,8 +11,12 @@ from pbir_utils.metadata_extractor import (
     _apply_row_filters,
     _extract_metadata_from_file,
     _consolidate_metadata_from_directory,
+    _resolve_columns,
+    _apply_custom_columns,
+    _select_columns,
     export_pbir_metadata_to_csv,
     HEADER_FIELDS,
+    VISUAL_HEADER_FIELDS,
 )
 
 
@@ -662,3 +667,287 @@ class TestExplicitParameters:
         )
 
         assert output_csv.exists()
+
+
+class TestResolveColumns:
+    """Tests for _resolve_columns function."""
+
+    def test_no_selection_returns_defaults(self):
+        """Test that no selection returns default fields."""
+        result = _resolve_columns(default_fields=HEADER_FIELDS)
+        assert result == HEADER_FIELDS
+
+    def test_columns_selects_subset(self):
+        """Test that --columns returns only requested columns."""
+        result = _resolve_columns(
+            columns=["Report", "Table"], default_fields=HEADER_FIELDS
+        )
+        assert result == ["Report", "Table"]
+
+    def test_columns_reorders(self):
+        """Test that --columns preserves user-specified order."""
+        result = _resolve_columns(
+            columns=["Table", "Report", "Expression"], default_fields=HEADER_FIELDS
+        )
+        assert result == ["Table", "Report", "Expression"]
+
+    def test_exclude_columns(self):
+        """Test that --exclude-columns removes specified columns."""
+        result = _resolve_columns(
+            exclude_columns=["Page ID", "ID"], default_fields=HEADER_FIELDS
+        )
+        assert "Page ID" not in result
+        assert "ID" not in result
+        assert "Report" in result
+
+    def test_columns_and_exclude_mutually_exclusive(self):
+        """Test that providing both columns and exclude_columns raises ValueError."""
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            _resolve_columns(
+                columns=["Report"],
+                exclude_columns=["Table"],
+                default_fields=HEADER_FIELDS,
+            )
+
+    def test_unknown_column_errors(self):
+        """Test that unknown column names raise ValueError."""
+        with pytest.raises(ValueError, match="Unknown column"):
+            _resolve_columns(columns=["Nonexistent"], default_fields=HEADER_FIELDS)
+
+    def test_unknown_exclude_column_errors(self):
+        """Test that unknown exclude column names raise ValueError."""
+        with pytest.raises(ValueError, match="Unknown column"):
+            _resolve_columns(
+                exclude_columns=["Nonexistent"], default_fields=HEADER_FIELDS
+            )
+
+    def test_custom_column_appended_to_defaults(self):
+        """Test that custom columns are appended to defaults when no --columns."""
+        result = _resolve_columns(
+            custom_columns={"Path": "{Report}/{Page Name}"},
+            default_fields=HEADER_FIELDS,
+        )
+        assert result[-1] == "Path"
+        assert result[:-1] == HEADER_FIELDS
+
+    def test_custom_column_with_columns(self):
+        """Test that --columns can reference custom column names."""
+        result = _resolve_columns(
+            columns=["Path", "Table"],
+            custom_columns={"Path": "{Report}/{Page Name}"},
+            default_fields=HEADER_FIELDS,
+        )
+        assert result == ["Path", "Table"]
+
+    def test_exclude_custom_column(self):
+        """Test that --exclude-columns can exclude a custom column."""
+        result = _resolve_columns(
+            exclude_columns=["Path"],
+            custom_columns={"Path": "{Report}/{Page Name}"},
+            default_fields=HEADER_FIELDS,
+        )
+        assert "Path" not in result
+
+    def test_visual_header_fields(self):
+        """Test that visual header fields work as defaults."""
+        result = _resolve_columns(
+            columns=["Report", "Visual Type"], default_fields=VISUAL_HEADER_FIELDS
+        )
+        assert result == ["Report", "Visual Type"]
+
+
+class TestApplyCustomColumns:
+    """Tests for _apply_custom_columns function."""
+
+    def test_template_evaluation(self):
+        """Test that templates are correctly evaluated."""
+        rows = [{"Report": "Sales", "Page Name": "Overview"}]
+        _apply_custom_columns(rows, {"Path": "{Report}/{Page Name}"})
+        assert rows[0]["Path"] == "Sales/Overview"
+
+    def test_none_values_become_empty_string(self):
+        """Test that None values in rows are treated as empty strings."""
+        rows = [{"Report": "Sales", "Table": None}]
+        _apply_custom_columns(rows, {"Combined": "{Report}-{Table}"})
+        assert rows[0]["Combined"] == "Sales-"
+
+    def test_no_custom_columns_noop(self):
+        """Test that None custom_columns does nothing."""
+        rows = [{"Report": "Sales"}]
+        _apply_custom_columns(rows, None)
+        assert "Path" not in rows[0]
+
+    def test_unknown_placeholder_handled(self):
+        """Test that unknown placeholders produce a descriptive value."""
+        rows = [{"Report": "Sales"}]
+        _apply_custom_columns(rows, {"Bad": "{Nonexistent}"})
+        assert "unknown placeholder" in rows[0]["Bad"]
+
+    def test_multiple_custom_columns(self):
+        """Test that multiple custom columns can be defined."""
+        rows = [{"Report": "Sales", "Page Name": "Overview", "Table": "Fact"}]
+        _apply_custom_columns(
+            rows,
+            {
+                "Path": "{Report}/{Page Name}",
+                "Qualified": "{Table}.{Report}",
+            },
+        )
+        assert rows[0]["Path"] == "Sales/Overview"
+        assert rows[0]["Qualified"] == "Fact.Sales"
+
+
+class TestSelectColumns:
+    """Tests for _select_columns function."""
+
+    def test_selects_subset(self):
+        """Test that only selected columns are returned."""
+        rows = [{"A": 1, "B": 2, "C": 3}]
+        result = _select_columns(rows, ["A", "C"])
+        assert result == [{"A": 1, "C": 3}]
+
+    def test_missing_column_gets_empty_string(self):
+        """Test that missing columns default to empty string."""
+        rows = [{"A": 1}]
+        result = _select_columns(rows, ["A", "B"])
+        assert result == [{"A": 1, "B": ""}]
+
+    def test_preserves_order(self):
+        """Test that column order matches fieldnames."""
+        rows = [{"C": 3, "A": 1, "B": 2}]
+        result = _select_columns(rows, ["B", "A"])
+        assert list(result[0].keys()) == ["B", "A"]
+
+
+class TestExportWithColumnSelection:
+    """Integration tests for export with column selection parameters."""
+
+    def _setup_report(self, tmp_path):
+        """Helper to create a minimal report structure."""
+        report_dir = tmp_path / "TestReport.Report"
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+        visual_data = {
+            "name": "Visual1",
+            "position": {"x": 10, "y": 20, "width": 100, "height": 200},
+            "visual": {"visualType": "card"},
+            "singleVisual": {
+                "projections": {
+                    "Values": [
+                        {
+                            "field": {
+                                "Column": {
+                                    "Expression": {"SourceRef": {"Entity": "Sales"}},
+                                    "Property": "Amount",
+                                }
+                            }
+                        }
+                    ],
+                }
+            },
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Visual1/visual.json",
+            visual_data,
+        )
+        return report_dir
+
+    def test_export_with_columns(self, tmp_path):
+        """Test export with --columns selects only specified columns."""
+        import csv
+
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "output.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir), str(output_csv), columns=["Report", "Table"]
+        )
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert set(rows[0].keys()) == {"Report", "Table"}
+
+    def test_export_with_exclude_columns(self, tmp_path):
+        """Test export with --exclude-columns removes specified columns."""
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "output.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir), str(output_csv), exclude_columns=["Page ID", "ID"]
+        )
+        with open(output_csv, "r") as f:
+            header = f.readline().strip().split(",")
+        assert "Page ID" not in header
+        assert "ID" not in header
+        assert "Report" in header
+
+    def test_export_with_custom_column(self, tmp_path):
+        """Test export with --define-column adds derived column."""
+        import csv
+
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "output.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir),
+            str(output_csv),
+            custom_columns={"Path": "{Report}/{Page Name}"},
+        )
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert "Path" in rows[0]
+        assert rows[0]["Path"] == "TestReport/Overview"
+
+    def test_export_custom_column_with_columns(self, tmp_path):
+        """Test that --define-column + --columns positions the custom column."""
+        import csv
+
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "output.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir),
+            str(output_csv),
+            columns=["Path", "Table"],
+            custom_columns={"Path": "{Report}/{Page Name}"},
+        )
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert list(rows[0].keys()) == ["Path", "Table"]
+        assert rows[0]["Path"] == "TestReport/Overview"
+
+    def test_export_visuals_only_with_columns(self, tmp_path):
+        """Test column selection works with --visuals-only mode."""
+        import csv
+
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir),
+            str(output_csv),
+            visuals_only=True,
+            columns=["Report", "Visual Type"],
+        )
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert set(rows[0].keys()) == {"Report", "Visual Type"}
+
+    def test_export_visuals_only_with_custom_column(self, tmp_path):
+        """Test custom columns work with --visuals-only mode."""
+        import csv
+
+        report_dir = self._setup_report(tmp_path)
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(
+            str(report_dir),
+            str(output_csv),
+            visuals_only=True,
+            custom_columns={"Path": "{Report}/{Page Name}/{Visual ID}"},
+        )
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert "Path" in rows[0]
+        assert rows[0]["Path"] == "TestReport/Overview/Visual1"

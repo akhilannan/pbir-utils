@@ -31,6 +31,9 @@ def register(subparsers):
           pbir-utils extract-metadata "C:\Reports\MyReport.Report" --pages "Overview" "Detail"
           pbir-utils extract-metadata "C:\Reports" --reports "Report1" "Report2"
           pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only --visual-types slicer card
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --columns "Report" "Page Name" "Table"
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --exclude-columns "Page ID" "ID"
+          pbir-utils extract-metadata "C:\Reports\MyReport.Report" --define-column "Path={Report}/{Page Name}"
     """
     )
     parser = subparsers.add_parser(
@@ -74,6 +77,23 @@ def register(subparsers):
         "--visuals-only",
         action="store_true",
         help="Extract visual-level metadata instead of attribute usage.",
+    )
+    col_group = parser.add_mutually_exclusive_group()
+    col_group.add_argument(
+        "--columns",
+        nargs="+",
+        help="Columns to include in output (in order). Mutually exclusive with --exclude-columns.",
+    )
+    col_group.add_argument(
+        "--exclude-columns",
+        nargs="+",
+        help="Columns to exclude from output. Mutually exclusive with --columns.",
+    )
+    parser.add_argument(
+        "--define-column",
+        action="append",
+        metavar="NAME=TEMPLATE",
+        help='Define a custom derived column using {ColumnName} placeholders (e.g. "Path={Report}/{Page Name}").',
     )
     parser.add_argument(
         "--filters",
@@ -124,9 +144,26 @@ def handle(args):
     if getattr(args, "visual_ids", None):
         filters["Visual ID"] = set(args.visual_ids)
 
+    # Parse --define-column into a dict
+    custom_columns = None
+    define_column = getattr(args, "define_column", None)
+    if define_column:
+        custom_columns = {}
+        for defn in define_column:
+            if "=" not in defn:
+                console.print_error(
+                    f"Invalid --define-column format: '{defn}'. Expected NAME=TEMPLATE."
+                )
+                sys.exit(1)
+            name, template = defn.split("=", 1)
+            custom_columns[name.strip()] = template.strip()
+
     export_pbir_metadata_to_csv(
         report_path,
         output_path,
         filters=filters or None,
         visuals_only=args.visuals_only,
+        columns=getattr(args, "columns", None),
+        exclude_columns=getattr(args, "exclude_columns", None),
+        custom_columns=custom_columns,
     )

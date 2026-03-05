@@ -534,6 +534,36 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv"
 
 **Output columns:** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
 
+### Customizing Output Columns
+
+You can control which columns appear in the CSV output using `--columns`, `--exclude-columns`, and `--define-column`.
+
+```bash
+# Select and reorder specific columns
+pbir-utils extract-metadata report --columns "Report" "Page Name" "Table" "Column or Measure"
+
+# Remove unwanted columns
+pbir-utils extract-metadata report --exclude-columns "Page ID" "ID"
+
+# Define a custom derived column using {ColumnName} placeholders
+pbir-utils extract-metadata report --define-column "Path={Report}/{Page Name}"
+
+# Combine --columns with --define-column to control position
+pbir-utils extract-metadata report --columns "Path" "Table" "Expression" --define-column "Path={Report}/{Page Name}"
+
+# Multiple custom columns
+pbir-utils extract-metadata report --define-column "Path={Report}/{Page Name}" --define-column "Field={Table}.{Column or Measure}"
+
+# Works with --visuals-only too
+pbir-utils extract-metadata report --visuals-only --columns "Report" "Visual Type" "Visual ID"
+```
+
+!!! note "Column Rules"
+    - `--columns` and `--exclude-columns` are **mutually exclusive**
+    - `--define-column` can be combined with either `--columns` or `--exclude-columns`
+    - Without `--columns`, custom columns are appended to the default output
+    - Unknown column names produce an error listing available columns
+
 ### CLI Options
 
 | Option | Description |
@@ -544,6 +574,9 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv"
 | `--visual-types` | Filter by visual type(s) (for `--visuals-only` mode) |
 | `--visual-ids` | Filter by visual ID(s) (for `--visuals-only` mode) |
 | `--visuals-only` | Extract visual-level metadata instead of attribute usage |
+| `--columns` | Columns to include in output (in order). Mutually exclusive with `--exclude-columns` |
+| `--exclude-columns` | Columns to exclude from output. Mutually exclusive with `--columns` |
+| `--define-column` | Define a custom derived column as `NAME=TEMPLATE` (repeatable). Templates use `{ColumnName}` placeholders |
 | `--filters` | [Deprecated] JSON string filter. Use explicit arguments instead. |
 
 ---
