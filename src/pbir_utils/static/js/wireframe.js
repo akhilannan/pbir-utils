@@ -132,28 +132,38 @@ function copyText(text) {
 }
 
 function deselectAllVisuals() {
-    document.querySelectorAll('.visual-box.selected').forEach(el => {
-        el.classList.remove('selected');
-    });
+    const selected = document.querySelectorAll('.visual-box.selected');
+    if (selected.length === 0) return;
+    
+    selected.forEach(el => el.classList.remove('selected'));
+    
+    // Clear field pane visual filtering
+    syncFieldsPaneToSelection();
 }
 
 function toggleVisualSelection(visualElement, e) {
-    // If Ctrl/Cmd key is pressed, toggle selection (multi-select not fully implemented but good practice)
-    // For now, single select pattern:
+    // Mutual exclusivity: if fields are currently manually selected, clear them
+    if (selectedFields.size > 0) {
+        clearFieldFilters(false); // don't trigger applyFieldFilters yet
+    }
 
-    // If already selected, deselect
+    // If Ctrl/Cmd key is pressed, toggle selection
     if (visualElement.classList.contains('selected')) {
         visualElement.classList.remove('selected');
-        return;
+    } else {
+        // Deselect others if not multi-select
+        if (!e.ctrlKey && !e.metaKey) {
+            document.querySelectorAll('.visual-box.selected').forEach(el => {
+                if (el !== visualElement) el.classList.remove('selected');
+            });
+        }
+        visualElement.classList.add('selected');
+        
+        // Auto-expand fields pane if collapsed
+        expandFieldsPane();
     }
-
-    // Deselect others
-    if (!e.ctrlKey && !e.metaKey) {
-        deselectAllVisuals();
-    }
-
-    // Select this one
-    visualElement.classList.add('selected');
+    
+    syncFieldsPaneToSelection();
 }
 
 function openPage(pageId, skipTracking) {
@@ -171,6 +181,9 @@ function openPage(pageId, skipTracking) {
     const tab = document.getElementById(`tab-${pageId}`);
     if (tab) tab.classList.add("active");
 
+    // Clear visual selections on page switch
+    deselectAllVisuals();
+    
     applyZoom();
 
     // Track page change for undo (skip on initial load and when undoing/resetting)
@@ -250,6 +263,21 @@ function toggleTheme() {
         }
     }
 })();
+
+let visualToFields = {}; // Reverse index: visualId -> Set of fieldKeys
+
+function buildVisualToFieldsIndex() {
+    // Build reverse index from fieldsIndex.fieldToVisuals
+    const fieldMap = fieldsIndex.fieldToVisuals || {};
+    for (const [fieldKey, visualIds] of Object.entries(fieldMap)) {
+        visualIds.forEach(vid => {
+            if (!visualToFields[vid]) {
+                visualToFields[vid] = new Set();
+            }
+            visualToFields[vid].add(fieldKey);
+        });
+    }
+}
 
 /* Interactivity Functions */
 
@@ -872,6 +900,9 @@ function initFieldsPane() {
 
     container.innerHTML = html || '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No fields found</div>';
 
+    // Build the reverse index
+    buildVisualToFieldsIndex();
+
     // Load saved pane state (default is collapsed)
     const savedState = localStorage.getItem('wireframe-fields-pane');
     const pane = document.getElementById('fields-pane');
@@ -1061,31 +1092,53 @@ function toggleFieldSelection(event, fieldKey) {
         });
     }
 
+    // Mutual exclusivity: clear visual selections when manually filtering fields
+    const activeVisuals = document.querySelectorAll('.visual-box.selected');
+    if (activeVisuals.length > 0) {
+        activeVisuals.forEach(el => el.classList.remove('selected'));
+    }
+
     updateFieldsFooter();
     applyFieldFilters();
     updateResetButtonState();
 }
 
 function updateFieldsFooter() {
-    const count = selectedFields.size;
-    const controls = document.getElementById('fields-selection-controls');
+    const fieldCount = selectedFields.size;
+    const fieldControls = document.getElementById('fields-selection-controls');
+    const visualControls = document.getElementById('visual-selection-controls');
+    const selectedVisuals = document.querySelectorAll('.visual-box.selected');
+    const visualCount = selectedVisuals.length;
 
-    if (count > 0) {
-        controls.style.display = 'flex';
-        document.getElementById('selection-text').textContent = `${count} selected`;
+    // Field selection chip
+    if (fieldCount > 0) {
+        fieldControls.style.display = 'flex';
+        document.getElementById('selection-text').textContent = `${fieldCount} selected`;
     } else {
-        controls.style.display = 'none';
+        fieldControls.style.display = 'none';
+    }
+
+    // Visual selection chip
+    if (visualControls) {
+        if (visualCount > 0) {
+            visualControls.style.display = 'flex';
+            document.getElementById('visual-selection-text').textContent = `${visualCount} visual${visualCount > 1 ? 's' : ''} selected`;
+        } else {
+            visualControls.style.display = 'none';
+        }
     }
 }
 
-function clearFieldFilters() {
+function clearFieldFilters(applyNow = true) {
     selectedFields.clear();
     document.querySelectorAll('.field-item.selected').forEach(el => {
         el.classList.remove('selected');
     });
     updateFieldsFooter();
-    applyFieldFilters();
-    updateResetButtonState();
+    if (applyNow) {
+        applyFieldFilters();
+        updateResetButtonState();
+    }
 }
 
 function searchFields() {
@@ -1601,6 +1654,7 @@ function handleDragEnd(e) {
     // Delay setting isDragging to false so the click event can see it was a drag
     setTimeout(() => {
         isDragging = false;
+        syncFieldsPaneToSelection();
     }, 0);
 }
 
@@ -1668,7 +1722,66 @@ function hideSelectedVisuals() {
     hideContextMenu();
 }
 
+function syncFieldsPaneToSelection() {
+    const selectedVisuals = document.querySelectorAll('.visual-box.selected');
+    const tableItems = document.querySelectorAll('.table-item');
+    
+    updateFieldsFooter();
 
+    if (selectedVisuals.length === 0) {
+        // Restore all tables and fields if no active search
+        const query = document.getElementById('fields-search').value.toLowerCase().trim();
+        if (query) {
+            searchFields();
+        } else {
+            tableItems.forEach(table => {
+                table.style.display = '';
+                table.classList.remove('expanded');
+                table.querySelectorAll('.field-item').forEach(f => f.style.display = '');
+            });
+        }
+        return;
+    }
+
+    // Collect all unique field keys from selected visuals (using data-fields attribute fallback
+    // plus our visualToFields index to be safe)
+    const activeFieldKeys = new Set();
+    selectedVisuals.forEach(visual => {
+        const vid = visual.dataset.id;
+        // Check reverse index first
+        if (visualToFields[vid]) {
+            visualToFields[vid].forEach(k => activeFieldKeys.add(k));
+        }
+        // Fallback to embedded array
+        try {
+            const visualFields = JSON.parse(visual.dataset.fields || '[]');
+            visualFields.forEach(k => activeFieldKeys.add(k));
+        } catch (e) {}
+    });
+
+    // Filter the Fields pane DOM
+    tableItems.forEach(tableItem => {
+        let hasMatchingFields = false;
+        const fieldItems = tableItem.querySelectorAll('.field-item');
+
+        fieldItems.forEach(fieldItem => {
+            const isUsed = activeFieldKeys.has(fieldItem.dataset.field);
+            fieldItem.style.display = isUsed ? '' : 'none';
+            if (isUsed) {
+                hasMatchingFields = true;
+            }
+        });
+
+        tableItem.style.display = hasMatchingFields ? '' : 'none';
+        
+        // Auto-expand if it has matching fields (helps discoverability)
+        if (hasMatchingFields) {
+            tableItem.classList.add('expanded');
+        } else {
+            tableItem.classList.remove('expanded');
+        }
+    });
+}
 
 // Initialize based on mode
 if (!API_MODE) {

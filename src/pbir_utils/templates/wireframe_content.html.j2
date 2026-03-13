@@ -116,9 +116,13 @@
             <div class="fields-pane-title" onclick="collapseFieldsPane(event)" title="Collapse Pane" aria-label="Collapse Fields Pane" style="cursor: pointer;">
                 <span>Fields</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="visual-selection-chip" id="visual-selection-controls" style="display: none; cursor: default;" onclick="event.stopPropagation();" title="Active visual selection">
+                        <span class="selection-text" id="visual-selection-text">0 selected</span>
+                        <button class="clear-selection-btn" onclick="deselectAllVisuals(); event.stopPropagation();" title="Clear Visual Selection">✕</button>
+                    </div>
                     <div class="fields-selection-chip" id="fields-selection-controls" style="display: none; cursor: default;" onclick="event.stopPropagation();">
                         <span class="selection-text" id="selection-text">0 selected</span>
-                        <button class="clear-selection-btn" onclick="clearFieldFilters(); event.stopPropagation();" title="Clear Selection">✕</button>
+                        <button class="clear-selection-btn" onclick="clearFieldFilters(); event.stopPropagation();" title="Clear Field Selection">✕</button>
                     </div>
                     <button class="icon-button" style="width: 24px; height: 24px; border: none; pointer-events: none;" aria-hidden="true">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

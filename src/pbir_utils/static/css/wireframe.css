@@ -715,7 +715,8 @@
             /* Fixed height to prevent layout shift */
         }
 
-        .pbir-wireframe .fields-selection-chip {
+        .pbir-wireframe .fields-selection-chip,
+        .pbir-wireframe .visual-selection-chip {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -730,10 +731,23 @@
             border: 1px solid rgba(59, 130, 246, 0.2);
         }
 
-        [data-theme="dark"] .pbir-wireframe .fields-selection-chip {
+        [data-theme="dark"] .pbir-wireframe .fields-selection-chip,
+        [data-theme="dark"] .pbir-wireframe .visual-selection-chip {
             background-color: rgba(96, 165, 250, 0.15);
             border-color: rgba(96, 165, 250, 0.3);
             color: var(--accent-color);
+        }
+
+        .pbir-wireframe .visual-selection-chip {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        [data-theme="dark"] .pbir-wireframe .visual-selection-chip {
+            background-color: rgba(52, 211, 153, 0.15);
+            border-color: rgba(52, 211, 153, 0.3);
+            color: #34d399;
         }
 
         .pbir-wireframe .selection-text {

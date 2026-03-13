@@ -59,6 +59,8 @@ The UI provides a wireframe view of your report layout.
 
 Click visuals to select them. Hold `Ctrl` (or `Cmd`) to select multiple, or click and drag to draw a selection box.
 
+When you select one or more visuals, the **Fields Pane** automatically filters to show only the tables and columns those visuals use. A green indicator chip appears at the top of the pane showing the number of selected visuals; click the `✕` to clear the selection.
+
 
 Right-click any visual (or selection) to:
 
@@ -81,9 +83,9 @@ The **Fields Pane** (right side) lists your tables, columns, and measures.
 
 - **Search**: Find fields by name.
 - **Field Usage**: Hover over a field to see where it is used (visuals, bookmarks, filters).
-- **Fields Selection**: Click a field to select it (and deselect others). Hold `Ctrl` (or `Cmd`) to select multiple fields.
-- **Filter by Field**: Selected fields highlight the visuals that use them.
-- **Selection Controls**: A summary of selected fields appears at the top of the pane, allowing you to quickly clear the selection.
+- **Field Selection**: Click a field to select it. Hold `Ctrl` (or `Cmd`) to select multiple fields. This highlights the visuals that use those fields on the canvas.
+- **Mutual Exclusivity**: You can filter visuals by selecting fields, or filter fields by selecting visuals, but not both at once. Clicking a field clears active visual selections.
+- **Selection Controls**: A summary chip appears at the top of the pane showing active field or visual selections. Click the `✕` to clear it.
 
 ---
 

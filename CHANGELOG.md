@@ -1,4 +1,5 @@
 ## Added
+- **Wireframe Visualizer**: Selecting visuals now filters the Fields pane to show only the tables and columns they use. You can select multiple visuals by holding `Ctrl` or dragging a selection box. ([#5](https://github.com/akhilannan/pbir-utils/issues/5))
 - **Metadata Extraction**: Added `Visual Path` column to `extract-metadata --visuals-only` to output the full visual grouping hierarchy. ([#4](https://github.com/akhilannan/pbir-utils/issues/4))
 
 ## Fixed
