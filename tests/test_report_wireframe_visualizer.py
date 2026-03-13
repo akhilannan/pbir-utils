@@ -98,6 +98,52 @@ def test_adjust_positions_for_groups():
     assert orphan["x"] == 100
 
 
+def test_adjust_visual_positions_nested_groups():
+    visuals = [
+        {
+            "id": "grandpa",
+            "x": 10,
+            "y": 10,
+            "width": 200,
+            "height": 200,
+            "visualType": "Group",
+            "parentGroupName": None,
+            "isHidden": False,
+        },
+        {
+            "id": "parent",
+            "x": 5,
+            "y": 5,
+            "width": 100,
+            "height": 100,
+            "visualType": "Group",
+            "parentGroupName": "grandpa",
+            "isHidden": False,
+        },
+        {
+            "id": "child",
+            "x": 2,
+            "y": 2,
+            "width": 50,
+            "height": 50,
+            "visualType": "card",
+            "parentGroupName": "parent",
+            "isHidden": False,
+        },
+    ]
+
+    adjusted = _adjust_visual_positions(visuals)
+
+    # Child should be offset by both parent and grandpa positions
+    child = next(v for v in adjusted if v["id"] == "child")
+    assert child["x"] == 17  # 2 + 5 + 10
+    assert child["y"] == 17  # 2 + 5 + 10
+
+    parent = next(v for v in adjusted if v["id"] == "parent")
+    assert parent["x"] == 15  # 5 + 10
+    assert parent["y"] == 15
+
+
 def test_apply_wireframe_filters():
     pages_info = [
         {

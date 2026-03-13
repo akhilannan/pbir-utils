@@ -15,6 +15,7 @@ __all__ = [
     "iter_pages",
     "iter_visuals",
     "extract_visual_info",
+    "resolve_visual_path",
     "walk_json_files",
     "process_json_files",
     "traverse_pbir_json",
@@ -337,6 +338,36 @@ def extract_visual_info(page_folder: str | Path, include_fields: bool = False) -
 
         visuals[visual_id] = info
     return visuals
+
+
+def resolve_visual_path(
+    visual_id: str,
+    visuals_map: dict,
+    separator: str = "/",
+) -> str:
+    """
+    Walk the parentGroupName chain to build a full path from root group to visual.
+
+    Args:
+        visual_id (str): The ID of the visual to resolve context for.
+        visuals_map (dict): The dictionary of visual info objects mapping ID to visual metadata.
+        separator (str, optional): The path separator to use. Defaults to "/".
+
+    Returns:
+        str: The full path to the visual through all parent groups.
+    """
+    parts = []
+    current_id = visual_id
+    seen = set()  # cycle protection
+
+    while current_id and current_id not in seen:
+        seen.add(current_id)
+        parts.append(current_id)
+        info = visuals_map.get(current_id)
+        current_id = info.get("parentGroupName") if info else None
+
+    parts.reverse()
+    return separator.join(parts)
 
 
 def walk_json_files(

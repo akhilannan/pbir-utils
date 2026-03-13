@@ -1,3 +1,5 @@
 ## Added
-- **Metadata Extraction**: New `--columns`, `--exclude-columns`, and `--define-column` flags for `extract-metadata`. Select, reorder, exclude, or derive custom columns in CSV output using `{ColumnName}` templates. ([#4](https://github.com/akhilannan/pbir-utils/issues/4))
+- **Metadata Extraction**: Added `Visual Path` column to `extract-metadata --visuals-only` to output the full visual grouping hierarchy. ([#4](https://github.com/akhilannan/pbir-utils/issues/4))
 
+## Fixed
+- **Wireframe Visualizer**: Fixed visual coordinate calculations inside nested groups to recursively accumulate offsets from all ancestor groups.

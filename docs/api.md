@@ -303,7 +303,10 @@ pbir.export_pbir_metadata_to_csv(
 
 **Attribute Metadata (default):** Report, Page Name, Page ID, Table, Column or Measure, Expression, Used In, Used In Detail, ID
 
-**Visual Metadata (`visuals_only=True`):** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
+**Visual Metadata (`visuals_only=True`):** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Visual Path, Is Hidden
+
+!!! note "Visual Path"
+    The `Visual Path` column auto-resolves the full parent grouping hierarchy (e.g., `ReportName/PageName/Group1/SubGroup/VisualID`), making it easy to see exactly where a visual lives in heavily nested reports.
 
 ### Customizing Output Columns
 

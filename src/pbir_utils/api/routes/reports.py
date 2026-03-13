@@ -387,7 +387,7 @@ async def download_visuals_csv(report_path: str, visual_ids: str = None):
         report_path: Path to the PBIR report folder.
         visual_ids: Optional comma-separated list of visual IDs to filter by (WYSIWYG export).
     """
-    from pbir_utils.common import iter_pages, extract_visual_info
+    from pbir_utils.common import iter_pages, extract_visual_info, resolve_visual_path
     from pbir_utils.metadata_extractor import VISUAL_HEADER_FIELDS
     from pathlib import Path
 
@@ -411,6 +411,7 @@ async def download_visuals_csv(report_path: str, visual_ids: str = None):
                 # Skip if filtering and this visual not in filter (WYSIWYG)
                 if visual_id_set and visual_id not in visual_id_set:
                     continue
+                visual_path = f"{report_name}/{page_name}/{resolve_visual_path(visual_id, visuals_info)}"
                 metadata.append(
                     {
                         "Report": report_name,
@@ -419,6 +420,7 @@ async def download_visuals_csv(report_path: str, visual_ids: str = None):
                         "Visual Type": info["visualType"],
                         "Visual ID": visual_id,
                         "Parent Group ID": info.get("parentGroupName"),
+                        "Visual Path": visual_path,
                         "Is Hidden": info.get("isHidden", False),
                     }
                 )

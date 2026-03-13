@@ -7,6 +7,7 @@ from .common import (
     iter_pages,
     extract_visual_info,
     find_report_folders,
+    resolve_visual_path,
 )
 from .visual_utils import _find_calculations_in_dict
 from .console_utils import console
@@ -31,6 +32,7 @@ VISUAL_HEADER_FIELDS = [
     "Visual Type",
     "Visual ID",
     "Parent Group ID",
+    "Visual Path",
     "Is Hidden",
 ]
 
@@ -554,6 +556,7 @@ def _export_visual_metadata(
 
             visuals_info = extract_visual_info(page_folder)
             for visual_id, info in visuals_info.items():
+                visual_path = f"{report_name}/{page_name}/{resolve_visual_path(visual_id, visuals_info)}"
                 row = {
                     "Report": report_name,
                     "Page Name": page_name,
@@ -561,6 +564,7 @@ def _export_visual_metadata(
                     "Visual Type": info["visualType"],
                     "Visual ID": visual_id,
                     "Parent Group ID": info["parentGroupName"],
+                    "Visual Path": visual_path,
                     "Is Hidden": info["isHidden"],
                 }
                 if _apply_row_filters(row, filters):

@@ -532,7 +532,10 @@ pbir-utils extract-metadata "C:\Reports\MyReport.Report" --visuals-only --visual
 pbir-utils extract-metadata "C:\Reports\MyReport.Report" "C:\Output\visuals.csv" --visuals-only
 ```
 
-**Output columns:** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Is Hidden
+**Output columns:** Report, Page Name, Page ID, Visual Type, Visual ID, Parent Group ID, Visual Path, Is Hidden
+
+!!! note "Visual Path"
+    The `Visual Path` column auto-resolves the full parent grouping hierarchy (e.g., `ReportName/PageName/Group1/SubGroup/VisualID`), making it easy to see exactly where a visual lives in heavily nested reports.
 
 ### Customizing Output Columns
 

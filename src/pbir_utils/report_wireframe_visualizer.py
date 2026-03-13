@@ -65,10 +65,13 @@ def _adjust_visual_positions(visuals: list[dict]) -> list[dict]:
         adj_visual = visual.copy()
 
         parent_id = visual.get("parentGroupName")
-        if parent_id and parent_id in visual_map:
+        seen = set()
+        while parent_id and parent_id in visual_map and parent_id not in seen:
+            seen.add(parent_id)
             parent = visual_map[parent_id]
             adj_visual["x"] += parent["x"]
             adj_visual["y"] += parent["y"]
+            parent_id = parent.get("parentGroupName")
 
         adjusted_visuals.append(adj_visual)
 

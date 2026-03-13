@@ -443,9 +443,7 @@ class TestVisualMetadataExport:
         with open(output_csv, "r") as f:
             header = f.readline().strip()
 
-        expected_headers = (
-            "Report,Page Name,Page ID,Visual Type,Visual ID,Parent Group ID,Is Hidden"
-        )
+        expected_headers = "Report,Page Name,Page ID,Visual Type,Visual ID,Parent Group ID,Visual Path,Is Hidden"
         assert header == expected_headers
 
     def test_visuals_only_extracts_parent_group(self, tmp_path):
@@ -575,6 +573,104 @@ class TestVisualMetadataExport:
         reports = {r["Report"] for r in rows}
         assert "Report1" in reports
         assert "Report2" in reports
+
+    def test_visuals_only_visual_path_no_parent(self, tmp_path):
+        """Test that visual path is just report/page/visual when no parent exists."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        visual_data = {
+            "name": "Visual1",
+            "position": {"x": 10, "y": 20, "width": 100, "height": 200},
+            "visual": {"visualType": "card"},
+            "isHidden": False,
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Visual1/visual.json",
+            visual_data,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        assert len(rows) == 1
+        assert rows[0]["Visual Path"] == "TestReport/Overview/Visual1"
+
+    def test_visuals_only_visual_path_nested_groups(self, tmp_path):
+        """Test that visual path includes multiple nested parent groups."""
+        report_dir = tmp_path / "TestReport.Report"
+
+        pages_data = {"pageOrder": ["Page1"], "activePageName": "Page1"}
+        create_dummy_file(report_dir, "definition/pages/pages.json", pages_data)
+
+        page_data = {"name": "Page1", "displayName": "Overview"}
+        create_dummy_file(report_dir, "definition/pages/Page1/page.json", page_data)
+
+        # Create grandpa group
+        grandpa_data = {
+            "name": "GrandpaGroup",
+            "position": {"x": 0, "y": 0, "width": 300, "height": 300},
+            "visual": {"visualType": "Group"},
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/GrandpaGroup/visual.json",
+            grandpa_data,
+        )
+
+        # Create parent group
+        parent_data = {
+            "name": "ParentGroup",
+            "position": {"x": 10, "y": 10, "width": 200, "height": 200},
+            "visual": {"visualType": "Group"},
+            "parentGroupName": "GrandpaGroup",
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/ParentGroup/visual.json",
+            parent_data,
+        )
+
+        # Create child visual
+        child_data = {
+            "name": "Child1",
+            "position": {"x": 10, "y": 10, "width": 50, "height": 50},
+            "visual": {"visualType": "card"},
+            "parentGroupName": "ParentGroup",
+        }
+        create_dummy_file(
+            report_dir,
+            "definition/pages/Page1/visuals/Child1/visual.json",
+            child_data,
+        )
+
+        output_csv = tmp_path / "visuals.csv"
+        export_pbir_metadata_to_csv(str(report_dir), str(output_csv), visuals_only=True)
+
+        import csv
+
+        with open(output_csv, "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        assert len(rows) == 3
+        child_row = next(r for r in rows if r["Visual ID"] == "Child1")
+        assert (
+            child_row["Visual Path"]
+            == "TestReport/Overview/GrandpaGroup/ParentGroup/Child1"
+        )
 
 
 class TestExplicitParameters:
