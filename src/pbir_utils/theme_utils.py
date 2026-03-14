@@ -1,3 +1,4 @@
+import json
 import re
 import shutil
 from pathlib import Path
@@ -71,7 +72,7 @@ def set_theme(
                             "Theme already matches existing — no changes needed."
                         )
                     return False
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 # If we fail to load or compare, ignore and proceed to overwrite
                 pass
 
