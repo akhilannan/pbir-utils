@@ -690,10 +690,24 @@ Commands for applying and updating report themes.
 
 ### Set Theme
 
-Apply a custom theme JSON file to the report.
+Apply a custom theme JSON file to the report. This command is content-aware: if the exact same theme content is already applied, it will skip execution (especially useful for dry-runs).
 
 ```bash
 pbir-utils set-theme "C:\Reports\MyReport.Report" --theme-file "C:\Themes\Corporate.json"
+```
+
+You can also run this as part of your sanitizer pipeline by defining it in `pbir-sanitize.yaml`. Relative paths resolve to the folder containing the config file, allowing configs to be portable:
+
+```yaml
+# pbir-sanitize.yaml
+definitions:
+  set_theme:
+    description: Apply standard corporate theme
+    params:
+      theme_path: "./themes/Corporate.json"  # Relative to this yaml file
+
+include:
+  - set_theme
 ```
 
 ### Reset Colors

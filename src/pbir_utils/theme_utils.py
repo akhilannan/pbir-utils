@@ -9,6 +9,8 @@ from .console_utils import console
 def set_theme(
     report_path: str,
     theme_path: str,
+    *,
+    config_dir: str | None = None,
     dry_run: bool = False,
     summary: bool = False,
 ) -> bool:
@@ -21,23 +23,64 @@ def set_theme(
         return False
 
     source_theme_path = Path(theme_path)
+    if not source_theme_path.is_absolute() and config_dir:
+        source_theme_path = Path(config_dir) / source_theme_path
+
+    source_theme_path = source_theme_path.resolve()
+
     if not source_theme_path.exists():
-        console.print_warning(f"Theme file not found: {theme_path}")
+        console.print_warning(f"Theme file not found: {source_theme_path}")
         return False
 
     theme_name = source_theme_path.name
     report_data = load_json(str(report_json_path))
+
+    # Check if this exact theme is already applied with the same content
+    existing_theme = report_data.get("themeCollection", {}).get("customTheme", {})
+    existing_theme_name = existing_theme.get("name")
+    existing_version = existing_theme.get(
+        "reportVersionAtImport",
+        {
+            "visual": "1.8.0",  # default versions just in case
+            "report": "2.0.0",
+            "page": "1.3.0",
+        },
+    )
+
+    if existing_theme_name:
+        existing_path = (
+            Path(report_path)
+            / "StaticResources"
+            / "RegisteredResources"
+            / existing_theme_name
+        )
+        if existing_path.exists():
+            try:
+                existing_content = load_json(str(existing_path))
+                new_content = load_json(str(source_theme_path))
+                if (
+                    existing_theme_name == theme_name
+                    and existing_content == new_content
+                ):
+                    if summary:
+                        console.print_info(
+                            f"Theme '{theme_name}' already matches — no changes needed."
+                        )
+                    else:
+                        console.print_info(
+                            "Theme already matches existing — no changes needed."
+                        )
+                    return False
+            except Exception:
+                # If we fail to load or compare, ignore and proceed to overwrite
+                pass
 
     if "themeCollection" not in report_data:
         report_data["themeCollection"] = {}
 
     report_data["themeCollection"]["customTheme"] = {
         "name": theme_name,
-        "reportVersionAtImport": {
-            "visual": "1.8.0",  # default versions just in case
-            "report": "2.0.0",
-            "page": "1.3.0",
-        },
+        "reportVersionAtImport": existing_version,
         "type": "RegisteredResources",
     }
 

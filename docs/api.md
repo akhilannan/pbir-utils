@@ -752,12 +752,38 @@ pbir.set_page_display_option(
     page="Trends",
     dry_run=False
 )
-
 # Set a specific page by internal name/ID
 pbir.set_page_display_option(
     report_path=r"C:\DEV\MyReport.Report",
     display_option="FitToWidth",
     page="bb40336091625ae0070a"
+)
+```
+
+---
+
+## Set Theme
+
+Applies a custom theme JSON file to the report. Features content-aware duplication prevention: skips application if an identical theme is already applied.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `theme_path` | str | Path to the theme component JSON file to apply |
+| `config_dir` | str | Base directory for resolving relative `theme_path`s (optional) |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Apply a theme (skips if exactly the same theme content is already applied)
+pbir.set_theme(
+    report_path=r"C:\DEV\MyReport.Report",
+    theme_path=r"C:\Themes\Corporate.json",
+    dry_run=False
 )
 ```
 

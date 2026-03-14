@@ -244,4 +244,10 @@ def load_config(
 
     user = _load_yaml(user_path) if user_path and user_path.exists() else {}
 
+    # Store config file directory in options for relative path resolution
+    if user_path and user_path.exists():
+        if "options" not in user:
+            user["options"] = {}
+        user["options"]["config_dir"] = str(user_path.parent.resolve())
+
     return _merge_configs(default, user)

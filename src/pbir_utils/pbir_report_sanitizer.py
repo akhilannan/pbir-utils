@@ -150,24 +150,26 @@ def sanitize_powerbi_report(
 
         # Print action heading from config description if available
         # and suppress the function's default heading
+
+        # Build kwargs
+        kwargs: dict[str, Any] = {
+            "dry_run": cfg.dry_run,
+            "summary": cfg.summary,
+            **action_spec.params,
+        }
+
+        # Inject config_dir if the function accepts it
+        sig = inspect.signature(func)
+        if "config_dir" in sig.parameters and "config_dir" in cfg.options:
+            kwargs["config_dir"] = cfg.options["config_dir"]
+
         if action_spec.description:
             console.print_action_heading(action_spec.description, cfg.dry_run)
             # Suppress the action function's default heading
             with console.suppress_heading():
-                # Build kwargs
-                kwargs: dict[str, Any] = {
-                    "dry_run": cfg.dry_run,
-                    "summary": cfg.summary,
-                    **action_spec.params,
-                }
                 results[action_spec.id] = func(report_path, **kwargs)
         else:
             # No custom description - let function print its default heading
-            kwargs: dict[str, Any] = {
-                "dry_run": cfg.dry_run,
-                "summary": cfg.summary,
-                **action_spec.params,
-            }
             results[action_spec.id] = func(report_path, **kwargs)
 
     print()  # Add blank line before final status

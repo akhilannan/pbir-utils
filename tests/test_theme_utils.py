@@ -62,6 +62,110 @@ class TestSetTheme:
         )
         assert not os.path.exists(copied_file)
 
+    def test_set_theme_relative_path(self, tmp_path):
+        report_path = str(tmp_path)
+        create_dummy_file(tmp_path, "definition/report.json", {})
+
+        # Create a themes directory separate from the report
+        themes_dir = tmp_path / "my_themes"
+        themes_dir.mkdir()
+        theme_path = themes_dir / "RelativeTheme.json"
+        with open(theme_path, "w") as f:
+            f.write('{"name": "RelativeTheme"}')
+
+        with patch("builtins.print"):
+            # Use relative path and config_dir to resolve it
+            result = set_theme(
+                report_path, "RelativeTheme.json", config_dir=str(themes_dir)
+            )
+
+        assert result is True
+
+        # Verify file is copied from the resolved relative path
+        copied_file = os.path.join(
+            report_path, "StaticResources/RegisteredResources/RelativeTheme.json"
+        )
+        assert os.path.exists(copied_file)
+
+    def test_set_theme_skips_when_content_matches(self, tmp_path):
+        report_path = str(tmp_path)
+        # Create report with existing theme
+        report_data = {
+            "themeCollection": {
+                "customTheme": {"name": "MyTheme.json", "type": "RegisteredResources"}
+            }
+        }
+        create_dummy_file(tmp_path, "definition/report.json", report_data)
+
+        # Create the existing theme file in the report
+        existing_theme_content = '{\n  "name": "MyTheme",\n  "color": "#FFFFFF"\n}'
+        create_dummy_file(
+            tmp_path,
+            "StaticResources/RegisteredResources/MyTheme.json",
+            existing_theme_content,
+        )
+
+        # Create the new (source) theme file with identical content (even if formatted differently)
+        theme_path = os.path.join(tmp_path, "MyTheme.json")
+        with open(theme_path, "w") as f:
+            f.write('{"name": "MyTheme", "color": "#FFFFFF"}')
+
+        with patch("pbir_utils.console_utils.console.print_info") as mock_info:
+            result = set_theme(report_path, theme_path)
+
+        # Should return False because content is identical
+        assert result is False
+        mock_info.assert_called_with(
+            "Theme already matches existing — no changes needed."
+        )
+
+    def test_set_theme_applies_when_content_differs(self, tmp_path):
+        report_path = str(tmp_path)
+        # Create report with existing theme and custom version
+        custom_version = {"visual": "1.9.9", "report": "2.9.9", "page": "1.9.9"}
+        report_data = {
+            "themeCollection": {
+                "customTheme": {
+                    "name": "MyTheme.json",
+                    "type": "RegisteredResources",
+                    "reportVersionAtImport": custom_version,
+                }
+            }
+        }
+        create_dummy_file(tmp_path, "definition/report.json", report_data)
+
+        # Create the existing theme file in the report
+        existing_theme_content = '{"name": "MyTheme", "color": "#000000"}'
+        create_dummy_file(
+            tmp_path,
+            "StaticResources/RegisteredResources/MyTheme.json",
+            existing_theme_content,
+        )
+
+        # Create the new (source) theme file with DIFFERENT content
+        theme_path = os.path.join(tmp_path, "MyTheme.json")
+        with open(theme_path, "w") as f:
+            f.write('{"name": "MyTheme", "color": "#FFFFFF"}')
+
+        with patch("builtins.print"):
+            result = set_theme(report_path, theme_path)
+
+        # Should return True because content differs
+        assert result is True
+
+        # Verify custom version was preserved
+        updated_report_data = load_json(
+            os.path.join(report_path, "definition/report.json")
+        )
+        updated_version = updated_report_data["themeCollection"]["customTheme"][
+            "reportVersionAtImport"
+        ]
+        assert updated_version == {
+            "visual": "1.9.9",
+            "report": "2.9.9",
+            "page": "1.9.9",
+        }
+
 
 class TestResetHardcodedColors:
     """Tests for reset_hardcoded_colors."""
