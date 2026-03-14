@@ -173,11 +173,11 @@ def cleanup_invalid_bookmarks(
     valid_pages = set(pages_data.get("pageOrder", []))
 
     valid_visuals_by_page = {}
-    for page_id in valid_pages:
-        page_folder = str(Path(report_path) / "definition" / "pages" / page_id)
-        valid_visuals_by_page[page_id] = {
-            visual_id for visual_id, _, _ in iter_visuals(page_folder)
-        }
+    for page_id, page_folder, _ in iter_pages(report_path):
+        if page_id in valid_pages:
+            valid_visuals_by_page[page_id] = {
+                visual_id for visual_id, _, _ in iter_visuals(page_folder)
+            }
 
     bookmarks_to_remove = set()
     stats = {"processed": 0, "removed": 0, "cleaned": 0, "updated": 0}

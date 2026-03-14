@@ -66,6 +66,7 @@ def test_cleanup_invalid_bookmarks(tmp_path):
 
     # Valid page
     create_dummy_file(tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1"]})
+    create_dummy_file(tmp_path, "definition/pages/Page1/page.json", {"name": "Page1"})
     create_dummy_file(
         tmp_path, "definition/pages/Page1/visuals/v1/visual.json", {"name": "v1"}
     )
@@ -129,7 +130,6 @@ def test_remove_unused_bookmarks_keeps_all_when_navigator_is_all_empty_string(tm
     Test that remove_unused_bookmarks does NOT remove any bookmarks
     if a bookmark navigator has bookmarkGroup set to ''.
     """
-    report_path = str(tmp_path)
 
     # Create bookmarks
     create_dummy_file(
@@ -170,7 +170,7 @@ def test_remove_unused_bookmarks_keeps_all_when_navigator_is_all_empty_string(tm
     )
 
     # Run the function
-    changed = remove_unused_bookmarks(report_path, dry_run=False)
+    changed = remove_unused_bookmarks(str(tmp_path), dry_run=False)
 
     # Assertions
     assert changed is False, (
@@ -179,6 +179,60 @@ def test_remove_unused_bookmarks_keeps_all_when_navigator_is_all_empty_string(tm
     assert (
         tmp_path / "definition" / "bookmarks" / "Bookmark1.bookmark.json"
     ).exists(), "Bookmark1 should be preserved"
+
+
+def test_cleanup_invalid_bookmarks_with_standardized_folders(tmp_path):
+    """Test cleanup works correctly when page folder names are standardized (e.g., 'DisplayName_pageid')."""
+    report_path = str(tmp_path)
+
+    # Valid page registered in pages.json
+    page_id = "page1guid"
+    create_dummy_file(tmp_path, "definition/pages/pages.json", {"pageOrder": [page_id]})
+
+    # Page folder name is standardized (DisplayName_GUID), not just GUID
+    folder_name = f"Overview_{page_id}"
+    create_dummy_file(
+        tmp_path,
+        f"definition/pages/{folder_name}/page.json",
+        {"name": page_id, "displayName": "Overview"},
+    )
+
+    # Visual inside the standardized page folder
+    create_dummy_file(
+        tmp_path,
+        f"definition/pages/{folder_name}/visuals/v1/visual.json",
+        {"name": "v1"},
+    )
+
+    # Bookmark referencing the valid page and valid visual
+    create_dummy_file(
+        tmp_path,
+        "definition/bookmarks/b1.bookmark.json",
+        {
+            "name": "b1",
+            "explorationState": {
+                "activeSection": page_id,
+                "sections": {page_id: {"visualContainers": {"v1": {}}}},
+            },
+        },
+    )
+
+    create_dummy_file(
+        tmp_path,
+        "definition/bookmarks/bookmarks.json",
+        {"items": [{"name": "b1"}]},
+    )
+
+    # Run cleanup
+    changed = cleanup_invalid_bookmarks(report_path)
+
+    # b1 should NOT be removed (visual and page are valid)
+    assert not changed, "Bookmark should be considered valid"
+    assert (tmp_path / "definition" / "bookmarks" / "b1.bookmark.json").exists()
+
+    # b1 data should not be mutated
+    b1_data = load_json(tmp_path / "definition" / "bookmarks" / "b1.bookmark.json")
+    assert "v1" in b1_data["explorationState"]["sections"][page_id]["visualContainers"]
 
 
 def test_remove_unused_bookmarks_keeps_all_when_navigator_has_no_group_prop(tmp_path):
