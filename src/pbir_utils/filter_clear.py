@@ -475,12 +475,11 @@ def clear_filters(
     elif not Path(report_path).name.endswith(".Report"):
         console.print_warning(f"report.json not found at {report_json_path}")
 
-    # Exit early if only report filters requested and nothing to do
-    if not any([show_page_filters, show_visual_filters, target_page, target_visual]):
-        return found_any_filters
+    should_check_pages = any([show_page_filters, show_visual_filters, target_page, target_visual])
 
     # 2. Page & Visual Level
-    for page_id, page_path, page_data in iter_pages(report_path):
+    page_iterator = iter_pages(report_path) if should_check_pages else []
+    for page_id, page_path, page_data in page_iterator:
         page_name = page_data.get("displayName", page_id)
         is_target_page = target_page and target_page.lower() in [
             page_id.lower(),
@@ -589,31 +588,32 @@ def clear_filters(
                     _print_filter_list(v_filters, "      ", dry_run, summary)
 
     # 3. Print Summary
+    if not found_any_filters:
+        console.print_info("No filters found matching the criteria.")
+        return False
+
     if summary:
-        if counts.total > 0:
-            parts = []
-            if counts.report > 0:
-                parts.append(f"{counts.report} report filter(s)")
-            if counts.page > 0:
-                parts.append(
-                    f"{counts.page} page filter(s) across {len(counts.pages_affected)} page(s)"
-                )
-            if counts.slicer > 0:
-                parts.append(
-                    f"{counts.slicer} slicer filter(s) across {len(counts.slicers_affected)} slicer(s)"
-                )
-            if counts.visual > 0:
-                parts.append(
-                    f"{counts.visual} visual filter(s) across {len(counts.visuals_affected)} visual(s)"
-                )
+        parts = []
+        if counts.report > 0:
+            parts.append(f"{counts.report} report filter(s)")
+        if counts.page > 0:
+            parts.append(
+                f"{counts.page} page filter(s) across {len(counts.pages_affected)} page(s)"
+            )
+        if counts.slicer > 0:
+            parts.append(
+                f"{counts.slicer} slicer filter(s) across {len(counts.slicers_affected)} slicer(s)"
+            )
+        if counts.visual > 0:
+            parts.append(
+                f"{counts.visual} visual filter(s) across {len(counts.visuals_affected)} visual(s)"
+            )
 
-            action_word = "Would clear" if dry_run else "Cleared"
-            msg = f"{action_word}: {', '.join(parts)}"
-            if dry_run:
-                console.print_dry_run(msg)
-            else:
-                console.print_success(msg)
+        action_word = "Would clear" if dry_run else "Cleared"
+        msg = f"{action_word}: {', '.join(parts)}"
+        if dry_run:
+            console.print_dry_run(msg)
         else:
-            console.print_info("No filters found matching the criteria.")
+            console.print_success(msg)
 
-    return found_any_filters
+    return True
