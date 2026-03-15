@@ -475,7 +475,9 @@ def clear_filters(
     elif not Path(report_path).name.endswith(".Report"):
         console.print_warning(f"report.json not found at {report_json_path}")
 
-    should_check_pages = any([show_page_filters, show_visual_filters, target_page, target_visual])
+    should_check_pages = any(
+        [show_page_filters, show_visual_filters, target_page, target_visual]
+    )
 
     # 2. Page & Visual Level
     page_iterator = iter_pages(report_path) if should_check_pages else []

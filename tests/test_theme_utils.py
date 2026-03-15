@@ -119,6 +119,45 @@ class TestSetTheme:
             "Theme already matches existing — no changes needed."
         )
 
+    def test_set_theme_removes_old_theme(self, tmp_path):
+        report_path = str(tmp_path)
+        # Create report with existing theme
+        report_data = {
+            "themeCollection": {
+                "customTheme": {"name": "OldTheme.json", "type": "RegisteredResources"}
+            }
+        }
+        create_dummy_file(tmp_path, "definition/report.json", report_data)
+
+        # Create the old theme file
+        old_theme_path = os.path.join(
+            report_path, "StaticResources/RegisteredResources/OldTheme.json"
+        )
+        create_dummy_file(
+            tmp_path,
+            "StaticResources/RegisteredResources/OldTheme.json",
+            '{"name": "OldTheme"}',
+        )
+
+        # Create the new theme file
+        theme_path = os.path.join(tmp_path, "NewTheme.json")
+        with open(theme_path, "w") as f:
+            f.write('{"name": "NewTheme"}')
+
+        with patch("builtins.print"):
+            result = set_theme(report_path, theme_path)
+
+        assert result is True
+
+        # Verify old theme is removed
+        assert not os.path.exists(old_theme_path)
+
+        # Verify new theme is copied
+        new_theme_path = os.path.join(
+            report_path, "StaticResources/RegisteredResources/NewTheme.json"
+        )
+        assert os.path.exists(new_theme_path)
+
     def test_set_theme_applies_when_content_differs(self, tmp_path):
         report_path = str(tmp_path)
         # Create report with existing theme and custom version

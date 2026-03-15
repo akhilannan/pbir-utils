@@ -48,6 +48,7 @@ def set_theme(
         },
     )
 
+    existing_path = None
     if existing_theme_name:
         existing_path = (
             Path(report_path)
@@ -109,6 +110,12 @@ def set_theme(
     items.append({"name": theme_name, "path": theme_name, "type": "CustomTheme"})
     registered["items"] = items
 
+    should_remove_old = bool(
+        existing_path
+        and existing_path.exists()
+        and existing_theme_name != theme_name
+    )
+
     made_changes = True
     if not dry_run:
         write_json(str(report_json_path), report_data)
@@ -118,6 +125,19 @@ def set_theme(
         dest_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_theme_path, dest_dir / theme_name)
 
+        # Remove the old theme file if it has a different name
+        if should_remove_old:
+            try:
+                existing_path.unlink()
+                if not summary:
+                    console.print_info(
+                        f"Removed old theme file '{existing_theme_name}'."
+                    )
+            except OSError as e:
+                console.print_warning(
+                    f"Failed to remove old theme file '{existing_theme_name}': {e}"
+                )
+
     if summary:
         if dry_run:
             console.print_dry_run(f"Would set theme to '{theme_name}'.")
@@ -125,6 +145,10 @@ def set_theme(
             console.print_success(f"Set theme to '{theme_name}'.")
     else:
         if dry_run:
+            if should_remove_old:
+                console.print_dry_run(
+                    f"Would remove old theme file '{existing_theme_name}'."
+                )
             console.print_dry_run(f"Would copy {theme_name} and update report.json.")
         else:
             console.print_success(f"Copied {theme_name} and updated report.json.")

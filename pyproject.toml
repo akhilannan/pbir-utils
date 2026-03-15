@@ -19,9 +19,9 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "jinja2",
-    "pyyaml",
-    "simpleeval",
+    "jinja2>=3.1.6",
+    "pyyaml>=6.0.3",
+    "simpleeval>=1.0.6",
 ]
 dynamic = ["version"]
 
