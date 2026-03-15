@@ -111,9 +111,7 @@ def set_theme(
     registered["items"] = items
 
     should_remove_old = bool(
-        existing_path
-        and existing_path.exists()
-        and existing_theme_name != theme_name
+        existing_path and existing_path.exists() and existing_theme_name != theme_name
     )
 
     made_changes = True
