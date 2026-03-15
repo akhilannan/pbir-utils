@@ -1,0 +1,30 @@
+<svg width="200" height="230" viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg">
+  <!-- Style -->
+  <style>
+    /* Grey brackets - subtle framing element */
+    .bracket { fill: none; stroke: #666666; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+    
+    /* Yellow/Gold text to match Power BI branding and stand out */
+    .text { font-family: 'Segoe UI', Consolas, Monaco, monospace; font-size: 24px; font-weight: bold; fill: #F2C811; }
+    
+    /* Dark outline on text for light mode visibility */
+    .text-outline { stroke: #2B2B2B; stroke-width: 1px; }
+  </style>
+
+  <!-- Left Bracket { -->
+  <path class="bracket" d="M 55,40 C 35,40 35,40 35,70 L 35,90 C 35,110 15,110 15,110 C 15,110 35,110 35,130 L 35,150 C 35,180 35,180 55,180" />
+
+  <!-- Right Bracket } -->
+  <path class="bracket" d="M 145,40 C 165,40 165,40 165,70 L 165,90 C 165,110 185,110 185,110 C 185,110 165,110 165,130 L 165,150 C 165,180 165,180 145,180" />
+
+  <!-- Power BI Style Bars -->
+  <g transform="translate(65, 55)">
+     <rect x="42" y="0" width="28" height="100" rx="3" fill="#D08800" />
+     <rect x="21" y="25" width="28" height="75" rx="3" fill="#E2A008" />
+     <rect x="0" y="50" width="28" height="50" rx="3" fill="#F2C811" />
+  </g>
+
+  <!-- Text with subtle dark outline for light mode -->
+  <text x="100" y="215" text-anchor="middle" class="text text-outline">pbir-utils</text>
+  <text x="100" y="215" text-anchor="middle" class="text">pbir-utils</text>
+</svg>
