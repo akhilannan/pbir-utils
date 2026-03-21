@@ -94,10 +94,14 @@ def sanitize_powerbi_report(
                 filtered_actions.append(
                     ActionSpec(id=action_name, implementation=action_name)
                 )
+        # Preserve options from loaded config (e.g. config_dir for relative paths)
+        merged_options = dict(full_cfg.options)
+        merged_options["dry_run"] = dry_run
+        merged_options["summary"] = summary
         cfg = SanitizeConfig(
             actions=filtered_actions,
             definitions=full_cfg.definitions,
-            options={"dry_run": dry_run, "summary": summary},
+            options=merged_options,
         )
     elif isinstance(config, SanitizeConfig):
         cfg = config

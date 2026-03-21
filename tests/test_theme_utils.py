@@ -205,6 +205,88 @@ class TestSetTheme:
             "page": "1.9.9",
         }
 
+    def test_set_theme_via_sanitizer_relative_path(self, tmp_path):
+        """Test that set_theme works via sanitizer YAML with relative theme_path."""
+        report_dir = tmp_path / "MyReport.Report"
+        report_def = report_dir / "definition"
+        report_def.mkdir(parents=True)
+        create_dummy_file(report_dir, "definition/report.json", {})
+
+        # Create a config dir with YAML and theme
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        themes_dir = config_dir / "themes"
+        themes_dir.mkdir()
+        theme_file = themes_dir / "Corporate.json"
+        theme_file.write_text('{"name": "Corporate"}')
+
+        yaml_content = """
+definitions:
+  set_theme:
+    description: Apply standard corporate theme
+    params:
+      theme_path: "./themes/Corporate.json"
+
+actions:
+  - set_theme
+"""
+        yaml_file = config_dir / "pbir-sanitize.yaml"
+        yaml_file.write_text(yaml_content)
+
+        from pbir_utils.sanitize_config import load_config
+        from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
+
+        cfg = load_config(config_path=str(yaml_file), report_path=str(report_dir))
+
+        with patch("builtins.print"):
+            results = sanitize_powerbi_report(str(report_dir), config=cfg)
+
+        assert results.get("set_theme") is True
+        copied_file = (
+            report_dir / "StaticResources" / "RegisteredResources" / "Corporate.json"
+        )
+        assert copied_file.exists()
+
+    def test_set_theme_backward_compat_preserves_config_dir(self, tmp_path):
+        """Test backward-compat API preserves config_dir for relative path resolution."""
+        report_dir = tmp_path / "MyReport.Report"
+        report_def = report_dir / "definition"
+        report_def.mkdir(parents=True)
+        create_dummy_file(report_dir, "definition/report.json", {})
+
+        # Place YAML with relative theme_path in report dir
+        themes_dir = report_dir / "themes"
+        themes_dir.mkdir()
+        theme_file = themes_dir / "Corporate.json"
+        theme_file.write_text('{"name": "Corporate"}')
+
+        yaml_content = """
+definitions:
+  set_theme:
+    description: Apply corp theme
+    params:
+      theme_path: "./themes/Corporate.json"
+
+actions:
+  - set_theme
+"""
+        (report_dir / "pbir-sanitize.yaml").write_text(yaml_content)
+
+        from pbir_utils.pbir_report_sanitizer import sanitize_powerbi_report
+
+        # Use backward-compat API with actions list. CWD is NOT the report dir,
+        # so the only way this works is if config_dir from auto-discovered YAML
+        # is preserved in the backward-compat path.
+        with (
+            patch("pathlib.Path.cwd", return_value=tmp_path),
+            patch("builtins.print"),
+        ):
+            results = sanitize_powerbi_report(
+                str(report_dir), ["set_theme"], dry_run=True
+            )
+
+        assert results.get("set_theme") is True
+
 
 class TestResetHardcodedColors:
     """Tests for reset_hardcoded_colors."""
