@@ -28,6 +28,7 @@ from .visual_utils import (
     remove_unused_custom_visuals,
     disable_show_items_with_no_data,
     remove_hidden_visuals_never_shown,
+    clear_slicer_search_text,
 )
 from .folder_standardizer import standardize_pbir_folders
 from .theme_utils import (
@@ -75,6 +76,7 @@ __all__ = [
     "remove_unused_custom_visuals",
     "disable_show_items_with_no_data",
     "remove_hidden_visuals_never_shown",
+    "clear_slicer_search_text",
     # Folder utilities
     "standardize_pbir_folders",
     # Rule validation

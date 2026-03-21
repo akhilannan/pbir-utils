@@ -48,6 +48,7 @@ pbir.sanitize_powerbi_report(
         "set_first_page_as_active",
         "remove_empty_pages",
         "remove_hidden_visuals_never_shown",
+        "clear_slicer_search_text",
         "standardize_pbir_folders",
     ],
     dry_run=True,
@@ -673,6 +674,36 @@ pbir.reset_filter_pane_width(
 
 # Reset filter pane width on all pages
 pbir.reset_filter_pane_width(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=False
+)
+```
+
+---
+
+## Clear Slicer Search Text
+
+Clears leftover search text from slicer visuals. When a user searches in a slicer dropdown and forgets to clear the search before publishing, the report saves this search state in the `selfFilter` property. This function removes that property so users don't see leftover search terms.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Preview slicers that have leftover search text
+pbir.clear_slicer_search_text(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=True
+)
+
+# Clear the search text and save
+pbir.clear_slicer_search_text(
     report_path=r"C:\DEV\MyReport.Report",
     dry_run=False
 )

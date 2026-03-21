@@ -11,6 +11,77 @@ from .common import load_json, write_json, process_json_files
 from .console_utils import console
 
 
+def clear_slicer_search_text(
+    report_path: str, dry_run: bool = False, summary: bool = False
+) -> bool:
+    """
+    Clear leftover search text from slicer visuals.
+
+    Removes the 'selfFilter' property from slicer visuals, which is left behind
+    when a user searches but forgets to clear the search pane before publishing.
+
+    Args:
+        report_path (str): The path to the report.
+        dry_run (bool): Whether to perform a dry run.
+        summary (bool): Whether to show summary instead of detailed messages.
+
+    Returns:
+        bool: True if changes were made (or would be made), False otherwise.
+    """
+    console.print_action_heading("Clearing slicer search text", dry_run)
+
+    modified_visuals = []
+
+    def _remove_self_filter(data) -> bool:
+        if isinstance(data, dict):
+            removed = "selfFilter" in data
+            if removed:
+                del data["selfFilter"]
+            return removed or any(_remove_self_filter(v) for v in data.values())
+        elif isinstance(data, list):
+            return any(_remove_self_filter(item) for item in data)
+        return False
+
+    def _check_and_track(data: dict, file_path: str) -> bool:
+        result = _remove_self_filter(data)
+        if result:
+            modified_visuals.append(Path(file_path).parent.name)
+        return result
+
+    visuals_modified = process_json_files(
+        Path(report_path) / "definition" / "pages",
+        "visual.json",
+        _check_and_track,
+        process=True,
+        dry_run=dry_run,
+    )
+
+    if visuals_modified > 0:
+        if summary:
+            if dry_run:
+                console.print_dry_run(
+                    f"Would clear search text from {visuals_modified} slicer(s)."
+                )
+            else:
+                console.print_success(
+                    f"Cleared search text from {visuals_modified} slicer(s)."
+                )
+        else:
+            for visual_name in modified_visuals:
+                if dry_run:
+                    console.print_dry_run(
+                        f"Would clear search text from slicer: {visual_name}"
+                    )
+                else:
+                    console.print_success(
+                        f"Cleared search text from slicer: {visual_name}"
+                    )
+        return True
+    else:
+        console.print_info("No slicers found with leftover search text.")
+        return False
+
+
 def remove_unused_custom_visuals(
     report_path: str, dry_run: bool = False, summary: bool = False
 ) -> bool:

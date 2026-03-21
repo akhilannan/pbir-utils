@@ -58,6 +58,7 @@ The following actions are available for use with `--actions`, `--include`, or `-
 | `remove_unused_custom_visuals` | Remove custom visual registrations not used by any visual | ✓ |
 | `disable_show_items_with_no_data` | Turn off "Show items with no data" on visuals (improves performance by hiding rows/columns with blank values) | ✓ |
 | `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks) | ✓ |
+| `clear_slicer_search_text` | Remove leftover search text from slicer visuals | ✓ |
 | `remove_empty_pages` | Remove pages without visuals and clean up orphan folders | ✓ |
 | `set_first_page_as_active` | Set the first non-hidden page as the default active page | ✓ |
 | `reset_filter_pane_width` | Remove custom filter pane width from all pages | ✓ |
@@ -246,7 +247,7 @@ Sanitizer checks verify that sanitize actions from `pbir-sanitize.yaml` wouldn't
 | Actions | Default Severity |
 |---------|------------------|
 | `cleanup_invalid_bookmarks`, `remove_unused_bookmarks`, `remove_unused_measures`, `remove_unused_custom_visuals`, `remove_hidden_visuals_never_shown`, `remove_empty_pages` | `warning` |
-| `set_first_page_as_active`, `disable_show_items_with_no_data`, `reset_filter_pane_width`, `hide_tooltip_pages`, cosmetic actions | `info` |
+| `set_first_page_as_active`, `disable_show_items_with_no_data`, `clear_slicer_search_text`, `reset_filter_pane_width`, `hide_tooltip_pages`, cosmetic actions | `info` |
 
 You can customize severity in `pbir-sanitize.yaml`:
 

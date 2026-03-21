@@ -36,6 +36,10 @@ definitions:
   # ============================================
   # Cosmetic/Preference Actions (info severity)
   # ============================================
+  clear_slicer_search_text:
+    description: Clear leftover search text from slicer visuals
+    severity: info
+
   disable_show_items_with_no_data:
     description: Disable 'Show items with no data'
     severity: info
@@ -158,6 +162,7 @@ actions:
   - hide_tooltip_pages
   - set_first_page_as_active
   - disable_show_items_with_no_data
+  - clear_slicer_search_text
   - reset_filter_pane_width
 
 # Global options

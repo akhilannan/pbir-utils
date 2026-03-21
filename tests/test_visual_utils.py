@@ -9,6 +9,7 @@ from pbir_utils.visual_utils import (
     remove_unused_custom_visuals,
     disable_show_items_with_no_data,
     remove_hidden_visuals_never_shown,
+    clear_slicer_search_text,
 )
 from pbir_utils.common import load_json
 
@@ -197,3 +198,71 @@ class TestRemoveHiddenVisualsNeverShown:
         assert os.path.exists(
             os.path.join(report_path, "definition/pages/Page1/visuals/hidden_v")
         )
+
+
+class TestClearSlicerSearchText:
+    """Tests for clear_slicer_search_text."""
+
+    def test_clears_search_text(self, tmp_path):
+        """Test that selfFilter property is removed but selfFilterEnabled remains."""
+        report_path = str(tmp_path)
+        visual_json = {
+            "name": "slicer",
+            "visual": {"visualType": "slicer"},
+            "objects": {
+                "general": [
+                    {
+                        "properties": {
+                            "responsive": {"expr": {"Literal": {"Value": "false"}}},
+                            "selfFilterEnabled": {
+                                "expr": {"Literal": {"Value": "true"}}
+                            },
+                            "selfFilter": {"filter": {"Version": 2}},
+                        }
+                    }
+                ]
+            },
+        }
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/visuals/slicer/visual.json", visual_json
+        )
+
+        result = clear_slicer_search_text(report_path)
+
+        assert result is True
+        updated_data = load_json(
+            os.path.join(
+                report_path, "definition/pages/Page1/visuals/slicer/visual.json"
+            )
+        )
+        properties = updated_data["objects"]["general"][0]["properties"]
+        assert "responsive" in properties
+        assert "selfFilter" not in properties
+        assert "selfFilterEnabled" in properties
+
+    def test_no_search_text(self, tmp_path):
+        """Test when no visuals have search text."""
+        report_path = str(tmp_path)
+        visual_json = {
+            "name": "slicer",
+            "visual": {"visualType": "slicer"},
+            "objects": {
+                "general": [
+                    {
+                        "properties": {
+                            "responsive": {"expr": {"Literal": {"Value": "false"}}}
+                        }
+                    }
+                ]
+            },
+        }
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/visuals/slicer/visual.json", visual_json
+        )
+
+        with patch("builtins.print") as mock_print:
+            result = clear_slicer_search_text(report_path)
+            assert result is False
+            assert any(
+                "No slicers found" in str(call) for call in mock_print.call_args_list
+            )
