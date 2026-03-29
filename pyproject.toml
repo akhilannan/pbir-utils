@@ -51,6 +51,7 @@ docs = [
     "mkdocs",
     "mkdocs-material",
     "requests",
+    "pygments<2.20.0",
 ]
 
 [tool.setuptools.packages.find]
