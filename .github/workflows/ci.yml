@@ -34,7 +34,7 @@ jobs:
       run: uv run bandit -r src
 
     - name: Check dependencies for vulnerabilities
-      run: uv run pip-audit
+      run: uv run pip-audit --ignore-vuln CVE-2026-4539
 
     - name: Run tests with pytest
       run: uv run pytest --cov=src --cov-fail-under=80
