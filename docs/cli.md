@@ -60,6 +60,7 @@ The following actions are available for use with `--actions`, `--include`, or `-
 | `remove_hidden_visuals_never_shown` | Remove permanently hidden visuals not revealed by bookmarks (keeps hidden slicer visuals that have default values or are controlled by bookmarks) | ✓ |
 | `clear_slicer_search_text` | Remove leftover search text from slicer visuals | ✓ |
 | `remove_empty_pages` | Remove pages without visuals and clean up orphan folders | ✓ |
+| `remove_unused_hidden_pages` | Remove hidden pages that have no functional dependencies | |
 | `set_first_page_as_active` | Set the first non-hidden page as the default active page | ✓ |
 | `reset_filter_pane_width` | Remove custom filter pane width from all pages | ✓ |
 | `hide_tooltip_pages` | Set visibility to hidden for Tooltip pages | ✓ |

@@ -47,6 +47,7 @@ pbir.sanitize_powerbi_report(
         "hide_tooltip_pages",
         "set_first_page_as_active",
         "remove_empty_pages",
+        "remove_unused_hidden_pages",
         "remove_hidden_visuals_never_shown",
         "clear_slicer_search_text",
         "standardize_pbir_folders",
@@ -73,6 +74,9 @@ pbir.set_first_page_as_active(report_path, dry_run=True)
 
 # Remove empty pages
 pbir.remove_empty_pages(report_path, dry_run=True)
+
+# Remove unused hidden pages
+pbir.remove_unused_hidden_pages(report_path, dry_run=True)
 
 # Cleanup invalid bookmarks
 pbir.cleanup_invalid_bookmarks(report_path, dry_run=True)
@@ -739,6 +743,43 @@ pbir.hide_pages_by_type(
     report_path=r"C:\DEV\MyReport.Report",
     page_type="Drillthrough",
     dry_run=False
+)
+```
+
+---
+
+## Remove Unused Hidden Pages
+
+Safely identifies and removes completely hidden Power BI pages that lack functional dependencies. A page is considered "in use" and will **not** be removed if it meets any of the following criteria:
+
+- **Active Page:** It is the current `activePageName` in `pages.json`.
+- **Page Binding:** It is configured as a Tooltip or Drillthrough page.
+- **Page Navigation:** It is targeted by a button or visual link action.
+- **Visual Tooltips:** It is selected as a custom tooltip for any visual.
+- **Active Bookmarks:** It is referenced by the exploration state of a bookmark that is actively linked to a Bookmark Navigator or button.
+
+If a hidden page is only referenced by completely unused bookmarks, both the page and those unused bookmarks will be safely removed.
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `report_path` | str | Path to the PBIR report folder |
+| `dry_run` | bool | Preview without modifying files. Default: `False` |
+| `summary` | bool | Show summary instead of detailed messages. Default: `False` |
+
+### Example
+
+```python
+# Preview pages that would be removed
+pbir.remove_unused_hidden_pages(
+    report_path=r"C:\DEV\MyReport.Report",
+    dry_run=True
+)
+
+# Actually remove them and any orphaned bookmark references
+pbir.remove_unused_hidden_pages(
+    report_path=r"C:\DEV\MyReport.Report"
 )
 ```
 

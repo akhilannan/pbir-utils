@@ -33,6 +33,10 @@ definitions:
     description: Remove empty pages and clean up rogue folders
     severity: warning
 
+  remove_unused_hidden_pages:
+    description: Remove hidden pages that have no functional dependencies
+    severity: warning
+
   # ============================================
   # Cosmetic/Preference Actions (info severity)
   # ============================================

@@ -7,7 +7,14 @@ Contains functions for managing pages in PBIR reports.
 from pathlib import Path
 import shutil
 
-from .common import load_json, write_json, process_json_files, iter_pages
+from .common import (
+    load_json,
+    write_json,
+    walk_json_files,
+    process_json_files,
+    iter_pages,
+    iter_visuals,
+)
 from .console_utils import console
 
 
@@ -578,3 +585,241 @@ def set_page_display_option(
                 f"All pages already have the display option '{display_option}'."
             )
         return False
+
+
+def remove_unused_hidden_pages(
+    report_path: str,
+    dry_run: bool = False,
+    summary: bool = False,
+) -> bool:
+    """
+    Remove hidden pages that are not used as tooltips, drillthroughs,
+    page navigation targets, or referenced in active bookmarks.
+
+    Args:
+        report_path (str): Path to the report.
+        dry_run (bool): Preview changes without modifying files.
+        summary (bool): Show summary instead of detailed messages.
+
+    Returns:
+        bool: True if any pages were/would be removed.
+    """
+    console.print_action_heading("Removing unused hidden pages", dry_run)
+
+    pages_dir = Path(report_path) / "definition" / "pages"
+    pages_json_path = pages_dir / "pages.json"
+    bookmarks_dir = Path(report_path) / "definition" / "bookmarks"
+    bookmarks_json_path = bookmarks_dir / "bookmarks.json"
+
+    if not pages_json_path.exists():
+        console.print_info("No pages found.")
+        return False
+
+    pages_data = load_json(pages_json_path)
+    page_order = pages_data.get("pageOrder", [])
+    active_page = pages_data.get("activePageName", "")
+
+    # 1. Collect hidden pages and build initial protected set
+    hidden_pages = {}  # page_id -> displayName
+    protected_pages = set()
+
+    # Protect active page
+    if active_page:
+        protected_pages.add(active_page)
+
+    for page_id, page_folder, page_data in iter_pages(report_path):
+        if page_data.get("visibility") == "HiddenInViewMode":
+            hidden_pages[page_id] = page_data.get("displayName", page_id)
+
+        # Check page bindings/types (tooltips/drillthroughs)
+        binding_type = page_data.get("pageBinding", {}).get("type", "")
+        page_type = page_data.get("type", "")
+        if page_type == "Tooltip" or binding_type in ("Tooltip", "Drillthrough"):
+            protected_pages.add(page_id)
+
+    if not hidden_pages:
+        console.print_info("No hidden pages found.")
+        return False
+
+    # Scan visuals for page navigation and tooltip section references
+    # Also collect used bookmark references
+    used_bookmark_names = set()
+    all_bookmarks_used = False
+
+    for _, page_folder, _ in iter_pages(report_path):
+        for _, _, visual_data in iter_visuals(page_folder):
+            visual = visual_data.get("visual", {})
+            visual_type = visual.get("visualType", "")
+
+            # Check bookmark navigators
+            if visual_type == "bookmarkNavigator":
+                for bookmark in visual.get("objects", {}).get("bookmarks", []):
+                    props = bookmark.get("properties", {})
+                    if "bookmarkGroup" not in props:
+                        all_bookmarks_used = True
+                    else:
+                        val = (
+                            props.get("bookmarkGroup", {})
+                            .get("expr", {})
+                            .get("Literal", {})
+                            .get("Value")
+                        )
+                        if val is not None and val.strip("'") == "":
+                            all_bookmarks_used = True
+                        elif val:
+                            used_bookmark_names.add(val.strip("'"))
+
+            # Check visual links (for page nav and bookmark actions)
+            vco = visual.get("visualContainerObjects", {})
+            for link in vco.get("visualLink", []):
+                props = link.get("properties", {})
+
+                # Bookmark links
+                bm_val = (
+                    props.get("bookmark", {})
+                    .get("expr", {})
+                    .get("Literal", {})
+                    .get("Value")
+                )
+                if bm_val:
+                    used_bookmark_names.add(bm_val.strip("'"))
+
+                # Page navigation links
+                nav_val = (
+                    props.get("navigationSection", {})
+                    .get("expr", {})
+                    .get("Literal", {})
+                    .get("Value")
+                )
+                if nav_val:
+                    protected_pages.add(nav_val.strip("'"))
+
+            # Check tooltip sections
+            for tooltip in vco.get("visualTooltip", []):
+                section_val = (
+                    tooltip.get("properties", {})
+                    .get("section", {})
+                    .get("expr", {})
+                    .get("Literal", {})
+                    .get("Value")
+                )
+                if section_val:
+                    target = section_val.strip("'")
+                    if target != "___AUTO___":
+                        protected_pages.add(target)
+
+    # Scan bookmarks to find page references (only for "used" bookmarks)
+    if bookmarks_dir.exists():
+        for file_path_str in walk_json_files(bookmarks_dir, ".json"):
+            file_path = Path(file_path_str)
+            if file_path.name == "bookmarks.json" or not file_path.name.endswith(
+                ".bookmark.json"
+            ):
+                continue
+
+            bd = load_json(file_path)
+            bookmark_name = bd.get("name")
+            if all_bookmarks_used or bookmark_name in used_bookmark_names:
+                state = bd.get("explorationState", {})
+                active_sec = state.get("activeSection")
+                if active_sec:
+                    protected_pages.add(active_sec)
+
+                sections_dict = state.get("sections", {})
+                if sections_dict:
+                    protected_pages.update(sections_dict.keys())
+
+    # 3. Identify removable pages
+    removable_pages = {
+        pid: name for pid, name in hidden_pages.items() if pid not in protected_pages
+    }
+
+    if not removable_pages:
+        console.print_info("No unused hidden pages found.")
+        return False
+
+    # 4. Process removals
+    for page_id, display_name in removable_pages.items():
+        if dry_run:
+            if not summary:
+                console.print_dry_run(
+                    f"Would remove hidden page: {display_name} ({page_id})"
+                )
+        else:
+            if not summary:
+                console.print_success(
+                    f"Removed hidden page: {display_name} ({page_id})"
+                )
+
+            # Remove from pageOrder
+            if page_id in page_order:
+                page_order.remove(page_id)
+
+            # Delete folder
+            page_folder = pages_dir / page_id
+            if page_folder.exists() and page_folder.is_dir():
+                shutil.rmtree(page_folder)
+
+    # Save pages.json
+    if not dry_run and removable_pages:
+        pages_data["pageOrder"] = page_order
+        write_json(pages_json_path, pages_data)
+
+    # Clean up bookmarks referencing removed pages (even if they were unused)
+    if not dry_run and bookmarks_dir.exists():
+        bookmarks_index = (
+            load_json(bookmarks_json_path) if bookmarks_json_path.exists() else None
+        )
+
+        for file_path_str in walk_json_files(bookmarks_dir, ".json"):
+            file_path = Path(file_path_str)
+            if file_path.name == "bookmarks.json" or not file_path.name.endswith(
+                ".bookmark.json"
+            ):
+                continue
+
+            bd = load_json(file_path)
+            state = bd.get("explorationState", {})
+            active_sec = state.get("activeSection")
+            sections_dict = state.get("sections", {})
+
+            needs_save = False
+            file_deleted = False
+
+            # If the active section is a removed page, this bookmark is totally invalid
+            if active_sec in removable_pages:
+                file_path.unlink()
+                file_deleted = True
+                if bookmarks_index and "items" in bookmarks_index:
+                    bookmarks_index["items"] = [
+                        item
+                        for item in bookmarks_index["items"]
+                        if item.get("name") != bd.get("name")
+                    ]
+            elif sections_dict:
+                # Remove sections pointing to removed pages
+                for pid in list(sections_dict.keys()):
+                    if pid in removable_pages:
+                        del sections_dict[pid]
+                        needs_save = True
+
+            if needs_save and not file_deleted:
+                write_json(file_path, bd)
+
+        if bookmarks_index:
+            write_json(bookmarks_json_path, bookmarks_index)
+
+        # If bookmarks dir has no remaining items, remove the whole dir
+        if bookmarks_index is not None and not bookmarks_index.get("items"):
+            if bookmarks_dir.exists():
+                shutil.rmtree(bookmarks_dir)
+
+    # Summary formatting
+    if summary:
+        msg = f"Removed {len(removable_pages)} unused hidden page(s)."
+        if dry_run:
+            console.print_dry_run("Would " + msg.lower())
+        else:
+            console.print_success(msg)
+
+    return True

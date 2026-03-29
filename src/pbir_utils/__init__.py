@@ -23,6 +23,7 @@ from .page_utils import (
     remove_empty_pages,
     set_page_size,
     set_page_display_option,
+    remove_unused_hidden_pages,
 )
 from .visual_utils import (
     remove_unused_custom_visuals,
@@ -69,6 +70,7 @@ __all__ = [
     "remove_empty_pages",
     "set_page_size",
     "set_page_display_option",
+    "remove_unused_hidden_pages",
     # Theme utilities
     "set_theme",
     "reset_hardcoded_colors",

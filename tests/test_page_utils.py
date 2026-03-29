@@ -13,6 +13,7 @@ from pbir_utils.page_utils import (
     remove_empty_pages,
     set_page_size,
     set_page_display_option,
+    remove_unused_hidden_pages,
 )
 from pbir_utils.common import load_json
 
@@ -604,3 +605,375 @@ class TestSetPageDisplayOption:
         assert result is True
         p1 = load_json(os.path.join(report_path, "definition/pages/Page1/page.json"))
         assert p1["displayOption"] == "FitToWidth"  # Unchanged due to dry run
+
+
+class TestRemoveUnusedHiddenPages:
+    """Tests for remove_unused_hidden_pages."""
+
+    def test_removes_hidden_page_with_no_deps(self, tmp_path):
+        """Test that a hidden page with no dependencies is removed."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
+        )
+
+        # Visible page
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(tmp_path, "definition/pages/Page1/visuals/v1/visual.json", {})
+
+        # Hidden unused page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode"},
+        )
+        create_dummy_file(tmp_path, "definition/pages/Page2/visuals/v2/visual.json", {})
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is True
+        pages_data = load_json(os.path.join(report_path, "definition/pages/pages.json"))
+        assert pages_data["pageOrder"] == ["Page1"]
+        assert os.path.exists(os.path.join(report_path, "definition/pages/Page1"))
+        assert not os.path.exists(os.path.join(report_path, "definition/pages/Page2"))
+
+    def test_keeps_tooltip_page(self, tmp_path):
+        """Test that a hidden tooltip page is kept."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1"]}
+        )
+
+        # Hidden tooltip page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"visibility": "HiddenInViewMode", "pageBinding": {"type": "Tooltip"}},
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is False
+        assert os.path.exists(os.path.join(report_path, "definition/pages/Page1"))
+
+    def test_keeps_drillthrough_page(self, tmp_path):
+        """Test that a hidden drillthrough page is kept."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1"]}
+        )
+
+        # Hidden drillthrough page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"visibility": "HiddenInViewMode", "pageBinding": {"type": "Drillthrough"}},
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is False
+
+    def test_keeps_page_navigation_target(self, tmp_path):
+        """Test that a hidden page targeted by page navigation is kept."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1", "Page2"]}
+        )
+
+        # Visible page with a navigation button to Page2
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/visuals/v1/visual.json",
+            {
+                "visual": {
+                    "visualContainerObjects": {
+                        "visualLink": [
+                            {
+                                "properties": {
+                                    "navigationSection": {
+                                        "expr": {"Literal": {"Value": "'Page2'"}}
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        )
+
+        # Hidden target page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page2"},
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is False
+
+    def test_keeps_tooltip_target_page(self, tmp_path):
+        """Test that a hidden page targeted as a visual tooltip is kept."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1", "Page2"]}
+        )
+
+        # Visible page with a visual using Page2 as tooltip
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/visuals/v1/visual.json",
+            {
+                "visual": {
+                    "visualContainerObjects": {
+                        "visualTooltip": [
+                            {
+                                "properties": {
+                                    "section": {
+                                        "expr": {"Literal": {"Value": "'Page2'"}}
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        )
+
+        # Hidden target page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page2"},
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is False
+
+    def test_keeps_page_with_used_bookmark(self, tmp_path):
+        """Test that a hidden page referenced by a *used* bookmark is kept."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1", "Page2"]}
+        )
+
+        # Visible page with a bookmark navigator pointing to "MyGroup"
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/visuals/v1/visual.json",
+            {
+                "visual": {
+                    "visualType": "bookmarkNavigator",
+                    "objects": {
+                        "bookmarks": [
+                            {
+                                "properties": {
+                                    "bookmarkGroup": {
+                                        "expr": {"Literal": {"Value": "'MyGroup'"}}
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                }
+            },
+        )
+
+        # Hidden target page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page2"},
+        )
+
+        # Bookmark in "MyGroup" referencing Page2
+        create_dummy_file(
+            tmp_path,
+            "definition/bookmarks/bookmarks.json",
+            {"items": [{"name": "bm1"}]},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/bookmarks/bm1.bookmark.json",
+            {
+                "name": "MyGroup",
+                "explorationState": {
+                    "activeSection": "Page2",
+                    "sections": {"Page2": {}},
+                },
+            },
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+        assert result is False
+
+    def test_removes_page_with_only_unused_bookmarks(self, tmp_path):
+        """Test that a hidden page referenced only by unused bookmarks is removed."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
+        )
+
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/visuals/v1/visual.json", {}
+        )  # No bookmark refs
+
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page2"},
+        )
+
+        # Unused bookmark referencing Page2
+        create_dummy_file(
+            tmp_path,
+            "definition/bookmarks/bookmarks.json",
+            {"items": [{"name": "UnusedBM"}]},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/bookmarks/b1.bookmark.json",
+            {
+                "name": "UnusedBM",
+                "explorationState": {
+                    "activeSection": "Page2",
+                    "sections": {"Page2": {}},
+                },
+            },
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is True
+        assert not os.path.exists(os.path.join(report_path, "definition/pages/Page2"))
+
+        # Bookmark file should be deleted since its activeSection was removed
+        assert not os.path.exists(
+            os.path.join(report_path, "definition/bookmarks/b1.bookmark.json")
+        )
+        # Directory should be cleaned up too since it's now empty
+        assert not os.path.exists(os.path.join(report_path, "definition/bookmarks"))
+
+    def test_keeps_active_page(self, tmp_path):
+        """Test that the active page is not removed even if hidden and unused."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2"], "activePageName": "Page1"},
+        )
+
+        # Hidden active page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page1"},
+        )
+        # Visible remaining page
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "Visible", "name": "Page2"},
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is False
+        assert os.path.exists(os.path.join(report_path, "definition/pages/Page1"))
+
+    def test_dry_run_no_changes(self, tmp_path):
+        """Test that dry run identifies pages but modifies nothing."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1"]},
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page1/page.json",
+            {"visibility": "HiddenInViewMode"},
+        )
+
+        with patch("builtins.print"):
+            result = remove_unused_hidden_pages(report_path, dry_run=True)
+
+        assert result is True
+        assert os.path.exists(os.path.join(report_path, "definition/pages/Page1"))
+
+    def test_no_hidden_pages(self, tmp_path):
+        """Test when no hidden pages exist."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path, "definition/pages/pages.json", {"pageOrder": ["Page1"]}
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+        assert result is False
+
+    def test_cleans_bookmark_references(self, tmp_path):
+        """Test that sections pointing to a removed page are stripped from keeping bookmarks."""
+        report_path = str(tmp_path)
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/pages.json",
+            {"pageOrder": ["Page1", "Page2"]},
+        )
+        create_dummy_file(
+            tmp_path, "definition/pages/Page1/page.json", {"visibility": "Visible"}
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/pages/Page2/page.json",
+            {"visibility": "HiddenInViewMode", "name": "Page2"},
+        )
+
+        # This bookmark is unused but its activeSection is Page1. It has a section for Page2.
+        # Since Page2 is removed, but activeSection is preserved, the bookmark file is kept but section removed.
+        create_dummy_file(
+            tmp_path, "definition/bookmarks/bookmarks.json", {"items": [{"name": "bm"}]}
+        )
+        create_dummy_file(
+            tmp_path,
+            "definition/bookmarks/b1.bookmark.json",
+            {
+                "name": "bm",
+                "explorationState": {
+                    "activeSection": "Page1",
+                    "sections": {"Page1": {}, "Page2": {"visualContainers": {}}},
+                },
+            },
+        )
+
+        result = remove_unused_hidden_pages(report_path)
+
+        assert result is True
+        # Bookmark file still exists
+        bm_data = load_json(
+            os.path.join(report_path, "definition/bookmarks/b1.bookmark.json")
+        )
+        assert "Page2" not in bm_data["explorationState"]["sections"]
+        assert "Page1" in bm_data["explorationState"]["sections"]
