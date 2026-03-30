@@ -1,2 +1,3 @@
 ## Fixed
-- **CI**: Pinned `pygments<2.20.0` to resolve an issue where the `deploy-docs` GitHub Action was crashing during `mkdocs gh-deploy` due to a newly introduced bug in Pygments.
+- **API**: Fixed a bug where `validate_report` (and the associated CLI validation rules) would fail to forward custom user configurations and parameters from `pbir-sanitize.yaml` (such as `theme_path` in `set_theme`), leading to `TypeError` during rule evaluation.
+

@@ -12,6 +12,7 @@ from .common import load_json, iter_pages, iter_visuals
 from .console_utils import console
 from .rule_config import RuleSpec, load_rules
 from .pbir_report_sanitizer import sanitize_powerbi_report, get_available_actions
+from .sanitize_config import SanitizeConfig
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +172,7 @@ def _evaluate_sanitizer_rule(
     rule: RuleSpec,
     report_path: str,
     available_actions: dict,
+    sanitize_config: SanitizeConfig,
 ) -> tuple[bool, list[dict]]:
     """
     Evaluate sanitizer-based rule by checking if action would make changes.
@@ -185,7 +187,7 @@ def _evaluate_sanitizer_rule(
         with console.suppress_all():
             results = sanitize_powerbi_report(
                 report_path,
-                actions=[rule.id],
+                config=sanitize_config,
                 dry_run=True,
             )
 
@@ -584,8 +586,15 @@ def validate_report(
                     description=action.description,
                     severity=action.severity,
                 )
+                run_config = SanitizeConfig(
+                    actions=[action],
+                    options=dict(san_cfg.options),
+                )
                 passed, violations = _evaluate_sanitizer_rule(
-                    rule, report_path, available_actions
+                    rule,
+                    report_path,
+                    available_actions,
+                    sanitize_config=run_config,
                 )
                 results[action.id] = passed
 

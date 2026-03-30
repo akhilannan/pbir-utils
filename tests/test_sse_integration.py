@@ -1,4 +1,6 @@
+import base64
 import json
+from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from pbir_utils.api.main import app
@@ -98,3 +100,81 @@ def test_validate_run_stream(api_client, sample_report_structure):
         # Should verify no errors (unless expected)
         types = [e.get("type") for e in events]
         assert "error" not in types
+
+
+def test_validate_run_stream_with_custom_sanitize_config(
+    api_client, sample_report_structure, tmp_path
+):
+    """Test validation stream preserves custom sanitize action params."""
+    theme_file = tmp_path / "Corporate.json"
+    theme_file.write_text('{"name": "Corporate"}')
+
+    report_path = Path(sample_report_structure)
+    report_json = report_path / "definition" / "report.json"
+    report_json.write_text(
+        json.dumps(
+            {
+                "name": "Test Report",
+                "themeCollection": {
+                    "customTheme": {
+                        "name": "Corporate.json",
+                        "reportVersionAtImport": {
+                            "visual": "1.8.0",
+                            "report": "2.0.0",
+                            "page": "1.3.0",
+                        },
+                        "type": "RegisteredResources",
+                    }
+                },
+                "resourcePackages": [
+                    {
+                        "name": "RegisteredResources",
+                        "type": "RegisteredResources",
+                        "items": [
+                            {
+                                "name": "Corporate.json",
+                                "path": "Corporate.json",
+                                "type": "CustomTheme",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+    )
+
+    registered_resources = report_path / "StaticResources" / "RegisteredResources"
+    registered_resources.mkdir(parents=True)
+    (registered_resources / "Corporate.json").write_text('{"name": "Corporate"}')
+
+    sanitize_yaml = f"""
+definitions:
+  set_theme:
+    description: Apply corporate theme
+    params:
+      theme_path: '{theme_file.as_posix()}'
+include:
+  - set_theme
+"""
+    encoded_yaml = base64.b64encode(sanitize_yaml.encode("utf-8")).decode("ascii")
+
+    with api_client.stream(
+        "GET",
+        "/api/reports/validate/run/stream",
+        params={
+            "report_path": sample_report_structure,
+            "include_sanitizer": "true",
+            "sanitize_actions": "set_theme",
+            "sanitize_config_yaml": encoded_yaml,
+        },
+    ) as response:
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers["content-type"]
+
+        events = []
+        for line in response.iter_lines():
+            if line.startswith("data: "):
+                events.append(json.loads(line[6:]))
+
+        assert len(events) > 0
+        assert any(event.get("passed") == 1 for event in events if "passed" in event)

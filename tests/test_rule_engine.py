@@ -533,6 +533,40 @@ class TestValidateReport:
                     with pytest.raises(ValidationError):
                         validate_report(str(report_path), strict=True)
 
+    def test_explicit_sanitize_config_preserves_action_params(self, tmp_path):
+        """Test validate_report reuses explicit sanitize config for paramized actions."""
+        report_path = tmp_path / "Test.Report"
+        definition_path = report_path / "definition"
+        definition_path.mkdir(parents=True)
+        (definition_path / "report.json").write_text('{"name": "Test Report"}')
+
+        config_dir = tmp_path / "config"
+        themes_dir = config_dir / "themes"
+        themes_dir.mkdir(parents=True)
+        (themes_dir / "Corporate.json").write_text('{"name": "Corporate"}')
+
+        sanitize_config = config_dir / "pbir-sanitize.yaml"
+        sanitize_config.write_text(
+            "definitions:\n"
+            "  set_theme:\n"
+            "    description: Apply corporate theme\n"
+            "    params:\n"
+            "      theme_path: ./themes/Corporate.json\n"
+            "include:\n"
+            "  - set_theme\n"
+        )
+
+        result = validate_report(
+            str(report_path),
+            source="sanitizer",
+            actions=["set_theme"],
+            sanitize_config=str(sanitize_config),
+            strict=False,
+        )
+
+        assert result.results["set_theme"] is False
+        assert any(v["rule_id"] == "set_theme" for v in result.violations)
+
 
 class TestHelperFunctions:
     """Tests for expression helper functions."""
