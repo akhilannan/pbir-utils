@@ -25,9 +25,18 @@ def set_theme(
 
     source_theme_path = Path(theme_path)
     if not source_theme_path.is_absolute() and config_dir:
-        source_theme_path = Path(config_dir) / source_theme_path
+        resolved = (Path(config_dir) / source_theme_path).resolve()
 
-    source_theme_path = source_theme_path.resolve()
+        # If config_dir resolution fails, fall back to CWD resolution.
+        # This handles cases where the config lives in a subdirectory
+        # (e.g., scripts/) but the theme_path is specified relative to CWD.
+        if resolved.exists():
+            source_theme_path = resolved
+        else:
+            cwd_resolved = source_theme_path.resolve()
+            source_theme_path = cwd_resolved if cwd_resolved.exists() else resolved
+    else:
+        source_theme_path = source_theme_path.resolve()
 
     if not source_theme_path.exists():
         console.print_warning(f"Theme file not found: {source_theme_path}")

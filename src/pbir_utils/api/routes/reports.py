@@ -29,6 +29,25 @@ from ..models import (
 )
 from pbir_utils.common import validate_report_path
 
+
+def _write_cwd_temp_yaml(b64_content: str):
+    import base64
+    import tempfile
+    from pathlib import Path
+
+    yaml_content = base64.b64decode(b64_content).decode("utf-8")
+    temp_file = tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=".yaml",
+        dir=str(Path.cwd()),
+        delete=False,
+        encoding="utf-8",
+    )
+    temp_file.write(yaml_content)
+    temp_file.close()
+    return temp_file
+
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -602,8 +621,6 @@ async def run_validation(request: ValidateRequest):
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    import base64
-    import tempfile
     from pathlib import Path
     from pbir_utils.rule_engine import validate_report
     from pbir_utils.console_utils import console
@@ -613,13 +630,8 @@ async def run_validation(request: ValidateRequest):
     temp_file = None
     if request.rules_config_yaml:
         try:
-            yaml_content = base64.b64decode(request.rules_config_yaml).decode("utf-8")
             # Write to temp file for validate_report
-            temp_file = tempfile.NamedTemporaryFile(
-                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
-            )
-            temp_file.write(yaml_content)
-            temp_file.close()
+            temp_file = _write_cwd_temp_yaml(request.rules_config_yaml)
             rules_config_path = temp_file.name
         except Exception as e:
             logger.debug("Failed to decode rules config: %s", e)
@@ -728,8 +740,6 @@ async def run_validation_stream(
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    import base64
-    import tempfile
     from pathlib import Path
     from pbir_utils.rule_engine import validate_report
     from pbir_utils.console_utils import console
@@ -745,12 +755,7 @@ async def run_validation_stream(
     rules_temp_file = None
     if rules_config_yaml:
         try:
-            yaml_content = base64.b64decode(rules_config_yaml).decode("utf-8")
-            rules_temp_file = tempfile.NamedTemporaryFile(
-                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
-            )
-            rules_temp_file.write(yaml_content)
-            rules_temp_file.close()
+            rules_temp_file = _write_cwd_temp_yaml(rules_config_yaml)
             rules_config_path = rules_temp_file.name
         except Exception as e:
             logger.debug("Failed to decode rules config: %s", e)
@@ -760,12 +765,7 @@ async def run_validation_stream(
     sanitize_temp_file = None
     if sanitize_config_yaml:
         try:
-            yaml_content = base64.b64decode(sanitize_config_yaml).decode("utf-8")
-            sanitize_temp_file = tempfile.NamedTemporaryFile(
-                mode="w", suffix=".yaml", delete=False, encoding="utf-8"
-            )
-            sanitize_temp_file.write(yaml_content)
-            sanitize_temp_file.close()
+            sanitize_temp_file = _write_cwd_temp_yaml(sanitize_config_yaml)
             sanitize_config_path = sanitize_temp_file.name
         except Exception as e:
             logger.debug("Failed to decode sanitize config: %s", e)

@@ -698,7 +698,7 @@ Apply a custom theme JSON file to the report. This command is content-aware: if 
 pbir-utils set-theme "C:\Reports\MyReport.Report" --theme-file "C:\Themes\Corporate.json"
 ```
 
-You can also run this as part of your sanitizer pipeline by defining it in `pbir-sanitize.yaml`. Relative paths resolve to the folder containing the config file, allowing configs to be portable:
+You can also run this as part of your sanitizer pipeline by defining it in `pbir-sanitize.yaml`. Relative `theme_path` values are resolved in order: first against the config file's directory, then against the current working directory (CWD). For maximum portability, specify the path relative to the project root (CWD):
 
 ```yaml
 # pbir-sanitize.yaml
@@ -706,7 +706,7 @@ definitions:
   set_theme:
     description: Apply standard corporate theme
     params:
-      theme_path: "./themes/Corporate.json"  # Relative to this yaml file
+      theme_path: "scripts/theme/Corporate.json"  # CWD-relative path (works with CLI, UI, and CI/CD)
 
 include:
   - set_theme

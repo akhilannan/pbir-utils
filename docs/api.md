@@ -844,7 +844,7 @@ Applies a custom theme JSON file to the report. Features content-aware duplicati
 |-----------|------|-------------|
 | `report_path` | str | Path to the PBIR report folder |
 | `theme_path` | str | Path to the theme component JSON file to apply |
-| `config_dir` | str | Base directory for resolving relative `theme_path`s (optional) |
+| `config_dir` | str | Base directory for resolving relative `theme_path`s. Tries config file parent first, falls back to CWD. Auto-set by the sanitizer pipeline. |
 | `dry_run` | bool | Preview without modifying files. Default: `False` |
 | `summary` | bool | Show summary instead of detailed messages. Default: `False` |
 
